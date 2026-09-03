@@ -291,11 +291,30 @@ class gfbrand extends Module
     /**
      * Footer before injection.
      * Brand footer content, contact details, social links.
+     * Story 1.4 (FR-13): Global chrome — footer
      */
     public function hookDisplayFooterBefore($params)
     {
-        // Placeholder — story 1.4 (global chrome) fills this
-        return '';
+        if (!Configuration::get(self::CONFIG_PREFIX . 'ENABLED')) {
+            return '';
+        }
+
+        $prefix = self::CONFIG_PREFIX;
+        $tpl = $this->context->smarty->createTemplate(
+            $this->local_path . 'views/templates/hook/footer_brand.tpl',
+            $this->context->smarty
+        );
+
+        $tpl->assign([
+            'gf_shop_name'  => Configuration::get($prefix . 'SHOP_NAME'),
+            'gf_contact_email'  => Configuration::get($prefix . 'CONTACT_EMAIL'),
+            'gf_contact_phone'  => Configuration::get($prefix . 'CONTACT_PHONE'),
+            'gf_social_facebook'   => Configuration::get($prefix . 'SOCIAL_FACEBOOK'),
+            'gf_social_instagram'  => Configuration::get($prefix . 'SOCIAL_INSTAGRAM'),
+            'gf_social_linkedin'   => Configuration::get($prefix . 'SOCIAL_LINKEDIN'),
+        ]);
+
+        return $tpl->fetch();
     }
 
     /**
@@ -349,7 +368,7 @@ class gfbrand extends Module
             Configuration::updateValue(self::CONFIG_PREFIX . 'CONTACT_PHONE', Tools::getValue(self::CONFIG_PREFIX . 'CONTACT_PHONE'));
             Configuration::updateValue(self::CONFIG_PREFIX . 'SOCIAL_FACEBOOK', Tools::getValue(self::CONFIG_PREFIX . 'SOCIAL_FACEBOOK'));
             Configuration::updateValue(self::CONFIG_PREFIX . 'SOCIAL_INSTAGRAM', Tools::getValue(self::CONFIG_PREFIX . 'SOCIAL_INSTAGRAM'));
-            Configuration::updateValue(self::CONFIG_PREFIX . 'SOCIAL_TWITTER', Tools::getValue(self::CONFIG_PREFIX . 'SOCIAL_TWITTER'));
+            Configuration::updateValue(self::CONFIG_PREFIX . 'SOCIAL_LINKEDIN', Tools::getValue(self::CONFIG_PREFIX . 'SOCIAL_LINKEDIN'));
 
             $output .= $this->displayConfirmation($this->l('Settings saved successfully.'));
         }
@@ -464,10 +483,10 @@ class gfbrand extends Module
                     [
                         'col' => 3,
                         'type' => 'text',
-                        'label' => $this->l('Twitter/X URL'),
-                        'name' => $prefix . 'SOCIAL_TWITTER',
+                        'label' => $this->l('LinkedIn URL'),
+                        'name' => $prefix . 'SOCIAL_LINKEDIN',
                         'size' => 50,
-                        'desc' => $this->l('Full URL to your Twitter/X profile.'),
+                        'desc' => $this->l('Full URL to your LinkedIn company page.'),
                         'validate' => 'isUrl',
                     ],
                 ],
@@ -488,7 +507,7 @@ class gfbrand extends Module
             $prefix . 'CONTACT_PHONE' => Configuration::get($prefix . 'CONTACT_PHONE'),
             $prefix . 'SOCIAL_FACEBOOK' => Configuration::get($prefix . 'SOCIAL_FACEBOOK'),
             $prefix . 'SOCIAL_INSTAGRAM' => Configuration::get($prefix . 'SOCIAL_INSTAGRAM'),
-            $prefix . 'SOCIAL_TWITTER' => Configuration::get($prefix . 'SOCIAL_TWITTER'),
+            $prefix . 'SOCIAL_LINKEDIN' => Configuration::get($prefix . 'SOCIAL_LINKEDIN'),
         ];
 
         return $output . $helper->generateForm([$fields_form['form']]);

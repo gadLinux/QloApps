@@ -43,18 +43,197 @@ a:hover {
 
 /* ==========================================================================
    1. Global chrome (header, nav, footer) — Story 1.4
+   FR-13: Header, navigation, footer and mobile menu carry brand structure
+   FR-27: Language switcher styled and reachable on mobile
    ========================================================================== */
 
-/* Logo rendered from module assets with responsive srcset (FR-3, FR-4).
- * Uses the theme's #header_logo .logo <img> and overrides its source
- * via CSS to load from modules/gfbrand/assets/ instead of img/logo.jpg. */
+/* --- Header bar --- */
+#header {
+    background-color: var(--gf-beige, #FDFBF7) !important;
+    border-bottom: 3px solid var(--gf-olive, #6b8e23);
+}
+
+/* Override the header background image used by hotel theme on index page */
+#page .header-container header {
+    background-image: none !important;
+    background-color: var(--gf-beige, #FDFBF7) !important;
+}
+
+/* Header nav bar — dark olive strip */
+#nav-main {
+    background-color: var(--gf-olive-dark, #556B2F) !important;
+}
+
+#nav-main .container > .row {
+    border-bottom: none;
+}
+
+/* --- Navigation links --- */
+#nav_main .navigation-header ul li a,
+#g_menu .sf-menu ul.sf-dropdown-submenu li a,
+#g_menu .sf-menu > li > a {
+    color: var(--gf-beige, #FDFBF7);
+    font-family: var(--gf-font-display, Georgia, serif);
+}
+
+#nav_main .navigation-header ul li a:hover,
+#g_menu .sf-menu ul li a:hover,
+#g_menu .sf-menu > li.sfHover > a {
+    color: var(--gf-gold, #DAA520);
+    background-color: transparent;
+}
+
+/* Dropdown submenu */
+#g_menu .sf-menu ul.sf-dropdown-submenu {
+    background-color: var(--gf-charcoal, #2C302E) !important;
+}
+
+#g_menu .sf-menu ul.sf-dropdown-submenu li a {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--gf-beige, #FDFBF7) !important;
+}
+
+/* --- Mobile menu toggle --- */
+#mobile_menu .btn {
+    background-color: var(--gf-olive-dark, #556B2F) !important;
+    border-color: var(--gf-olive-dark, #556B2F) !important;
+    color: var(--gf-beige, #FDFBF7);
+}
+
+/* --- Logo --- */
 #header_logo .logo {
-    max-width: 80px;
-    height: auto;
+    max-height: 80px;
+    width: auto;
+}
+
+/* Override the stock logo link hover */
+#header_logo a:hover .logo {
+    opacity: 0.9;
+}
+
+/* --- Language switcher (FR-27) --- */
+#blocklanguages .btn-group .btn,
+#blocklanguages .language-selector .cur-sign {
+    color: var(--gf-olive-dark, #556B2F);
+}
+
+#blocklanguages .dropdown-menu > li > a {
+    border-color: var(--gf-sand-light, #E8E3D9);
+    color: var(--gf-charcoal, #2C302E);
+}
+
+#blocklanguages .dropdown-menu > li > a:hover {
+    background-color: var(--gf-sand-light, #E8E3D9);
+}
+
+/* Ensure language switcher is accessible on mobile */
+@media (max-width: 767px) {
+    #blocklanguages {
+        display: block !important;
+        margin-top: 10px;
+    }
+}
+
+/* --- Branded footer (#gf-footer) --- */
+#gf-footer.gf-footer {
+    background-color: var(--gf-charcoal, #2C302E);
+    color: var(--gf-sand-light, #E8E3D9);
+    padding: 60px 0 0;
+    font-size: var(--gf-body-size, 16px);
+    line-height: 1.7;
+}
+
+#gf-footer.gf-footer h4 {
+    color: var(--gf-beige, #FDFBF7);
+    font-family: var(--gf-font-display, Georgia, serif);
+    font-size: var(--gf-h5, 20px);
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--gf-olive, #6b8e23);
+}
+
+#gf-footer.gf-footer a {
+    color: var(--gf-sand-light, #E8E3D9);
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+#gf-footer.gf-footer a:hover {
+    color: var(--gf-gold, #DAA520);
+}
+
+/* Footer columns */
+.gf-footer-grid .gf-footer-col {
+    margin-bottom: 30px;
+}
+
+/* Contact list */
+.gf-contact-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.gf-contact-list li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    color: var(--gf-sand-light, #E8E3D9);
+}
+
+.gf-contact-list svg {
+    flex-shrink: 0;
+    color: var(--gf-olive, #6b8e23);
+}
+
+/* Social links */
+.gf-social-links {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.gf-social-links a {
+    color: var(--gf-sand-light, #E8E3D9);
+    transition: color 0.2s ease;
+}
+
+.gf-social-links a:hover {
+    color: var(--gf-olive, #6b8e23);
+}
+
+/* Quick links */
+.gf-quick-links {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.gf-quick-links li {
+    margin-bottom: 8px;
+}
+
+/* Copyright bar */
+.gf-footer-bottom {
+    background-color: var(--gf-beige, #FDFBF7);
+    color: var(--gf-charcoal, #2C302E);
+    padding: 16px 0;
+    text-align: center;
+    font-size: 14px;
+}
+
+.gf-footer-bottom a {
+    color: var(--gf-olive-dark, #556B2F);
+    margin-left: 8px;
+}
+
+/* --- Breadcrumb rebrand --- */
+#breadcrumbsblocks ul li a {
+    color: var(--gf-link, #55721c);
 }
 
 /* ==========================================================================
-   TO BE ADDED BY STORY 1.4: header nav styling, footer content
 
 /* ==========================================================================
    2. Homepage sections — Story 1.13

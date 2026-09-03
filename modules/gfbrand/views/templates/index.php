@@ -1,8 +1,1 @@
-<?php
-/**
- * Empty index file to prevent directory listing.
- */
-if (!defined(\_PS_VERSION_)) {
-    exit;
-}
-
+<?php header('Expires: -1'); header('Cache-Control: no-store'); exit;
