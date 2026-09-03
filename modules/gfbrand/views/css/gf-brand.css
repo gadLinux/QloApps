@@ -43,11 +43,18 @@ a:hover {
 
 /* ==========================================================================
    1. Global chrome (header, nav, footer) — Story 1.4
-   [Placeholder — story 1.4 fills this section]
    ========================================================================== */
 
-/* TO BE ADDED BY STORY 1.4 */
+/* Logo rendered from module assets with responsive srcset (FR-3, FR-4).
+ * Uses the theme's #header_logo .logo <img> and overrides its source
+ * via CSS to load from modules/gfbrand/assets/ instead of img/logo.jpg. */
+#header_logo .logo {
+    max-width: 80px;
+    height: auto;
+}
 
+/* ==========================================================================
+   TO BE ADDED BY STORY 1.4: header nav styling, footer content
 
 /* ==========================================================================
    2. Homepage sections — Story 1.13

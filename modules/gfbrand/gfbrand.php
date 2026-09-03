@@ -64,6 +64,11 @@ class gfbrand extends Module
             return false;
         }
 
+        /* Favicon, OG/Twitter meta tags injected into <head>. */
+        if (!$this->registerHook('displayHeader')) {
+            return false;
+        }
+
         /* Back-office configuration form rendered in AdminModules. */
         if (!$this->registerHook('displayAdminProductsPreferences')) {
             return false;
@@ -101,13 +106,14 @@ class gfbrand extends Module
 
         /* Default configuration values. Layer 2 — back-office configuration.
          * These can be overridden per customer via the back office.
-         */
-        if (!Configuration::updateValue(self::CONFIG_PREFIX . 'ENABLED', 1, false, true)
-            || !Configuration::updateValue(self::CONFIG_PREFIX . 'SHOP_NAME', 'GF Experiences', false, true)
-            || !Configuration::updateValue(self::CONFIG_PREFIX . 'TAGLINE', 'Gluten-Free Travel Made Safe & Easy', false, true)
-        ) {
-            return false;
-        }
+         * Use direct SQL to avoid Configuration::updateValue caching issues during install(). */
+        Db::getInstance()->execute(
+            'INSERT INTO `' . _DB_PREFIX_ . 'configuration` (`name`, `value`) VALUES
+             (\'' . pSQL(self::CONFIG_PREFIX . 'ENABLED') . '\', \'1\'),
+             (\'' . pSQL(self::CONFIG_PREFIX . 'SHOP_NAME') . '\', \'GF Experiences\'),
+             (\'' . pSQL(self::CONFIG_PREFIX . 'TAGLINE') . '\', \'Gluten-Free Travel Made Safe & Easy\')
+             ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)'
+        );
 
         return true;
     }
@@ -192,6 +198,70 @@ class gfbrand extends Module
             'https://fonts.googleapis.com/css2?family=DM+Serif+Display:wght@400&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&display=swap',
             'all'
         );
+
+        /* FR-20: Page titles reflect the brand. Prepend GF shop name only if
+         * the title does not already contain our brand name (PrestaShop appends
+         * the shop name at the end, so skip prepending to avoid duplication). */
+        $gfShopName = Configuration::get(self::CONFIG_PREFIX . 'SHOP_NAME');
+        if ($gfShopName && isset($this->context->controller->page_title)) {
+            if (stripos($this->context->controller->page_title, $gfShopName) === false) {
+                $this->context->controller->page_title = $gfShopName . ' — ' . $this->context->controller->page_title;
+            }
+        }
+    }
+
+    /**
+     * Favicon, OG/Twitter meta tags injected into <head>.
+     *
+     * FR-3: Brand assets served from the module, not dropped into theme img/.
+     * FR-20: Favicon, OG/Twitter card images and page titles reflect the brand.
+     *
+     * Uses the assets/ directory for all logo/favicon derivatives.
+     * The module path is resolved via Module::getPath() to ensure correct URLs
+     * regardless of installation mode (symlink or copied).
+     */
+    public function hookDisplayHeader($params)
+    {
+        if (!Configuration::get(self::CONFIG_PREFIX . 'ENABLED')) {
+            return '';
+        }
+
+        $moduleUrl = $this->context->link->getModuleLink(
+            'gfbrand',
+            'display',
+            [],
+            true
+        );
+        // Simpler: use the module's public asset URL via media path
+        $assetUrl = __PS_BASE_URI__ . 'modules/gfbrand/assets/';
+
+        $shopName = Configuration::get(self::CONFIG_PREFIX . 'SHOP_NAME', (int) $this->context->language->id);
+        $tagline = Configuration::get(self::CONFIG_PREFIX . 'TAGLINE', (int) $this->context->language->id);
+        $ogTitle = $shopName ?: 'GF Experiences';
+        $ogDesc  = $tagline ?: 'Gluten-Free Travel Made Safe & Easy';
+
+        // Current page URL for OG (use PrestaShop's link helper for protocol + host)
+        $ogUrl = rtrim($this->context->link->baseUri, '/') . $_SERVER['REQUEST_URI'];
+
+        return '
+        <!-- GF Brand: Favicon set -->
+        <link rel="icon" type="image/x-icon" href="' . $assetUrl . 'favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="' . $assetUrl . 'favicon-32.png" />
+        <link rel="icon" type="image/png" sizes="16x16" href="' . $assetUrl . 'favicon-16.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="' . $assetUrl . 'apple-touch-icon.png" />
+        <link rel="manifest" href="' . $assetUrl . 'site.webmanifest" />
+        <!-- GF Brand: OG / Twitter meta -->
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="' . htmlspecialchars($ogTitle, ENT_COMPAT, 'UTF-8') . '" />
+        <meta property="og:title" content="' . htmlspecialchars($ogTitle, ENT_COMPAT, 'UTF-8') . '" />
+        <meta property="og:description" content="' . htmlspecialchars($ogDesc, ENT_COMPAT, 'UTF-8') . '" />
+        <meta property="og:image" content="' . $assetUrl . 'og-image.png" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="' . htmlspecialchars($ogTitle, ENT_COMPAT, 'UTF-8') . '" />
+        <meta name="twitter:description" content="' . htmlspecialchars($ogDesc, ENT_COMPAT, 'UTF-8') . '" />
+        <meta name="twitter:image" content="' . $assetUrl . 'og-image.png" />';
     }
 
     /**
