@@ -111,7 +111,9 @@ class gfbrand extends Module
             'INSERT INTO `' . _DB_PREFIX_ . 'configuration` (`name`, `value`) VALUES
              (\'' . pSQL(self::CONFIG_PREFIX . 'ENABLED') . '\', \'1\'),
              (\'' . pSQL(self::CONFIG_PREFIX . 'SHOP_NAME') . '\', \'GF Experiences\'),
-             (\'' . pSQL(self::CONFIG_PREFIX . 'TAGLINE') . '\', \'Gluten-Free Travel Made Safe & Easy\')
+             (\'' . pSQL(self::CONFIG_PREFIX . 'TAGLINE') . '\', \'Gluten-Free Travel Made Safe & Easy\'),
+             (\'' . pSQL(self::CONFIG_PREFIX . 'PRIMARY_COLOR') . '\', \'#6b8e23\'),
+             (\'' . pSQL(self::CONFIG_PREFIX . 'SECONDARY_COLOR') . '\', \'#556B2F\')
              ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)'
         );
 
@@ -328,7 +330,10 @@ class gfbrand extends Module
 
     /**
      * Back-office configuration form.
-     * Renders a simple enable/disable toggle and shop name/tagline fields.
+     *
+     * FR-5: Exposes a back-office configuration screen for operational values:
+     * logo, primary/secondary colour, contact details, social URLs.
+     * Organized into sections for clarity.
      */
     public function getContent()
     {
@@ -338,8 +343,15 @@ class gfbrand extends Module
             Configuration::updateValue(self::CONFIG_PREFIX . 'ENABLED', (int) Tools::getValue(self::CONFIG_PREFIX . 'ENABLED'));
             Configuration::updateValue(self::CONFIG_PREFIX . 'SHOP_NAME', Tools::getValue(self::CONFIG_PREFIX . 'SHOP_NAME'));
             Configuration::updateValue(self::CONFIG_PREFIX . 'TAGLINE', Tools::getValue(self::CONFIG_PREFIX . 'TAGLINE'));
+            Configuration::updateValue(self::CONFIG_PREFIX . 'PRIMARY_COLOR', Tools::getValue(self::CONFIG_PREFIX . 'PRIMARY_COLOR'));
+            Configuration::updateValue(self::CONFIG_PREFIX . 'SECONDARY_COLOR', Tools::getValue(self::CONFIG_PREFIX . 'SECONDARY_COLOR'));
+            Configuration::updateValue(self::CONFIG_PREFIX . 'CONTACT_EMAIL', Tools::getValue(self::CONFIG_PREFIX . 'CONTACT_EMAIL'));
+            Configuration::updateValue(self::CONFIG_PREFIX . 'CONTACT_PHONE', Tools::getValue(self::CONFIG_PREFIX . 'CONTACT_PHONE'));
+            Configuration::updateValue(self::CONFIG_PREFIX . 'SOCIAL_FACEBOOK', Tools::getValue(self::CONFIG_PREFIX . 'SOCIAL_FACEBOOK'));
+            Configuration::updateValue(self::CONFIG_PREFIX . 'SOCIAL_INSTAGRAM', Tools::getValue(self::CONFIG_PREFIX . 'SOCIAL_INSTAGRAM'));
+            Configuration::updateValue(self::CONFIG_PREFIX . 'SOCIAL_TWITTER', Tools::getValue(self::CONFIG_PREFIX . 'SOCIAL_TWITTER'));
 
-            $output .= $this->displayConfirmation($this->l('Settings saved'));
+            $output .= $this->displayConfirmation($this->l('Settings saved successfully.'));
         }
 
         $helper = new HelperForm();
@@ -349,18 +361,24 @@ class gfbrand extends Module
         $helper->currentIndex = $this->context->link->getAdminLink('AdminModules', false)
             . '&configure=' . $this->name . '&tab_module=' . $this->tab . '&module_name=' . $this->name;
         $helper->token = Tools::getAdminTokenLite('AdminModules');
+        $helper->default_form_language = true;
+        $helper->allow_employee_form_load = true;
+
+        $prefix = self::CONFIG_PREFIX;
 
         $fields_form = [
             'form' => [
                 'legend' => [
-                    'title' => $this->l('GF Brand Layer'),
+                    'title' => $this->l('GF Brand Layer Configuration'),
                     'icon' => 'icon-paintbrush',
                 ],
                 'input' => [
+                    /* --- Section 1: General --- */
                     [
+                        'col' => 3,
                         'type' => 'switch',
                         'label' => $this->l('Enable brand layer'),
-                        'name' => self::CONFIG_PREFIX . 'ENABLED',
+                        'name' => $prefix . 'ENABLED',
                         'is_bool' => true,
                         'desc' => $this->l('When disabled, no GF branding CSS or JS is loaded.'),
                         'values' => [
@@ -369,30 +387,108 @@ class gfbrand extends Module
                         ],
                     ],
                     [
+                        'col' => 3,
                         'type' => 'text',
                         'label' => $this->l('Shop name'),
-                        'name' => self::CONFIG_PREFIX . 'SHOP_NAME',
+                        'name' => $prefix . 'SHOP_NAME',
                         'size' => 40,
-                        'desc' => $this->l('Displayed in branded emails and page titles.'),
+                        'desc' => $this->l('Displayed in page titles, OG meta tags, and branded emails.'),
+                        'validate' => 'isGenericName',
                     ],
                     [
+                        'col' => 3,
                         'type' => 'text',
                         'label' => $this->l('Tagline'),
-                        'name' => self::CONFIG_PREFIX . 'TAGLINE',
+                        'name' => $prefix . 'TAGLINE',
                         'size' => 40,
-                        'desc' => $this->l('Subtitle used on the homepage and email headers.'),
+                        'desc' => $this->l('Subtitle used on the homepage hero and email headers.'),
+                        'validate' => 'isGenericName',
+                    ],
+
+                    /* --- Section 2: Colors --- */
+                    [
+                        'col' => 3,
+                        'type' => 'color',
+                        'label' => $this->l('Primary color'),
+                        'name' => $prefix . 'PRIMARY_COLOR',
+                        'desc' => $this->l('Main brand olive used for buttons, links, and accents. Default: #6b8e23.'),
+                        'default' => '#6b8e23',
+                    ],
+                    [
+                        'col' => 3,
+                        'type' => 'color',
+                        'label' => $this->l('Secondary color'),
+                        'name' => $prefix . 'SECONDARY_COLOR',
+                        'desc' => $this->l('Darker olive for hover states and high-contrast text. Default: #556B2F.'),
+                        'default' => '#556B2F',
+                    ],
+
+                    /* --- Section 3: Contact --- */
+                    [
+                        'col' => 3,
+                        'type' => 'text',
+                        'label' => $this->l('Contact email'),
+                        'name' => $prefix . 'CONTACT_EMAIL',
+                        'size' => 40,
+                        'desc' => $this->l('Email address shown in the footer and contact section.'),
+                        'validate' => 'isEmail',
+                    ],
+                    [
+                        'col' => 3,
+                        'type' => 'text',
+                        'label' => $this->l('Contact phone'),
+                        'name' => $prefix . 'CONTACT_PHONE',
+                        'size' => 20,
+                        'desc' => $this->l('Phone number shown in the header and contact section (international format).'),
+                    ],
+
+                    /* --- Section 4: Social media --- */
+                    [
+                        'col' => 3,
+                        'type' => 'text',
+                        'label' => $this->l('Facebook URL'),
+                        'name' => $prefix . 'SOCIAL_FACEBOOK',
+                        'size' => 50,
+                        'desc' => $this->l('Full URL to your Facebook page (e.g., https://facebook.com/yourpage).'),
+                        'validate' => 'isUrl',
+                    ],
+                    [
+                        'col' => 3,
+                        'type' => 'text',
+                        'label' => $this->l('Instagram URL'),
+                        'name' => $prefix . 'SOCIAL_INSTAGRAM',
+                        'size' => 50,
+                        'desc' => $this->l('Full URL to your Instagram profile.'),
+                        'validate' => 'isUrl',
+                    ],
+                    [
+                        'col' => 3,
+                        'type' => 'text',
+                        'label' => $this->l('Twitter/X URL'),
+                        'name' => $prefix . 'SOCIAL_TWITTER',
+                        'size' => 50,
+                        'desc' => $this->l('Full URL to your Twitter/X profile.'),
+                        'validate' => 'isUrl',
                     ],
                 ],
                 'submit' => [
-                    'title' => $this->l('Save'),
+                    'title' => $this->l('Save settings'),
+                    'class' => 'button',
                 ],
             ],
         ];
 
         $helper->fields_value = [
-            self::CONFIG_PREFIX . 'ENABLED' => Configuration::get(self::CONFIG_PREFIX . 'ENABLED'),
-            self::CONFIG_PREFIX . 'SHOP_NAME' => Configuration::get(self::CONFIG_PREFIX . 'SHOP_NAME'),
-            self::CONFIG_PREFIX . 'TAGLINE' => Configuration::get(self::CONFIG_PREFIX . 'TAGLINE'),
+            $prefix . 'ENABLED' => Configuration::get($prefix . 'ENABLED'),
+            $prefix . 'SHOP_NAME' => Configuration::get($prefix . 'SHOP_NAME'),
+            $prefix . 'TAGLINE' => Configuration::get($prefix . 'TAGLINE'),
+            $prefix . 'PRIMARY_COLOR' => Configuration::get($prefix . 'PRIMARY_COLOR', 1, false, '#6b8e23'),
+            $prefix . 'SECONDARY_COLOR' => Configuration::get($prefix . 'SECONDARY_COLOR', 1, false, '#556B2F'),
+            $prefix . 'CONTACT_EMAIL' => Configuration::get($prefix . 'CONTACT_EMAIL'),
+            $prefix . 'CONTACT_PHONE' => Configuration::get($prefix . 'CONTACT_PHONE'),
+            $prefix . 'SOCIAL_FACEBOOK' => Configuration::get($prefix . 'SOCIAL_FACEBOOK'),
+            $prefix . 'SOCIAL_INSTAGRAM' => Configuration::get($prefix . 'SOCIAL_INSTAGRAM'),
+            $prefix . 'SOCIAL_TWITTER' => Configuration::get($prefix . 'SOCIAL_TWITTER'),
         ];
 
         return $output . $helper->generateForm([$fields_form['form']]);
