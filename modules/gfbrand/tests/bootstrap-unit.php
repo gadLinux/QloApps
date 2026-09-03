@@ -26,6 +26,7 @@ $classes = [
     // Application
     '/lib/Service/GFImportException.php',
     '/lib/Service/GFImportResult.php',
+    '/lib/Service/GFImageLocator.php',
     '/lib/Service/GFEstablishmentCsvReader.php',
     '/lib/Service/GFRoomTypeCsvReader.php',
     // Migrations

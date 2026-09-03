@@ -58,6 +58,13 @@ class GFEstablishment
     /** @var string */
     public $destinationUrl = '';
 
+    /**
+     * @var string Bare file name of the seed photograph, without any path.
+     *      The source data's paths are relative to where it was authored, so
+     *      only the name survives; GFImageLocator finds the file.
+     */
+    public $imageFile = '';
+
     /** @var bool */
     public $hasChannelManager = false;
 

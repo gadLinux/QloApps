@@ -153,6 +153,10 @@ class GFEstablishmentCsvReader
         $establishment->city = $this->resolveCity($row, $columns);
         $establishment->destinationUrl = $this->value($row, $columns, 'Destination_URL');
 
+        // Only the file name is dependable: the path in the source file is
+        // relative to wherever that file was authored.
+        $establishment->imageFile = basename($this->value($row, $columns, 'Image_Path'));
+
         return $establishment;
     }
 

@@ -66,6 +66,8 @@ class GFModuleServices
             'lib/Service/GFImportResult.php',
             'lib/Service/GFEstablishmentCsvReader.php',
             'lib/Service/GFRoomTypeCsvReader.php',
+            'lib/Service/GFImageLocator.php',
+            'lib/Service/GFProductImageFactory.php',
             'lib/Service/GFEstablishmentProductFactory.php',
             'lib/Service/GFCategoryTreeBuilder.php',
             'lib/Service/GFHotelFactory.php',
@@ -119,8 +121,19 @@ class GFModuleServices
                 new GFEstablishmentCsvReader(),
                 new GFEstablishmentProductFactory(),
                 $this->getEstablishmentRepository(),
-                $this->getHotelProvisioner()
+                $this->getHotelProvisioner(),
+                $this->getProductImageFactory()
             );
+        });
+    }
+
+    /**
+     * @return GFProductImageFactory
+     */
+    public function getProductImageFactory()
+    {
+        return $this->share('productImageFactory', function () {
+            return new GFProductImageFactory(new GFImageLocator());
         });
     }
 
@@ -149,7 +162,10 @@ class GFModuleServices
 
             return new GFHotelProvisioner(
                 new GFHotelFactory(new GFCategoryTreeBuilder(), $hotelRepository),
-                new GFRoomTypeFactory($this->getEstablishmentRepository()),
+                new GFRoomTypeFactory(
+                    $this->getEstablishmentRepository(),
+                    $this->getProductImageFactory()
+                ),
                 $hotelRepository,
                 $this->readRoomTypes()
             );

@@ -111,6 +111,30 @@ class GFEstablishmentCsvReaderTest extends TestCase
         $this->assertStringContainsString('"inner quote"', $sicilia->description);
     }
 
+    /**
+     * The source file points at images by a path relative to where it
+     * originally lived. Only the file name survives into the module, which
+     * ships the images alongside the CSV.
+     */
+    #[Test]
+    public function it_reduces_the_image_path_to_a_file_name(): void
+    {
+        $panella = $this->readByName('Cantine Panella');
+
+        $this->assertSame('panella.jpg', $panella->imageFile);
+    }
+
+    #[Test]
+    public function a_row_without_an_image_has_an_empty_file_name(): void
+    {
+        $sparse = $this->readByName('Tour Gastronomicos');
+
+        $this->assertSame('tour.jpg', $sparse->imageFile);
+
+        $noImage = new GFEstablishment();
+        $this->assertSame('', $noImage->imageFile);
+    }
+
     #[Test]
     public function it_throws_when_the_file_does_not_exist(): void
     {

@@ -26,20 +26,28 @@ class GFRoomTypeFactory
     /** @var GFEstablishmentRepository Reused to tag room types with a source id. */
     private $productRepository;
 
-    public function __construct(GFEstablishmentRepository $productRepository)
-    {
+    /** @var GFProductImageFactory|null */
+    private $imageFactory;
+
+    public function __construct(
+        GFEstablishmentRepository $productRepository,
+        GFProductImageFactory $imageFactory = null
+    ) {
         $this->productRepository = $productRepository;
+        $this->imageFactory = $imageFactory;
     }
 
     /**
      * Create or update one room type under a hotel.
      *
-     * @param  int $idHotel
-     * @param  int $idHotelCategory
+     * @param  int    $idHotel
+     * @param  int    $idHotelCategory
+     * @param  string $imageFile Hotel photograph, inherited by its room types
+     *                because the source data carries no per-room images.
      * @return int id_product of the room type
      * @throws GFImportException
      */
-    public function persist(GFRoomType $roomType, $idHotel, $idHotelCategory)
+    public function persist(GFRoomType $roomType, $idHotel, $idHotelCategory, $imageFile = '')
     {
         $sourceId = $roomType->getSourceId();
         $existingId = $this->productRepository->findIdBySourceId($sourceId);
@@ -62,6 +70,10 @@ class GFRoomTypeFactory
         $this->persistRoomTypeLink($idProduct, $idHotel, $roomType);
         $this->persistRooms($idProduct, $idHotel, $roomType);
         $this->tagWithSourceId($idProduct, $sourceId, $roomType);
+
+        if ($this->imageFactory !== null && $imageFile !== '') {
+            $this->imageFactory->attach($idProduct, $imageFile);
+        }
 
         return $idProduct;
     }
