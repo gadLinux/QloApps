@@ -1,0 +1,154 @@
+/**
+ * GF Experiences Brand Override Stylesheet
+ *
+ * This file consumes the design tokens declared in gf-tokens.css to restyle
+ * QloApps theme elements. It is loaded AFTER gf-tokens.css and AFTER the
+ * theme's global.css (load order enforced by hookActionFrontControllerSetMedia).
+ *
+ * Initially minimal — section headings are scaffold for the stories that fill them.
+ * Every selector in this file uses a token variable, never a hardcoded hex value.
+ *
+ * LAYER 1 (module CSS injection via actionFrontControllerSetMedia)
+ */
+
+/* ==========================================================================
+   0. Base resets — Story 1.1
+   Apply brand ground colour and typography to the page root.
+   These are low-risk: they change nothing on stock pages yet visible only
+   when later stories target specific elements.
+   ========================================================================== */
+
+body {
+    background-color: var(--gf-beige, #FDFBF7);
+    color: var(--gf-charcoal, #2C302E);
+    font-family: var(--gf-font-body, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif);
+    font-size: var(--gf-body-size, 16px);
+    line-height: var(--gf-body-lh, 1.65);
+}
+
+/* Headings use the display font */
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--gf-font-display, Georgia, 'Times New Roman', serif);
+    color: var(--gf-heading, #1A1C1B);
+}
+
+/* Links use the AA-safe olive */
+a {
+    color: var(--gf-link, #55721c);
+}
+
+a:hover {
+    color: var(--gf-olive, #6b8e23);
+}
+
+/* ==========================================================================
+   1. Global chrome (header, nav, footer) — Story 1.4
+   [Placeholder — story 1.4 fills this section]
+   ========================================================================== */
+
+/* TO BE ADDED BY STORY 1.4 */
+
+
+/* ==========================================================================
+   2. Homepage sections — Story 1.13
+   Hero, pillars, hotel collection strip, why choose us
+   ========================================================================== */
+
+/* TO BE ADDED BY STORY 1.13 */
+
+
+/* ==========================================================================
+   3. Establishment card and conditional CTA — Story 1.10
+   ========================================================================== */
+
+/* TO BE ADDED BY STORY 1.10 */
+
+
+/* ==========================================================================
+   4. Establishments listing with country filter — Story 1.9
+   ========================================================================== */
+
+/* TO BE ADDED BY STORY 1.9 */
+
+
+/* ==========================================================================
+   5. Advisors and Partners drawers — Story 1.11
+   ========================================================================== */
+
+/* TO BE ADDED BY STORY 1.11 */
+
+
+/* ==========================================================================
+   6. Booking questionnaire form — Story 1.12
+   ========================================================================== */
+
+/* TO BE ADDED BY STORY 1.12 */
+
+
+/* ==========================================================================
+   7. Transaction rebrand (cart, checkout, account) — Story 1.6
+   ========================================================================== */
+
+/* TO BE ADDED BY STORY 1.6 */
+
+
+/* ==========================================================================
+   8. Booking discovery rebrand (search, room list, room detail) — Story 1.5
+   ========================================================================== */
+
+/* TO BE ADDED BY STORY 1.5 */
+
+
+/* ==========================================================================
+   9. Transactional emails — Story 1.7
+   (Email CSS is inline in the template, not this file; this section is for
+    any shared patterns)
+   ========================================================================== */
+
+/* TO BE ADDED BY STORY 1.7 */
+
+
+/* ==========================================================================
+   10. Accessibility overrides — Story 1.16
+   Focus indicators, reduced motion, contrast fixes
+   ========================================================================== */
+
+/* Ensure all focus indicators are visible (WCAG 2.4.7) */
+*:focus-visible {
+    outline: 3px solid var(--gf-olive-dark, #556B2F);
+    outline-offset: 2px;
+}
+
+/* Reduced motion — disable card lift and transitions */
+@media (prefers-reduced-motion: reduce) {
+    .gf-card:hover {
+        transform: none;
+        box-shadow: var(--gf-shadow-card-rest, 0 4px 15px rgba(0, 0, 0, 0.03));
+    }
+
+    *, *::before, *::after {
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+    }
+}
+
+
+/* ==========================================================================
+   11. Theme override fixes — catch-all for QloApps stock blue → olive swap
+   ========================================================================== */
+
+/* Override the hardcoded #009ad0 theme blue in common elements.
+ * The SASS is not recompiled (C3), so target compiled output selectors. */
+
+/* Theme primary colour links */
+a.btn-primary,
+button.btn-primary {
+    background-color: var(--gf-olive-dark, #556B2F);
+    border-color: var(--gf-olive-dark, #556B2F);
+}
+
+a.btn-primary:hover,
+button.btn-primary:hover {
+    background-color: var(--gf-olive-hover, #55721c);
+    border-color: var(--gf-olive-hover, #55721c);
+}
