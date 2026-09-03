@@ -22,12 +22,15 @@ $classes = [
     '/lib/Migration/GFMigrationRunner.php',
     // Domain
     '/lib/Repository/GFEstablishment.php',
+    '/lib/Repository/GFRoomType.php',
     // Application
     '/lib/Service/GFImportException.php',
     '/lib/Service/GFImportResult.php',
     '/lib/Service/GFEstablishmentCsvReader.php',
+    '/lib/Service/GFRoomTypeCsvReader.php',
     // Migrations
     '/migrations/GFMigration20260903001Establishments.php',
+    '/migrations/GFMigration20260903002HotelSourceId.php',
 ];
 
 foreach ($classes as $relativePath) {

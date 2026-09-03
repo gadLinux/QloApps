@@ -1,0 +1,9 @@
+Hotel_ID,Code,Name,Description,Price,Adults,Children,Rooms
+3,STD,Standard Room,"A comfortable room with a dedicated gluten-free breakfast service. The kitchen prepares breakfast in a separate preparation area.",120,2,1,6
+3,DLX,Deluxe Room,"A larger room with seating area and a dedicated gluten-free breakfast service, plus an in-room kettle and sealed GF provisions.",180,2,2,4
+4,STD,Garden Room,"A ground-floor room opening onto the garden. The hotel kitchen is fully gluten-free, so every meal on site is safe.",140,2,1,8
+4,STE,Hacienda Suite,"A suite with a private terrace overlooking the volcano. All catering is prepared in the hotel's dedicated gluten-free kitchen.",260,2,2,3
+5,STD,Standard Room,"A quiet room with gluten-free options available at breakfast on request, prepared with separate utensils.",110,2,1,10
+6,STD,City Room,"A central room in Madrid with gluten-free breakfast prepared in a dedicated area, and a list of coeliac-safe restaurants nearby.",150,2,1,7
+6,STE,Music Suite,"A themed suite with a lounge area. Gluten-free catering is prepared in a dedicated kitchen and clearly labelled.",290,2,2,2
+15,STD,Tour Room,"Accommodation forming part of the Castilla-La Mancha gastronomic tour, with every meal prepared gluten-free.",130,2,1,5

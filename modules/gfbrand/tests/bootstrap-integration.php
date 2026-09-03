@@ -28,6 +28,7 @@ $classes = [
     '/lib/Repository/GFEstablishment.php',
     '/lib/Repository/GFEstablishmentRepository.php',
     '/lib/Service/GFImportException.php',
+    '/lib/Service/GFErrorCollectingController.php',
     '/lib/Service/GFImportResult.php',
     '/lib/Service/GFEstablishmentCsvReader.php',
     '/lib/Service/GFEstablishmentProductFactory.php',

@@ -22,6 +22,9 @@ class GFModuleServices
     /** Source of truth for the establishment catalogue. */
     const ESTABLISHMENTS_CSV = 'data/establishments.csv';
 
+    /** Bookable room types, keyed to the establishments by hotel id. */
+    const ROOM_TYPES_CSV = 'data/room-types.csv';
+
     /** @var string Absolute path to the module directory, with trailing slash. */
     private $moduleDir;
 
@@ -55,11 +58,19 @@ class GFModuleServices
             // Domain
             'lib/Repository/GFEstablishment.php',
             'lib/Repository/GFEstablishmentRepository.php',
+            'lib/Repository/GFRoomType.php',
+            'lib/Repository/GFHotelRepository.php',
             // Application
             'lib/Service/GFImportException.php',
+            'lib/Service/GFErrorCollectingController.php',
             'lib/Service/GFImportResult.php',
             'lib/Service/GFEstablishmentCsvReader.php',
+            'lib/Service/GFRoomTypeCsvReader.php',
             'lib/Service/GFEstablishmentProductFactory.php',
+            'lib/Service/GFCategoryTreeBuilder.php',
+            'lib/Service/GFHotelFactory.php',
+            'lib/Service/GFRoomTypeFactory.php',
+            'lib/Service/GFHotelProvisioner.php',
             'lib/Service/GFEstablishmentImporter.php',
             // Presentation
             'lib/Admin/GFImportPanel.php',
@@ -107,7 +118,40 @@ class GFModuleServices
             return new GFEstablishmentImporter(
                 new GFEstablishmentCsvReader(),
                 new GFEstablishmentProductFactory(),
-                $this->getEstablishmentRepository()
+                $this->getEstablishmentRepository(),
+                $this->getHotelProvisioner()
+            );
+        });
+    }
+
+    /**
+     * @return GFHotelRepository
+     */
+    public function getHotelRepository()
+    {
+        return $this->share('hotelRepository', function () {
+            return new GFHotelRepository();
+        });
+    }
+
+    /**
+     * Provisions bookable hotels, or null when the platform cannot host them.
+     *
+     * A shop without hotelreservationsystem still imports establishments as
+     * informational products; it just has nothing to book.
+     *
+     * @return GFHotelProvisioner|null
+     */
+    public function getHotelProvisioner()
+    {
+        return $this->share('hotelProvisioner', function () {
+            $hotelRepository = $this->getHotelRepository();
+
+            return new GFHotelProvisioner(
+                new GFHotelFactory(new GFCategoryTreeBuilder(), $hotelRepository),
+                new GFRoomTypeFactory($this->getEstablishmentRepository()),
+                $hotelRepository,
+                $this->readRoomTypes()
             );
         });
     }
@@ -120,6 +164,35 @@ class GFModuleServices
     public function getEstablishmentsCsvPath()
     {
         return $this->moduleDir . self::ESTABLISHMENTS_CSV;
+    }
+
+    /**
+     * @return string
+     */
+    public function getRoomTypesCsvPath()
+    {
+        return $this->moduleDir . self::ROOM_TYPES_CSV;
+    }
+
+    /**
+     * Room types grouped by hotel. A missing or unreadable file yields no room
+     * types rather than failing the import — the hotels still get created.
+     *
+     * @return array<string, GFRoomType[]>
+     */
+    private function readRoomTypes()
+    {
+        $path = $this->getRoomTypesCsvPath();
+
+        if (!file_exists($path)) {
+            return [];
+        }
+
+        try {
+            return (new GFRoomTypeCsvReader())->readGroupedByHotel($path);
+        } catch (GFImportException $exception) {
+            return [];
+        }
     }
 
     /**

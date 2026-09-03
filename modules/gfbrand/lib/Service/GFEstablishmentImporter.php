@@ -32,14 +32,23 @@ class GFEstablishmentImporter
     /** @var GFEstablishmentRepository */
     private $repository;
 
+    /**
+     * @var GFHotelProvisioner|null Optional: when absent, hotels are imported
+     *      as informational products only, which is what a shop without
+     *      hotelreservationsystem can support.
+     */
+    private $hotelProvisioner;
+
     public function __construct(
         GFEstablishmentCsvReader $reader,
         GFEstablishmentProductFactory $factory,
-        GFEstablishmentRepository $repository
+        GFEstablishmentRepository $repository,
+        GFHotelProvisioner $hotelProvisioner = null
     ) {
         $this->reader = $reader;
         $this->factory = $factory;
         $this->repository = $repository;
+        $this->hotelProvisioner = $hotelProvisioner;
     }
 
     /**
@@ -124,6 +133,8 @@ class GFEstablishmentImporter
             if (!$this->repository->saveFields((int) $product->id, $establishment)) {
                 throw new GFImportException('Could not write GF fields');
             }
+
+            $this->provisionHotel($establishment);
         } catch (GFImportException $exception) {
             $result->recordFailure($establishment->name . ': ' . $exception->getMessage());
 
@@ -134,10 +145,33 @@ class GFEstablishmentImporter
     }
 
     /**
+     * A hotel gets a bookable structure on top of its product row. A
+     * restaurant or experience links out to its own site and needs none.
+     */
+    private function provisionHotel(GFEstablishment $establishment)
+    {
+        if ($this->hotelProvisioner === null) {
+            return;
+        }
+
+        if (!$this->hotelProvisioner->supports($establishment)) {
+            return;
+        }
+
+        $this->hotelProvisioner->provision($establishment);
+    }
+
+    /**
      * @return int Number of products removed.
      */
     private function deleteImported()
     {
+        // Hotels first: deleting a hotel branch cleans up its rooms and links,
+        // which would otherwise be left pointing at deleted products.
+        if ($this->hotelProvisioner !== null) {
+            $this->hotelProvisioner->deleteImportedHotels();
+        }
+
         $deleted = 0;
 
         foreach ($this->repository->findImportedIds() as $idProduct) {
