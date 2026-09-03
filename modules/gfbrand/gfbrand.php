@@ -25,6 +25,9 @@ class gfbrand extends Module
      */
     const CONFIG_PREFIX = 'GFBRAND_';
 
+    /** @var GFModuleServices Builds and holds this module's collaborators. */
+    private $services;
+
     public function __construct()
     {
         $this->name = 'gfbrand';
@@ -36,6 +39,9 @@ class gfbrand extends Module
 
         $this->bootstrap = true;
         parent::__construct();
+
+        require_once dirname(__FILE__) . '/lib/GFModuleServices.php';
+        $this->services = new GFModuleServices(dirname(__FILE__));
 
         $this->ps_versions_compliancy = ['min' => '1.6', 'max' => _PS_VERSION_];
         $this->displayName = $this->l('GF Brand Layer');
@@ -117,7 +123,87 @@ class gfbrand extends Module
              ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)'
         );
 
+        if (!$this->runMigrations()) {
+            return false;
+        }
+
+        $this->importEstablishmentsOnFirstInstall();
+
         return true;
+    }
+
+    /**
+     * Bring the schema up to date.
+     *
+     * Runs on every load, not only on install, so deploying code is enough to
+     * apply a new migration. Already-applied versions are skipped, which makes
+     * the common case a cheap no-op.
+     */
+    public function runMigrations()
+    {
+        $result = $this->services->getMigrationRunner()->migrate();
+
+        if (!$result->isSuccessful()) {
+            PrestaShopLogger::addLog(
+                '[gfbrand] ' . $result->getSummary(),
+                3,
+                null,
+                'Module',
+                (int) $this->id
+            );
+
+            return false;
+        }
+
+        if ($result->hasChanges()) {
+            PrestaShopLogger::addLog('[gfbrand] ' . $result->getSummary(), 1, null, 'Module', (int) $this->id);
+        }
+
+        return true;
+    }
+
+    /**
+     * Seed the catalogue the first time only. Later runs are the operator's
+     * call, from the panel in the module configuration screen — re-importing
+     * unasked would fight with back-office edits.
+     */
+    private function importEstablishmentsOnFirstInstall()
+    {
+        if ($this->services->getEstablishmentRepository()->countAll() > 0) {
+            return;
+        }
+
+        $csvPath = $this->services->getEstablishmentsCsvPath();
+
+        if (!file_exists($csvPath)) {
+            return;
+        }
+
+        $result = $this->services->getEstablishmentImporter()->import($csvPath);
+
+        if (!$result->isSuccessful()) {
+            PrestaShopLogger::addLog(
+                '[gfbrand] establishment import: ' . implode('; ', $result->getErrors()),
+                2,
+                null,
+                'Module',
+                (int) $this->id
+            );
+        }
+    }
+
+    /**
+     * @return GFImportPanel
+     */
+    private function getImportPanel()
+    {
+        return new GFImportPanel(
+            $this->services->getEstablishmentImporter(),
+            $this->services->getEstablishmentRepository(),
+            $this->services->getMigrationRunner(),
+            $this,
+            $this->services->getEstablishmentsCsvPath()
+        );
     }
 
     /**
@@ -154,6 +240,11 @@ class gfbrand extends Module
                  WHERE `id_configuration` NOT IN (SELECT `id_configuration` FROM `' . _DB_PREFIX_ . 'configuration`)'
             );
         }
+
+        /* Roll the schema back through the migrations that created it.
+         * Imported products are deliberately left in place: deleting a shop's
+         * catalogue on uninstall would be destructive beyond this module. */
+        $this->services->getMigrationRunner()->rollback();
 
         return parent::uninstall();
     }
@@ -347,6 +438,7 @@ class gfbrand extends Module
         // Placeholder — story 1.7 fills this
     }
 
+
     /**
      * Back-office configuration form.
      *
@@ -372,6 +464,10 @@ class gfbrand extends Module
 
             $output .= $this->displayConfirmation($this->l('Settings saved successfully.'));
         }
+
+        $importPanel = $this->getImportPanel();
+        $output .= $importPanel->handleRequest();
+        $output .= $importPanel->render();
 
         $helper = new HelperForm();
         $helper->show_toolbar = false;

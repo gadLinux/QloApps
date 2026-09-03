@@ -1,0 +1,6 @@
+ID,Name,Type,Location,Country,City/Region,Description,Image_Path,Destination_URL,CTA_Type,CTA_Text,Certification_Type
+1,Cantine Panella,RESTAURANT,Montreal,Canada,Montreal,"A bakery with never-before-seen flour mixtures.","../img/panella.jpg","https://www.panella.ca/en",LINK,VISIT WEBSITE,GF Dedicated
+2,Hotel Chateau Louis,HOTEL,Edmonton,Canada,Edmonton AB,"A family owned hotel near downtown Edmonton.","../img/louis.jpg","https://www.chateaulouis.com",FORM,INQUIRE TO BOOK,GF Options
+3,Tour Gastronomicos,TOUR,Castilla,Spain,,"A food tour with no city recorded.","../img/tour.jpg","https://example.es",LINK,VISIT WEBSITE,
+4,,RESTAURANT,Nowhere,Nowhere,Nowhere,"This row has no name and must be skipped.","","",LINK,VISIT WEBSITE,GF Dedicated
+5,Caffè Sicília,RESTAURANT,Noto,Italy,Noto,"Accents and an ""inner quote"" in the description.","../img/sicilia.jpg","https://example.it",LINK,VISIT WEBSITE,gf options

@@ -47,16 +47,18 @@ a:hover {
    FR-27: Language switcher styled and reachable on mobile
    ========================================================================== */
 
-/* --- Header bar --- */
+/* --- Header bar — override inline style from hotel theme --- */
 #header {
     background-color: var(--gf-beige, #FDFBF7) !important;
+    background-image: none !important;
     border-bottom: 3px solid var(--gf-olive, #6b8e23);
 }
 
-/* Override the header background image used by hotel theme on index page */
+/* Also target the wrapper that sets header height on index page */
+#page .header-container,
 #page .header-container header {
     background-image: none !important;
-    background-color: var(--gf-beige, #FDFBF7) !important;
+    height: auto !important;
 }
 
 /* Header nav bar — dark olive strip */
