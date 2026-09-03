@@ -118,25 +118,34 @@ class gfbrand extends Module
      */
     public function uninstall()
     {
-        /* Collect config IDs before deleting — we need them for the shop table. */
-        $results = Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS(
-            'SELECT `id_configuration` FROM `' . _DB_PREFIX_ . 'configuration`
-             WHERE `name` LIKE \'' . pSQL(self::CONFIG_PREFIX) . '%\''
-        );
-
-        if ($results) {
-            $ids = array_column($results, 'id_configuration');
-            Db::getInstance()->execute(
-                'DELETE FROM `' . _DB_PREFIX_ . 'configuration_shop`
-                 WHERE `id_configuration` IN (' . implode(',', array_map('intval', $ids)) . ')'
-            );
-        }
-
-        /* Delete the configuration values themselves. */
+        /* Delete the main configuration values first — always exists. */
         Db::getInstance()->execute(
             'DELETE FROM `' . _DB_PREFIX_ . 'configuration` WHERE `name` LIKE \''
             . pSQL(self::CONFIG_PREFIX) . '%\''
         );
+
+        /* ps_configuration_shop may not exist in single-shop installations.
+         * Check existence first before attempting deletion. */
+        $tableExists = Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue(
+            'SELECT COUNT(*) AS c FROM INFORMATION_SCHEMA.TABLES
+             WHERE TABLE_SCHEMA = \'' . pSQL(_DB_NAME_) . '\'
+               AND TABLE_NAME = \'' . pSQL(_DB_PREFIX_ . 'configuration_shop') . '\''
+        );
+
+        if ((int) $tableExists) {
+            Db::getInstance()->execute(
+                'DELETE cs FROM `' . _DB_PREFIX_ . 'configuration_shop` cs
+                 INNER JOIN `' . _DB_PREFIX_ . 'configuration` c ON cs.id_configuration = c.id_configuration
+                 WHERE c.name LIKE \'' . pSQL(self::CONFIG_PREFIX) . '%\''
+            );
+
+            // Since we already deleted from ps_configuration, orphan rows remain.
+            // Delete by name pattern directly on the shop table.
+            Db::getInstance()->execute(
+                'DELETE FROM `' . _DB_PREFIX_ . 'configuration_shop`
+                 WHERE `id_configuration` NOT IN (SELECT `id_configuration` FROM `' . _DB_PREFIX_ . 'configuration`)'
+            );
+        }
 
         return parent::uninstall();
     }
