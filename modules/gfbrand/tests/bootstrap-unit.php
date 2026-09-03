@@ -23,10 +23,12 @@ $classes = [
     // Domain
     '/lib/Repository/GFEstablishment.php',
     '/lib/Repository/GFRoomType.php',
+    '/lib/Repository/GFImagePlaceholder.php',
     // Application
     '/lib/Service/GFImportException.php',
     '/lib/Service/GFImportResult.php',
     '/lib/Service/GFImageLocator.php',
+    '/lib/Service/GFPlaceholderImageGenerator.php',
     '/lib/Service/GFEstablishmentCsvReader.php',
     '/lib/Service/GFRoomTypeCsvReader.php',
     // Migrations

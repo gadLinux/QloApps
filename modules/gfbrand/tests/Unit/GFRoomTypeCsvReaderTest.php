@@ -104,6 +104,29 @@ class GFRoomTypeCsvReaderTest extends TestCase
     }
 
     #[Test]
+    public function it_reads_a_room_types_own_photograph(): void
+    {
+        $grouped = $this->reader->readGroupedByHotel($this->fixture);
+
+        $this->assertSame('deluxe-room.jpg', $grouped['3'][1]->imageFile);
+    }
+
+    /**
+     * No room photography exists for most of the catalogue. Such a row reads
+     * as having no image at all — it does not borrow the hotel's, which would
+     * put the same picture on every room of that hotel. The stand-in is a
+     * generated placeholder; see GFPlaceholderImageGeneratorTest.
+     */
+    #[Test]
+    public function a_room_without_its_own_photograph_has_none(): void
+    {
+        $grouped = $this->reader->readGroupedByHotel($this->fixture);
+
+        $this->assertSame('', $grouped['3'][0]->imageFile);
+        $this->assertSame('', (new GFRoomType())->imageFile);
+    }
+
+    #[Test]
     public function max_guests_is_adults_plus_children(): void
     {
         $roomType = new GFRoomType();

@@ -1,5 +1,5 @@
-Hotel_ID,Code,Name,Description,Price,Adults,Children,Rooms
-3,STD,Standard Room,"A comfortable room with a dedicated gluten-free breakfast service.",120,2,1,6
-3,DLX,Deluxe Room,"A larger room with seating area.",180,2,2,4
-4,STD,Garden Room,"A ground-floor room opening onto the garden.",140,,,
-5,,Nameless Room,"This row has no code and must be skipped.",100,2,1,2
+Hotel_ID,Code,Name,Description,Price,Adults,Children,Rooms,Image
+3,STD,Standard Room,"A comfortable room with a dedicated gluten-free breakfast service.",120,2,1,6,
+3,DLX,Deluxe Room,"A larger room with seating area.",180,2,2,4,deluxe-room.jpg
+4,STD,Garden Room,"A ground-floor room opening onto the garden.",140,,,,
+5,,Nameless Room,"This row has no code and must be skipped.",100,2,1,2,

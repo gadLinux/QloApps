@@ -60,6 +60,7 @@ class GFModuleServices
             'lib/Repository/GFEstablishmentRepository.php',
             'lib/Repository/GFRoomType.php',
             'lib/Repository/GFHotelRepository.php',
+            'lib/Repository/GFImagePlaceholder.php',
             // Application
             'lib/Service/GFImportException.php',
             'lib/Service/GFErrorCollectingController.php',
@@ -67,6 +68,7 @@ class GFModuleServices
             'lib/Service/GFEstablishmentCsvReader.php',
             'lib/Service/GFRoomTypeCsvReader.php',
             'lib/Service/GFImageLocator.php',
+            'lib/Service/GFPlaceholderImageGenerator.php',
             'lib/Service/GFProductImageFactory.php',
             'lib/Service/GFEstablishmentProductFactory.php',
             'lib/Service/GFCategoryTreeBuilder.php',
@@ -133,7 +135,10 @@ class GFModuleServices
     public function getProductImageFactory()
     {
         return $this->share('productImageFactory', function () {
-            return new GFProductImageFactory(new GFImageLocator());
+            return new GFProductImageFactory(
+                new GFImageLocator(),
+                new GFPlaceholderImageGenerator()
+            );
         });
     }
 

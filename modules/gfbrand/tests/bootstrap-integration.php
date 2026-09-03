@@ -27,6 +27,7 @@ $classes = [
     '/lib/Migration/GFMigrationRunner.php',
     '/lib/Repository/GFEstablishment.php',
     '/lib/Repository/GFEstablishmentRepository.php',
+    '/lib/Repository/GFImagePlaceholder.php',
     '/lib/Service/GFImportException.php',
     '/lib/Service/GFErrorCollectingController.php',
     '/lib/Service/GFImportResult.php',

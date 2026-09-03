@@ -41,6 +41,13 @@ class GFRoomType
     public $roomCount = 1;
 
     /**
+     * @var string Bare file name of this room type's own photograph.
+     *      Empty means none was supplied, and the room type gets a branded
+     *      placeholder instead — see GFRoomTypeFactory::attachImage().
+     */
+    public $imageFile = '';
+
+    /**
      * Stable id for this room type, derived from the hotel it belongs to.
      *
      * Room types are products, so they carry a gf_source_id like any other

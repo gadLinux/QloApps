@@ -30,6 +30,17 @@ if (!defined('_MYSQL_ENGINE_')) {
     define('_MYSQL_ENGINE_', 'InnoDB');
 }
 
+// Point the path constants at this checkout, so the classes that discover
+// files on disk — the image locator, the placeholder generator — resolve their
+// real defaults instead of needing every path injected.
+if (!defined('_PS_MODULE_DIR_')) {
+    define('_PS_MODULE_DIR_', dirname(dirname(dirname(__DIR__))) . '/');
+}
+
+if (!defined('_PS_ROOT_DIR_')) {
+    define('_PS_ROOT_DIR_', dirname(_PS_MODULE_DIR_));
+}
+
 if (!function_exists('pSQL')) {
     /**
      * Escaping is asserted on in integration tests against the real driver.

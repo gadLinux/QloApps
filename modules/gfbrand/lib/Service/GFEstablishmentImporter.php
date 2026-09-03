@@ -139,7 +139,7 @@ class GFEstablishmentImporter
                 throw new GFImportException('Could not write GF fields');
             }
 
-            $this->attachImage((int) $product->id, $establishment->imageFile);
+            $this->attachImage((int) $product->id, $establishment);
             $this->provisionHotel($establishment);
         } catch (GFImportException $exception) {
             $result->recordFailure($establishment->name . ': ' . $exception->getMessage());
@@ -151,24 +151,27 @@ class GFEstablishmentImporter
     }
 
     /**
-     * A missing photograph is not a failed import — the establishment is still
-     * correct, it just has no picture.
+     * A missing photograph is not a failed import — the establishment falls
+     * back to a branded placeholder and is still correct.
      */
-    private function attachImage($idProduct, $fileName)
+    private function attachImage($idProduct, GFEstablishment $establishment)
     {
-        if ($this->imageFactory === null || $fileName === '') {
+        if ($this->imageFactory === null) {
             return;
         }
 
-        $this->imageFactory->attach($idProduct, $fileName);
+        $placeholder = new GFImagePlaceholder(
+            $establishment->name,
+            $establishment->sourceId,
+            $establishment->city
+        );
+
+        $this->imageFactory->attach($idProduct, $establishment->imageFile, $placeholder);
     }
 
     /**
      * A hotel gets a bookable structure on top of its product row. A
      * restaurant or experience links out to its own site and needs none.
-     *
-     * Its room types inherit the hotel's photograph: the source data has no
-     * per-room images, and an empty room list reads as broken.
      */
     private function provisionHotel(GFEstablishment $establishment)
     {

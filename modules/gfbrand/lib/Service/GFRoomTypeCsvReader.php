@@ -105,6 +105,7 @@ class GFRoomTypeCsvReader
         $roomType->adults = $this->intOrDefault($row, $columns, 'Adults', 2);
         $roomType->children = $this->intOrDefault($row, $columns, 'Children', 0);
         $roomType->roomCount = max(1, $this->intOrDefault($row, $columns, 'Rooms', 1));
+        $roomType->imageFile = basename($this->value($row, $columns, 'Image'));
 
         return $roomType;
     }

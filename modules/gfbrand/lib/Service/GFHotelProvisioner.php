@@ -72,12 +72,7 @@ class GFHotelProvisioner
             : [];
 
         foreach ($roomTypes as $roomType) {
-            $this->roomTypeFactory->persist(
-                $roomType,
-                $idHotel,
-                $idCategory,
-                $establishment->imageFile
-            );
+            $this->roomTypeFactory->persist($roomType, $idHotel, $idCategory, $establishment);
         }
 
         return count($roomTypes);

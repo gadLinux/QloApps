@@ -9,6 +9,10 @@
  * theme's thumbnail sizes, so listings and the product page both have
  * something to show.
  *
+ * When no photograph exists — which is the case for most room types — it falls
+ * back to a generated branded placeholder rather than leaving the product
+ * blank or repeating a picture that belongs to something else.
+ *
  * APPLICATION LAYER
  *
  * @copyright 2026 GF Experiences
@@ -24,9 +28,15 @@ class GFProductImageFactory
     /** @var GFImageLocator */
     private $locator;
 
-    public function __construct(GFImageLocator $locator)
-    {
+    /** @var GFPlaceholderImageGenerator|null Optional: without it, no fallback. */
+    private $placeholderGenerator;
+
+    public function __construct(
+        GFImageLocator $locator,
+        GFPlaceholderImageGenerator $placeholderGenerator = null
+    ) {
         $this->locator = $locator;
+        $this->placeholderGenerator = $placeholderGenerator;
     }
 
     /**
@@ -37,21 +47,64 @@ class GFProductImageFactory
      * photograph uploaded through the back office.
      *
      * @param  int    $idProduct
-     * @param  string $fileName Bare file name from the source data.
+     * @param  string $fileName Bare file name from the source data; may be
+     *                empty, in which case the placeholder is used.
+     * @param  GFImagePlaceholder|null $placeholder Drawn when no photograph is
+     *                found. Without one, a product with no picture stays bare.
      * @return bool   True when an image was added.
      */
-    public function attach($idProduct, $fileName)
+    public function attach($idProduct, $fileName, GFImagePlaceholder $placeholder = null)
     {
         if ($this->hasImage($idProduct)) {
             return false;
         }
 
-        $sourcePath = $this->locator->locate($fileName);
+        $photograph = $fileName === '' ? null : $this->locator->locate($fileName);
+        $drawn = $photograph === null ? $this->draw($placeholder) : null;
+        $sourcePath = $photograph !== null ? $photograph : $drawn;
 
         if ($sourcePath === null) {
             return false;
         }
 
+        $added = $this->addCoverImage($idProduct, $sourcePath);
+
+        if ($drawn !== null && is_file($drawn)) {
+            unlink($drawn);
+        }
+
+        return $added;
+    }
+
+    /**
+     * @return string|null Path to a freshly drawn placeholder.
+     */
+    private function draw(GFImagePlaceholder $placeholder = null)
+    {
+        if ($this->placeholderGenerator === null || $placeholder === null) {
+            return null;
+        }
+
+        if (!$placeholder->isDrawable()) {
+            return null;
+        }
+
+        return $this->placeholderGenerator->generate(
+            $placeholder->label,
+            $placeholder->variantKey,
+            $placeholder->sublabel
+        );
+    }
+
+    /**
+     * Create the ps_image row and its files, rolling the row back when the
+     * files cannot be written — an image record with no file on disk shows as
+     * a broken picture on every listing.
+     *
+     * @return bool
+     */
+    private function addCoverImage($idProduct, $sourcePath)
+    {
         $readablePath = $this->toReadableJpeg($sourcePath);
 
         if ($readablePath === null) {

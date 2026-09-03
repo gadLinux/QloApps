@@ -40,14 +40,14 @@ class GFRoomTypeFactory
     /**
      * Create or update one room type under a hotel.
      *
-     * @param  int    $idHotel
-     * @param  int    $idHotelCategory
-     * @param  string $imageFile Hotel photograph, inherited by its room types
-     *                because the source data carries no per-room images.
+     * @param  int $idHotel
+     * @param  int $idHotelCategory
+     * @param  GFEstablishment|null $hotel The parent, whose photograph and
+     *                name the room type borrows when it has none of its own.
      * @return int id_product of the room type
      * @throws GFImportException
      */
-    public function persist(GFRoomType $roomType, $idHotel, $idHotelCategory, $imageFile = '')
+    public function persist(GFRoomType $roomType, $idHotel, $idHotelCategory, GFEstablishment $hotel = null)
     {
         $sourceId = $roomType->getSourceId();
         $existingId = $this->productRepository->findIdBySourceId($sourceId);
@@ -70,12 +70,32 @@ class GFRoomTypeFactory
         $this->persistRoomTypeLink($idProduct, $idHotel, $roomType);
         $this->persistRooms($idProduct, $idHotel, $roomType);
         $this->tagWithSourceId($idProduct, $sourceId, $roomType);
-
-        if ($this->imageFactory !== null && $imageFile !== '') {
-            $this->imageFactory->attach($idProduct, $imageFile);
-        }
+        $this->attachImage($idProduct, $roomType, $hotel);
 
         return $idProduct;
+    }
+
+    /**
+     * A room type shows its own photograph when it has one.
+     *
+     * It deliberately does not borrow the hotel's: every room of a hotel would
+     * then carry the same picture, which reads as a fault rather than as a
+     * room list. A branded placeholder, distinct per room and plainly not a
+     * photograph, is the honest stand-in until real room photography arrives.
+     */
+    private function attachImage($idProduct, GFRoomType $roomType, GFEstablishment $hotel = null)
+    {
+        if ($this->imageFactory === null) {
+            return;
+        }
+
+        $placeholder = new GFImagePlaceholder(
+            $roomType->name,
+            $roomType->getSourceId(),
+            $hotel !== null ? $hotel->name : ''
+        );
+
+        $this->imageFactory->attach($idProduct, $roomType->imageFile, $placeholder);
     }
 
     private function applyProductFields(Product $product, GFRoomType $roomType, $idHotelCategory, $isNew)
