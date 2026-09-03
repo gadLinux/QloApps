@@ -17,6 +17,8 @@ require_once _PS_ROOT_DIR_ . '/config/config.inc.php';
 
 $moduleDir = dirname(__DIR__);
 
+require_once $moduleDir . '/lib/GFModuleServices.php';
+
 $classes = [
     '/lib/Migration/GFMigrationInterface.php',
     '/lib/Migration/GFSchemaHelper.php',

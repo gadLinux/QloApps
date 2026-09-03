@@ -1,3 +1,3 @@
 ID,Name,Type,Location,Country,City/Region,Description,Image_Path,Destination_URL,CTA_Type,CTA_Text,Certification_Type
-1,Cantine Panella,RESTAURANT,Montreal,Canada,Montreal,"A bakery.","../img/panella.jpg","https://www.panella.ca/en",LINK,VISIT WEBSITE,GF Dedicated
-2,Hotel Chateau Louis,HOTEL,Edmonton,Canada,Edmonton AB,"A hotel.","../img/louis.jpg","https://www.chateaulouis.com",FORM,INQUIRE TO BOOK,GF Options
+test-1,Cantine Panella,RESTAURANT,Montreal,Canada,Montreal,"A bakery.","../img/panella.jpg","https://www.panella.ca/en",LINK,VISIT WEBSITE,GF Dedicated
+test-2,Hotel Chateau Louis,HOTEL,Edmonton,Canada,Edmonton AB,"A hotel.","../img/louis.jpg","https://www.chateaulouis.com",FORM,INQUIRE TO BOOK,GF Options
