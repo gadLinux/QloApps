@@ -17,10 +17,14 @@ use PHPUnit\Framework\Attributes\Test;
 
 #[CoversClass(GFCategoryTreeBuilder::class)]
 #[CoversClass(GFHotelFactory::class)]
+#[CoversClass(GFRoomTypeFactory::class)]
 class GFHotelProvisioningTest extends TestCase
 {
     /** Levels QloApps' own hotel form creates below Locations. */
     const LEVELS_BELOW_LOCATIONS = 4;
+
+    /** A photograph that exists in the mounted asset library. */
+    const HOTEL_PHOTOGRAPH = 'hacienda-guachupelin.jpg';
 
     /** @var GFHotelFactory */
     private $factory;
@@ -89,6 +93,41 @@ class GFHotelProvisioningTest extends TestCase
         );
     }
 
+    /**
+     * This has been asked for both ways, so it is pinned: a room type with no
+     * photograph of its own gets a generated placeholder, NOT its hotel's
+     * picture — which would put the same image on every room of the hotel.
+     * The hotel's own photograph lives in htl_image, checked below.
+     *
+     * A placeholder is identified by its shape: the generator draws a square,
+     * and the source photographs are landscape.
+     */
+    #[Test]
+    public function a_room_with_no_photograph_gets_a_placeholder_not_the_hotels_picture(): void
+    {
+        $hotel = $this->provision(self::HOTEL_PHOTOGRAPH);
+
+        $idProduct = $this->provisionRoomType($hotel, $this->establishment(self::HOTEL_PHOTOGRAPH));
+        $size = $this->coverImageSize($idProduct);
+
+        $this->assertNotNull($size, 'The room type was left with no image at all.');
+        $this->assertSame(
+            [GFPlaceholderImageGenerator::WIDTH, GFPlaceholderImageGenerator::HEIGHT],
+            $size,
+            'The room type is showing a photograph — it borrowed the hotel\'s.'
+        );
+    }
+
+    #[Test]
+    public function the_hotel_itself_keeps_its_photograph(): void
+    {
+        $hotel = $this->provision(self::HOTEL_PHOTOGRAPH);
+
+        $images = (new HotelImage())->getImagesByHotelId((int) $hotel->id);
+
+        $this->assertNotEmpty($images, 'The hotel has no htl_image row of its own.');
+    }
+
     #[Test]
     public function provisioning_twice_reuses_the_same_category(): void
     {
@@ -99,9 +138,29 @@ class GFHotelProvisioningTest extends TestCase
     }
 
     /**
+     * @param  string $imageFile Bare file name, or '' for a hotel with none.
      * @return HotelBranchInformation
      */
-    private function provision()
+    private function provision($imageFile = '')
+    {
+        $factory = $imageFile === ''
+            ? $this->factory
+            : new GFHotelFactory(
+                new GFCategoryTreeBuilder(),
+                $this->repository,
+                new GFHotelImageFactory(new GFImageLocator())
+            );
+
+        $idHotel = $factory->persist($this->establishment($imageFile));
+        $this->created[] = $idHotel;
+
+        return new HotelBranchInformation($idHotel);
+    }
+
+    /**
+     * @return GFEstablishment
+     */
+    private function establishment($imageFile = '')
     {
         $establishment = new GFEstablishment();
         $establishment->sourceId = 'test-hotel-tree';
@@ -110,11 +169,50 @@ class GFHotelProvisioningTest extends TestCase
         $establishment->country = 'Canada';
         $establishment->city = 'Edmonton AB';
         $establishment->description = 'Fixture.';
+        $establishment->imageFile = $imageFile;
 
-        $idHotel = $this->factory->persist($establishment);
-        $this->created[] = $idHotel;
+        return $establishment;
+    }
 
-        return new HotelBranchInformation($idHotel);
+    /**
+     * @return int id_product of the room type.
+     */
+    private function provisionRoomType(HotelBranchInformation $hotel, GFEstablishment $establishment)
+    {
+        $roomType = new GFRoomType();
+        $roomType->hotelSourceId = $establishment->sourceId;
+        $roomType->code = 'TST';
+        $roomType->name = 'Test Room';
+        $roomType->description = 'Fixture.';
+        $roomType->price = 100.0;
+        $roomType->roomCount = 1;
+        // No imageFile: this is the case under test.
+
+        $factory = new GFRoomTypeFactory(
+            new GFEstablishmentRepository(),
+            new GFProductImageFactory(new GFImageLocator(), new GFPlaceholderImageGenerator())
+        );
+
+        return $factory->persist($roomType, (int) $hotel->id, (int) $hotel->id_category, $establishment);
+    }
+
+    /**
+     * @return int[]|null [width, height] of the product's cover image.
+     */
+    private function coverImageSize($idProduct)
+    {
+        $idImage = (int) Db::getInstance()->getValue(
+            'SELECT `id_image` FROM `' . _DB_PREFIX_ . 'image` WHERE `id_product` = ' . (int) $idProduct
+        );
+
+        if (!$idImage) {
+            return null;
+        }
+
+        $path = _PS_PROD_IMG_DIR_ . (new Image($idImage))->getExistingImgPath() . '.jpg';
+        $size = @getimagesize($path);
+
+        return $size === false ? null : [$size[0], $size[1]];
     }
 
     /**

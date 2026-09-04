@@ -76,13 +76,15 @@ class GFRoomTypeFactory
     }
 
     /**
-     * Its own photograph, else its hotel's, else a branded placeholder.
+     * Its own photograph, else a branded placeholder.
      *
-     * Borrowing the hotel's picture does mean every room of a hotel shows the
-     * same one until real room photography exists. That is the lesser evil: a
-     * booking listing carrying a generated card instead of a photograph reads
-     * as unfinished, and a real photograph of the property is at least true.
-     * The placeholder stays for the case where even the hotel has no picture.
+     * It deliberately does not borrow the hotel's picture. Every room of a
+     * hotel would then carry the same one, which reads as a fault rather than
+     * as a room list — and the hotel's photograph already has a home of its
+     * own in htl_image, where the hotel listings and the search results show
+     * it. The placeholder is drawn per room, so two rooms of one hotel stay
+     * distinguishable, and it is plainly not a photograph, so it does not
+     * pretend to be one until real room photography arrives.
      */
     private function attachImage($idProduct, GFRoomType $roomType, GFEstablishment $hotel = null)
     {
@@ -90,14 +92,13 @@ class GFRoomTypeFactory
             return;
         }
 
-        $hotelName = $hotel !== null ? $hotel->name : '';
-        $photograph = $roomType->imageFile !== '' || $hotel === null
-            ? $roomType->imageFile
-            : $hotel->imageFile;
+        $placeholder = new GFImagePlaceholder(
+            $roomType->name,
+            $roomType->getSourceId(),
+            $hotel !== null ? $hotel->name : ''
+        );
 
-        $placeholder = new GFImagePlaceholder($roomType->name, $roomType->getSourceId(), $hotelName);
-
-        $this->imageFactory->attach($idProduct, $photograph, $placeholder);
+        $this->imageFactory->attach($idProduct, $roomType->imageFile, $placeholder);
     }
 
     private function applyProductFields(Product $product, GFRoomType $roomType, $idHotelCategory, $isNew)
