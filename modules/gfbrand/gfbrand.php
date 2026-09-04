@@ -102,6 +102,13 @@ class gfbrand extends Module
             return false;
         }
 
+        /* Room-type detail — the reserved certification slot, above the fold.
+         * This hook fires directly under the room title, which is where FR-10
+         * puts it; taking it means story 1.5 needs no product.tpl override. */
+        if (!$this->registerHook('displayRoomTypeDetailRoomTypeNameAfter')) {
+            return false;
+        }
+
         /* Booking search panel — refills it with the visitor's last search so
          * they do not retype a destination, dates and occupancy they have
          * already given us. wkroomsearchblock exposes this hook precisely so
@@ -451,6 +458,35 @@ class gfbrand extends Module
     public function hookActionEmailAddAfterContent($params)
     {
         // Placeholder — story 1.7 fills this
+    }
+
+    /**
+     * The reserved certification slot on the room-type detail page.
+     *
+     * Renders an empty, documented container immediately under the room
+     * title. Certification itself is Epic 2 (FR-29…FR-36); fixing the
+     * position and the markup contract now is what stops that epic having to
+     * re-lay-out this page. See views/templates/hook/certification_slot.tpl.
+     *
+     * @param  array $params ['product' => Product, 'id_product' => int]
+     * @return string
+     */
+    public function hookDisplayRoomTypeDetailRoomTypeNameAfter($params)
+    {
+        if (!Configuration::get(self::CONFIG_PREFIX . 'ENABLED')) {
+            return '';
+        }
+
+        $idProduct = isset($params['id_product']) ? (int) $params['id_product'] : 0;
+
+        $tpl = $this->context->smarty->createTemplate(
+            $this->local_path . 'views/templates/hook/certification_slot.tpl',
+            $this->context->smarty
+        );
+
+        $tpl->assign(['id_product' => $idProduct]);
+
+        return $tpl->fetch();
     }
 
     /**

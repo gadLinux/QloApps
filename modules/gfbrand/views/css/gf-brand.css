@@ -339,9 +339,340 @@ body:not(.index) #header .shopping_cart > a:hover {
 
 /* ==========================================================================
    8. Booking discovery rebrand (search, room list, room detail) — Story 1.5
+   FR-8 search, FR-9 room list and filters, FR-10 certification slot,
+   FR-16 mobile. Reached at layer 1 throughout: no stock module CSS is
+   replaced and no theme template is overridden (AC-6).
    ========================================================================== */
 
-/* TO BE ADDED BY STORY 1.5 */
+/* --- Certification slot (FR-10) — reserved by story 1.5, filled by Epic 2 ---
+ *
+ * Rendered under the room title on every room-type page. It collapses to
+ * nothing while empty, so the page reads correctly today; when Epic 2 puts
+ * badges inside it, the spacing below is already decided and nothing above
+ * or below moves. See views/templates/hook/certification_slot.tpl. */
+.gf-certification:empty {
+    display: none;
+}
+
+.gf-certification {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin: 14px 0 4px;
+}
+
+/* --- Room-type list ------------------------------------------------------ */
+
+/* Card title: display face, and olive only at heading size (D4). */
+.room_type_name a,
+.rm_detail_head a {
+    color: var(--gf-heading, #1A1C1B);
+    font-family: var(--gf-font-display, Georgia, serif);
+}
+
+.room_type_name a:hover,
+.rm_detail_head a:hover {
+    color: var(--gf-olive-dark, #556B2F);
+}
+
+/* Price is small text, so it takes the dark olive, never --gf-olive (D4). */
+.room_price .price,
+.price_display .price,
+.room-type-price {
+    color: var(--gf-olive-dark, #556B2F);
+    font-family: var(--gf-font-display, Georgia, serif);
+}
+
+.room-type-image {
+    border-radius: 4px;
+}
+
+/* --- Filters: facets, checkboxes, chips, clear-all ----------------------- */
+
+.lf_headingmain_wrapper span,
+#filter_results .lf_headingmain_wrapper span {
+    font-family: var(--gf-font-display, Georgia, serif);
+    color: var(--gf-heading, #1A1C1B);
+}
+
+/* "Clear Filter" is an action, not decoration. wkhotelfilterblock renders it
+ * at #A9A9A9 on white — 2.3:1, below AA for any text — behind a selector
+ * specific enough that it has to be matched rather than out-weighted. */
+.layered_filter_cont div.layered_filter_heading span.clear_filter,
+.clear_filter,
+.clear-filter,
+a.clear_filter {
+    color: var(--gf-olive-dark, #556B2F);
+    cursor: pointer;
+}
+
+.layered_filter_cont div.layered_filter_heading span.clear_filter:hover {
+    color: var(--gf-olive-hover, #55721c);
+}
+
+/* Empty-result notice. The stock pink is not in the palette and carries dark
+ * red text at a ratio that depends on the browser's rendering; the sand
+ * ground with charcoal is 9.9:1 and reads as information, not as an error —
+ * which is what "no rooms match your filters" actually is. */
+.noRoomsAvailAlert {
+    background-color: var(--gf-sand-light, #E8E3D9) !important;
+    color: var(--gf-charcoal, #2C302E) !important;
+    border-left: 4px solid var(--gf-olive, #6b8e23);
+    border-radius: 3px;
+}
+
+.noRoomsAvailAlert span {
+    color: var(--gf-charcoal, #2C302E) !important;
+}
+
+/* Facet checkboxes.
+ *
+ * The theme runs them through the uniform plugin, which hides the real input
+ * and paints .checker span from a sprite image — so there is no colour to
+ * override, only a picture to replace. Drawing the box here instead gives a
+ * checked state that carries the brand and a tick at 8.6:1 on olive-dark,
+ * and it keeps the real input in place, so the label, the click target and
+ * keyboard operation are all untouched. */
+#left_column .checker span,
+#filter_results .checker span {
+    background-image: none;
+    background-color: #FFFFFF;
+    border: 1px solid var(--gf-charcoal, #2C302E);
+    border-radius: 3px;
+    box-sizing: border-box;
+}
+
+#left_column .checker span.checked,
+#filter_results .checker span.checked {
+    background-color: var(--gf-olive-dark, #556B2F);
+    border-color: var(--gf-olive-dark, #556B2F);
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23FFFFFF' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round' d='M3.5 8.5l3 3 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 12px 12px;
+}
+
+/* Uniform swallows the input's own focus ring, so put it on the drawn box. */
+#left_column .checker.focus span,
+#filter_results .checker.focus span {
+    outline: 2px solid var(--gf-olive-dark, #556B2F);
+    outline-offset: 2px;
+}
+
+/* --- Select controls (chosen) --------------------------------------------
+ * The hotel picker and the sort control are both chosen widgets; its own
+ * stylesheet highlights the hovered option in #379bf0. */
+.chosen-container .chosen-results li.highlighted {
+    background-color: var(--gf-olive-dark, #556B2F);
+    color: #FFFFFF;
+}
+
+.chosen-container-single .chosen-single {
+    border-color: var(--gf-sand-light, #E8E3D9);
+    color: var(--gf-charcoal, #2C302E);
+}
+
+.chosen-container-active .chosen-single {
+    border-color: var(--gf-olive-dark, #556B2F);
+}
+
+/* --- Search widget fields ------------------------------------------------ */
+
+#search_hotel_block_form .header-rmsearch-input {
+    border-color: var(--gf-sand-light, #E8E3D9);
+    color: var(--gf-charcoal, #2C302E);
+    font-family: var(--gf-font-body, -apple-system, sans-serif);
+}
+
+#search_hotel_block_form .header-rmsearch-input:active,
+#search_hotel_block_form .header-rmsearch-input:focus {
+    border: 2px solid var(--gf-olive-dark, #556B2F);
+}
+
+/* --- Date picker (AC-5) --------------------------------------------------
+ *
+ * The booking calendar is dateRangePicker, styled in the theme's
+ * daterangepicker.css. Three of its states failed AA before this:
+ *
+ *   selected day   white on #1292ff  = 3.0:1  -> white on olive-dark = 7.4:1
+ *   in-range day   #333 on #E6E6E6   ok, but off-brand -> charcoal on sand
+ *   other month    #CCC on white     = 1.6:1  -> #6B6F6C = 4.6:1
+ *
+ * The selected day takes olive-dark, not --gf-olive: it is a small numeral,
+ * and the restricted olive is for headings, icons and decorative fills (D4). */
+.date-picker-wrapper .first-date-selected,
+.date-picker-wrapper .last-date-selected {
+    background-color: var(--gf-olive-dark, #556B2F) !important;
+    color: #FFFFFF !important;
+}
+
+.date-picker-wrapper .month-wrapper table .day.checked {
+    background-color: var(--gf-sand-light, #E8E3D9);
+    color: var(--gf-charcoal, #2C302E);
+}
+
+.date-picker-wrapper .month-wrapper table .day.toMonth.hovering {
+    background-color: var(--gf-olive-hover, #55721c);
+    color: #FFFFFF;
+}
+
+/* A day outside the bookable window still has to be readable, not a ghost.
+ * The adjacent-month rules in jquery.daterangepicker.min.css qualify .day
+ * with div, so match that specificity rather than reaching for !important. */
+.date-picker-wrapper .month-wrapper table div.day.invalid,
+.date-picker-wrapper .month-wrapper table div.day.lastMonth,
+.date-picker-wrapper .month-wrapper table div.day.nextMonth {
+    color: #6B6F6C;
+}
+
+.date-picker-wrapper .month-name,
+.date-picker-wrapper .month-wrapper table .week-name {
+    font-family: var(--gf-font-display, Georgia, serif);
+    color: var(--gf-heading, #1A1C1B);
+}
+
+/* Today, which the theme deliberately leaves unpainted, gets a quiet ring so
+ * it is findable without competing with the selection. */
+.date-picker-wrapper .month-wrapper table .day.real-today {
+    box-shadow: inset 0 0 0 1px var(--gf-olive, #6b8e23);
+}
+
+/* --- Occupancy panel ----------------------------------------------------- */
+
+/* wk-global-search.css qualifies these with #search_occupancy_wrapper, so
+ * match that specificity rather than reaching for !important. */
+#search_occupancy_wrapper .add_new_occupancy_btn,
+#search_occupancy_wrapper .remove-room-link,
+.add_new_occupancy_btn,
+.remove-room-link {
+    color: var(--gf-olive-dark, #556B2F);
+}
+
+#search_occupancy_wrapper .add_new_occupancy_btn:hover,
+#search_occupancy_wrapper .remove-room-link:hover {
+    color: var(--gf-olive-hover, #55721c);
+}
+
+/* --- Room-type detail ---------------------------------------------------- */
+
+.pb-center-column h1,
+#room_type_name,
+.rm_detail_head h1 {
+    font-family: var(--gf-font-display, Georgia, serif);
+    color: var(--gf-heading, #1A1C1B);
+}
+
+/* Review count sits in the theme's raw link blue (#0000FF), which is both
+ * off-brand and only 8.6:1 by luck rather than by choice. */
+.num_reviews,
+.num_reviews a,
+a .num_reviews {
+    color: var(--gf-link, #55721c) !important;
+    border-color: var(--gf-link, #55721c) !important;
+}
+
+/* Active tab underline on the room information tabs. */
+#more_info_block .idTabHrefShort.selected,
+.nav-tabs > li.active > a,
+.idTabHrefShort.selected {
+    border-bottom-color: var(--gf-olive, #6b8e23) !important;
+    color: var(--gf-heading, #1A1C1B) !important;
+}
+
+/* Bare separators the theme leaves in its blue. */
+#room_type_page hr:not([class]),
+.pb-center-column hr:not([class]) {
+    border-color: var(--gf-sand-light, #E8E3D9);
+}
+
+/* Price panel and the booking call to action. */
+.our_price_display,
+#our_price_display,
+.price_panel .price {
+    color: var(--gf-olive-dark, #556B2F);
+    font-family: var(--gf-font-display, Georgia, serif);
+}
+
+.book_now_submit,
+button.book_now_submit {
+    background-color: var(--gf-olive, #6b8e23);
+    border-color: var(--gf-olive, #6b8e23);
+    color: #FFFFFF;
+    font-weight: 600;
+}
+
+.book_now_submit:hover,
+.book_now_submit:focus {
+    background-color: var(--gf-olive-dark, #556B2F);
+    border-color: var(--gf-olive-dark, #556B2F);
+}
+
+/* The theme's generic action button (.button.button-<size>, #379AEF in
+ * global.css) — the hero's Make Booking, the newsletter submit, and the
+ * small buttons scattered through the discovery pages. */
+.button.button-small,
+.button.button-medium,
+.button.button-large,
+.newsletter-btn,
+button.newsletter-btn {
+    background-color: var(--gf-olive-dark, #556B2F) !important;
+    border-color: var(--gf-olive-dark, #556B2F) !important;
+    color: #FFFFFF !important;
+}
+
+.button.button-small:hover,
+.button.button-medium:hover,
+.button.button-large:hover,
+.newsletter-btn:hover {
+    background-color: var(--gf-olive-hover, #55721c) !important;
+    border-color: var(--gf-olive-hover, #55721c) !important;
+}
+
+/* --- Mobile discovery journey (AC-4, FR-16) ------------------------------
+ *
+ * Overflow is fixed at its source rather than with overflow-x:hidden on the
+ * body, which hides the symptom and breaks position:sticky descendants. */
+@media (max-width: 767px) {
+    /* The search panel lays out on a 22-column grid that cannot fit 360px. */
+    .header-rmsearch-wrapper #search_hotel_block_form .grid,
+    #left_column #search_hotel_block_form .grid {
+        grid-template-columns: 1fr !important;
+        column-gap: 0;
+    }
+
+    .header-rmsearch-wrapper #search_hotel_block_form .grid-item {
+        grid-column: span 1 !important;
+        margin-bottom: 10px;
+    }
+
+    /* Room cards stack; the image goes full width instead of a fixed column. */
+    .room-type-image,
+    .room_type_img img {
+        width: 100%;
+        height: auto;
+    }
+
+    /* Long words in room and hotel names must wrap, not push the page wide. */
+    .room_type_name,
+    .rm_detail_head h1,
+    .search_result_info {
+        overflow-wrap: break-word;
+        word-wrap: break-word;
+    }
+
+    /* Tables and any wide block scroll inside themselves, never the page. */
+    .table-responsive,
+    #room_type_page table {
+        display: block;
+        max-width: 100%;
+        overflow-x: auto;
+    }
+
+    .gf-certification {
+        margin: 10px 0 2px;
+    }
+}
 
 
 /* ==========================================================================
@@ -358,10 +689,41 @@ body:not(.index) #header .shopping_cart > a:hover {
    Focus indicators, reduced motion, contrast fixes
    ========================================================================== */
 
-/* Ensure all focus indicators are visible (WCAG 2.4.7) */
+/* Keyboard focus indicator (WCAG 2.4.7).
+ *
+ * The bare *:focus-visible below is not enough on its own: global.css carries
+ * `a:focus`, `.btn:focus` and `.button.button-medium:focus` rules that either
+ * restore the browser's own ring or remove it outright, and each of those
+ * out-specifies a universal selector. Every control type is therefore named
+ * at matching specificity so the brand ring wins on the cascade rather than
+ * on !important — checked by tabbing the search widget and the filters. */
 *:focus-visible {
     outline: 3px solid var(--gf-olive-dark, #556B2F);
     outline-offset: 2px;
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible,
+[tabindex]:focus-visible,
+.btn:focus-visible,
+.button:focus-visible,
+.chosen-container-active .chosen-single {
+    outline: 3px solid var(--gf-olive-dark, #556B2F) !important;
+    outline-offset: 2px !important;
+}
+
+/* On the dark search panel and the charcoal footer, an olive ring is too
+ * close to the ground to see; those get the sand instead. */
+#gf-footer a:focus-visible,
+#left_column .header-rmsearch-wrapper a:focus-visible,
+#left_column .header-rmsearch-wrapper button:focus-visible,
+#left_column .header-rmsearch-wrapper input:focus-visible,
+.header-rmsearch-wrapper .chosen-container-active .chosen-single {
+    outline-color: var(--gf-sand-light, #E8E3D9) !important;
 }
 
 /* Reduced motion — disable card lift and transitions */

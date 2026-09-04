@@ -33,6 +33,10 @@
 
     /* Structural */
     --gf-rule: #E5E9E6;           /* Borders, dividers */
+    --gf-sand-light: #E8E3D9;     /* Quiet ground: footer text, in-range dates,
+                                     empty-state notices. 9.9:1 under charcoal. */
+    --gf-gold: #DAA520;           /* Accent, footer link hover. Decorative and
+                                     large text only — 2.4:1 on white. */
 
     /* ==========================================================================
      * Semantic Aliases — AA-Safe Defaults
@@ -74,6 +78,7 @@
     --gf-h2-size: 34px;            /* Section title */
     --gf-h2-size-mobile: 26px;
     --gf-h3-size: 18px;            /* Card title */
+    --gf-h5: 20px;                 /* Footer column heading */
     --gf-body-size: 16px;          /* Body copy */
     --gf-body-size-mobile: 15px;
     --gf-card-body-size: 14px;     /* Card body text */
