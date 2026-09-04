@@ -1066,12 +1066,18 @@ button.book_now_submit {
 /* The theme's generic action button (.button.button-<size>, #379AEF in
  * global.css) — the hero's Make Booking, the newsletter submit, and the
  * small buttons scattered through the discovery pages. */
+/* global.css styles these with the `background` SHORTHAND, which sets a blue
+   linear-gradient as background-IMAGE. Overriding background-color alone left
+   the gradient painting straight over it, so every one of these buttons stayed
+   QloApps blue while computed background-color reported olive — a rebrand that
+   passed inspection and failed on screen. The image has to be cleared too. */
 .button.button-small,
 .button.button-medium,
 .button.button-large,
 .newsletter-btn,
 button.newsletter-btn {
     background-color: var(--gf-olive-dark, #556B2F) !important;
+    background-image: none !important;
     border-color: var(--gf-olive-dark, #556B2F) !important;
     color: #FFFFFF !important;
 }
@@ -1081,6 +1087,7 @@ button.newsletter-btn {
 .button.button-large:hover,
 .newsletter-btn:hover {
     background-color: var(--gf-olive-hover, #55721c) !important;
+    background-image: none !important;
     border-color: var(--gf-olive-hover, #55721c) !important;
 }
 

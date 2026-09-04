@@ -78,6 +78,41 @@ class GFHotelRepository
     }
 
     /**
+     * Every imported room type, with the bookability of the hotel it belongs to.
+     *
+     * QloApps assumes anything with room types can be booked, so the search
+     * results and the room-detail page offer "Book Now" for all of them. For an
+     * establishment we have not connected a channel manager to, that is a
+     * booking we cannot honour — and it contradicts the "Inquire to Book" the
+     * same hotel shows on its own card.
+     *
+     * Only hotels the importer owns are returned. A hotel created by hand in
+     * the back office has no source id, no establishment record and no opinion
+     * from us: it keeps stock QloApps behaviour, because disabling booking on
+     * something the brand layer knows nothing about would be overreach.
+     *
+     * @return array[] Rows of id_product (the room type) plus the establishment's
+     *                 type, destination URL and channel-manager fields.
+     */
+    public function findRoomTypeBookability()
+    {
+        $rows = $this->readDb()->executeS(
+            'SELECT rt.`id_product`,
+                    e.`id_product` AS `id_establishment`,
+                    e.`gf_type`, e.`gf_destination_url`,
+                    e.`gf_has_channel_manager`, e.`gf_channel_manager_status`
+             FROM `' . _DB_PREFIX_ . 'htl_room_type` rt
+             INNER JOIN `' . $this->table() . '` h ON h.`id` = rt.`id_hotel`
+             LEFT JOIN `' . _DB_PREFIX_ . 'product` e
+                    ON e.`gf_source_id` = h.`gf_source_id`
+                   AND e.`booking_product` = 0
+             WHERE h.`gf_source_id` IS NOT NULL AND h.`gf_source_id` != \'\''
+        );
+
+        return is_array($rows) ? $rows : [];
+    }
+
+    /**
      * @return int[]
      */
     public function findImportedIds()

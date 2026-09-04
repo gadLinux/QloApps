@@ -86,9 +86,11 @@ class GFModuleServices
             'lib/Service/GFSearchMemory.php',
             'lib/Service/GFEstablishmentListingResult.php',
             'lib/Service/GFEstablishmentListing.php',
+            'lib/Service/GFRoomTypeBookability.php',
             // Presentation
             'lib/Admin/GFImportPanel.php',
             'lib/Front/GFSearchPanel.php',
+            'lib/Front/GFInquiryLink.php',
         ];
 
         foreach ($classes as $relativePath) {
@@ -186,6 +188,32 @@ class GFModuleServices
     {
         return $this->share('establishmentListing', function () {
             return new GFEstablishmentListing($this->getEstablishmentRepository());
+        });
+    }
+
+    /**
+     * Which room types QloApps may take a booking for — story 1.10.
+     *
+     * Not shared across requests: the answer depends on data an admin can
+     * change at any moment, and AC-4 promises a flag flip takes effect with
+     * no deploy.
+     *
+     * @return GFRoomTypeBookability
+     */
+    public function getRoomTypeBookability()
+    {
+        return new GFRoomTypeBookability(
+            $this->getHotelRepository()->findRoomTypeBookability()
+        );
+    }
+
+    /**
+     * @return GFInquiryLink
+     */
+    public function getInquiryLink()
+    {
+        return $this->share('inquiryLink', function () {
+            return new GFInquiryLink();
         });
     }
 

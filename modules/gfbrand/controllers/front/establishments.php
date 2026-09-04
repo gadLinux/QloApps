@@ -173,25 +173,15 @@ class GfbrandEstablishmentsModuleFrontController extends ModuleFrontController
      * WordPress form makes the guest re-pick, by hand, the very hotel they
      * just clicked "inquire" on; story 1.12 pre-fills from ?hotel=.
      *
-     * TEMPORARY FALLBACK: story 1.12 owns controllers/front/inquiry.php and it
-     * does not exist yet. Rather than publish a link that 404s on every hotel
-     * card, the contact page stands in until then. Delete the guard — not the
-     * getModuleLink call — when 1.12 lands.
+     * Built by GFInquiryLink, which the booking pages use too — the card and
+     * the room list must send guests to the same place.
      *
      * @param  int $idProduct
      * @return string
      */
     private function inquiryUrl($idProduct)
     {
-        if (!file_exists(_PS_MODULE_DIR_ . 'gfbrand/controllers/front/inquiry.php')) {
-            return $this->context->link->getPageLink('contact', true);
-        }
-
-        return $this->context->link->getModuleLink(
-            'gfbrand',
-            'inquiry',
-            ['hotel' => (int) $idProduct]
-        );
+        return $this->module->getInquiryLink()->forEstablishment($idProduct);
     }
 
     /**

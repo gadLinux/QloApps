@@ -330,6 +330,47 @@ class gfbrand extends Module
                 $this->context->controller->page_title = $gfShopName . ' — ' . $this->context->controller->page_title;
             }
         }
+
+        $this->assignBookingRestrictions();
+    }
+
+    /**
+     * Tell the booking pages which room types may not be booked.
+     *
+     * QloApps offers "Book Now" for anything with room types, so a hotel whose
+     * channel manager is not connected invites a booking we cannot honour —
+     * while its own card says "Inquire to Book". The two surfaces disagreed
+     * where the guest could see it.
+     *
+     * The room list and the booking form read $gf_booking_restrictions to
+     * decide, so the answer is computed once per request, on the server, and
+     * the correct button is in the first byte of HTML. Doing this in
+     * JavaScript would show the wrong button first and then change it.
+     *
+     * Assigned only on the two controllers that render a booking control;
+     * every other page pays nothing.
+     */
+    private function assignBookingRestrictions()
+    {
+        $controller = Tools::getValue('controller');
+
+        if (!in_array($controller, ['category', 'product'], true)) {
+            return;
+        }
+
+        $bookability = $this->services->getRoomTypeBookability();
+        $restrictions = [];
+
+        foreach ($bookability->restrictedIds() as $idProduct) {
+            $restrictions[$idProduct] = [
+                'label' => $this->l('Inquire to Book'),
+                'url' => $this->services->getInquiryLink()->forEstablishment(
+                    $bookability->establishmentFor($idProduct)
+                ),
+            ];
+        }
+
+        $this->context->smarty->assign('gf_booking_restrictions', $restrictions);
     }
 
     /**
@@ -514,6 +555,16 @@ class gfbrand extends Module
     public function getEstablishmentListing()
     {
         return $this->services->getEstablishmentListing();
+    }
+
+    /**
+     * Where "Inquire to Book" goes — story 1.10.
+     *
+     * @return GFInquiryLink
+     */
+    public function getInquiryLink()
+    {
+        return $this->services->getInquiryLink();
     }
 
     /**

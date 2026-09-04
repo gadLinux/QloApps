@@ -41,6 +41,7 @@ $classes = [
     '/lib/Service/GFSearchMemory.php',
     '/lib/Service/GFEstablishmentListingResult.php',
     '/lib/Service/GFEstablishmentListing.php',
+    '/lib/Service/GFRoomTypeBookability.php',
     // Migrations
     '/migrations/GFMigration20260903001Establishments.php',
     '/migrations/GFMigration20260903002HotelSourceId.php',

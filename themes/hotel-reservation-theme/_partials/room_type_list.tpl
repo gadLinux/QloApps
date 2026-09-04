@@ -117,9 +117,25 @@
 															</div>
 														{/if}
 														{block name='room_type_list_room_book_now_button'}
-															<div>
-																<a cat_rm_check_in="{$booking_date_from|escape:'htmlall':'UTF-8'}" cat_rm_check_out="{$booking_date_to|escape:'htmlall':'UTF-8'}" href="" rm_product_id="{$room_v['id_product']}" cat_rm_book_nm_days="{$num_days|escape:'htmlall':'UTF-8'}" data-id-product-attribute="0" data-id-product="{$room_v['id_product']|intval}" class="btn btn-default button button-medium ajax_add_to_cart_button"><span>{l s='Book Now'}</span></a>
-															</div>
+															{* GF Experiences — story 1.10.
+															   QloApps offers Book Now for anything with room
+															   types. For a hotel whose channel manager is not
+															   connected that is a booking we cannot honour, and
+															   the same hotel says "Inquire to Book" on its own
+															   card. gf_booking_restrictions is assigned by the
+															   gfbrand module and is empty for every hotel it
+															   does not own, so stock behaviour is untouched. *}
+															{if isset($gf_booking_restrictions) && isset($gf_booking_restrictions[$room_v['id_product']])}
+																<div>
+																	<a href="{$gf_booking_restrictions[$room_v['id_product']]['url']|escape:'html':'UTF-8'}" class="btn btn-default button button-medium gf-inquire-button">
+																		<span>{$gf_booking_restrictions[$room_v['id_product']]['label']|escape:'htmlall':'UTF-8'}</span>
+																	</a>
+																</div>
+															{else}
+																<div>
+																	<a cat_rm_check_in="{$booking_date_from|escape:'htmlall':'UTF-8'}" cat_rm_check_out="{$booking_date_to|escape:'htmlall':'UTF-8'}" href="" rm_product_id="{$room_v['id_product']}" cat_rm_book_nm_days="{$num_days|escape:'htmlall':'UTF-8'}" data-id-product-attribute="0" data-id-product="{$room_v['id_product']|intval}" class="btn btn-default button button-medium ajax_add_to_cart_button"><span>{l s='Book Now'}</span></a>
+																</div>
+															{/if}
 														{/block}
 													</div>
 												{else}

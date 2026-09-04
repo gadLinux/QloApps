@@ -197,6 +197,18 @@
                                                     {/if}
                                                 </div>
                                                 {block name='booking_form_book_now_button'}
+{* GF Experiences — story 1.10. A hotel whose channel manager is not connected
+   cannot take a booking here, and says "Inquire to Book" on its own card; this
+   keeps the room page saying the same thing. gf_booking_restrictions is
+   assigned by the gfbrand module and is empty for every hotel it does not own,
+   so stock behaviour is untouched. *}
+{if isset($gf_booking_restrictions) && isset($gf_booking_restrictions[$product->id])}
+    <p id="add_to_cart" class="buttons_bottom_block no-print">
+        <a href="{$gf_booking_restrictions[$product->id]['url']|escape:'html':'UTF-8'}" class="exclusive book_now_submit gf-inquire-button">
+            <span>{$gf_booking_restrictions[$product->id]['label']|escape:'htmlall':'UTF-8'}</span>
+        </a>
+    </p>
+{else}
                                                     <p id="add_to_cart" class="buttons_bottom_block no-print">
                                                         <button type="submit" name="Submit" class="exclusive book_now_submit">
                                                             <span>
@@ -205,6 +217,7 @@
                                                             <span id="booking_action_loader"></span>
                                                         </button>
                                                     </p>
+                                                {/if}
                                                 {/block}
                                             {/if}
                                         </div>
@@ -323,6 +336,18 @@
                                         </div>
                                     {else}
                                         {block name='booking_form_book_now_button'}
+{* GF Experiences — story 1.10. A hotel whose channel manager is not connected
+   cannot take a booking here, and says "Inquire to Book" on its own card; this
+   keeps the room page saying the same thing. gf_booking_restrictions is
+   assigned by the gfbrand module and is empty for every hotel it does not own,
+   so stock behaviour is untouched. *}
+{if isset($gf_booking_restrictions) && isset($gf_booking_restrictions[$product->id])}
+    <p id="add_to_cart" class="buttons_bottom_block no-print">
+        <a href="{$gf_booking_restrictions[$product->id]['url']|escape:'html':'UTF-8'}" class="exclusive book_now_submit gf-inquire-button">
+            <span>{$gf_booking_restrictions[$product->id]['label']|escape:'htmlall':'UTF-8'}</span>
+        </a>
+    </p>
+{else}
                                                 <p id="add_to_cart" class="buttons_bottom_block no-print">
                                                     <button type="submit" name="Submit" class="exclusive book_now_submit">
                                                         <span>
@@ -331,6 +356,7 @@
                                                         <span id="booking_action_loader"></span>
                                                     </button>
                                                 </p>
+                                        {/if}
                                         {/block}
                                     {/if}
                                 </div>
