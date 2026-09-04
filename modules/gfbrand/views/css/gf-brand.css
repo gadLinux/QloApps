@@ -47,18 +47,75 @@ a:hover {
    FR-27: Language switcher styled and reachable on mobile
    ========================================================================== */
 
-/* --- Header bar — override inline style from hotel theme --- */
-#header {
+/* --- Header bar — override the inline style the hotel theme writes ---
+ *
+ * Scoped away from the landing page on purpose. There the header IS the
+ * hero: the theme gives it a full-viewport height and a photograph inline,
+ * centres the welcome text inside it, and pins the room search panel to its
+ * foot. Flattening it to a beige bar collapsed the hero to ~125px, which
+ * dropped the search panel straight on top of the welcome text and left the
+ * text stranded behind the header at z-index -10.
+ *
+ * Inner pages have no hero, so there the brand bar is what we want. */
+body:not(.index) #header {
     background-color: var(--gf-beige, #FDFBF7) !important;
     background-image: none !important;
     border-bottom: 3px solid var(--gf-olive, #6b8e23);
 }
 
-/* Also target the wrapper that sets header height on index page */
-#page .header-container,
-#page .header-container header {
+body:not(.index) #page .header-container,
+body:not(.index) #page .header-container header {
     background-image: none !important;
     height: auto !important;
+}
+
+/* On the landing page the hero keeps its photograph; it gets the brand rule
+ * along its foot and a scrim so the white welcome text stays legible over
+ * whatever image the client uploads (WCAG 1.4.3). */
+body.index #header {
+    border-bottom: 3px solid var(--gf-olive, #6b8e23);
+    background-color: var(--gf-charcoal, #2C302E);
+}
+
+/* The hero headline sits on a photograph, so it keeps the theme's white
+ * rather than the charcoal every other heading takes. */
+body.index .header-desc-container .header-hotel-name {
+    color: #FFFFFF;
+    text-shadow: 0 1px 3px rgba(44, 48, 46, 0.45);
+}
+
+body.index .header-desc-container::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background: linear-gradient(
+        180deg,
+        rgba(44, 48, 46, 0.55) 0%,
+        rgba(44, 48, 46, 0.25) 45%,
+        rgba(44, 48, 46, 0.60) 100%
+    );
+    pointer-events: none;
+}
+
+/* The theme colours the header's own links white, because on the landing page
+ * they sit on the hero photograph. On inner pages our beige bar is behind
+ * them instead, where white on #FDFBF7 is about 1.05:1 — "Sign in" and the
+ * cart were effectively invisible (WCAG 1.4.3). */
+body:not(.index) #header .header-top a,
+body:not(.index) #header .header_user_info a,
+body:not(.index) #header .shopping_cart > a,
+body:not(.index) #header .shopping_cart > a b,
+body:not(.index) #header .shopping_cart .ajax_cart_quantity {
+    color: var(--gf-charcoal, #2C302E);
+}
+
+body:not(.index) #header .header-top a:hover,
+body:not(.index) #header .header_user_info a:hover,
+body:not(.index) #header .shopping_cart > a:hover {
+    color: var(--gf-olive-dark, #556B2F);
 }
 
 /* Header nav bar — dark olive strip */
@@ -339,4 +396,86 @@ a.btn-primary:hover,
 button.btn-primary:hover {
     background-color: var(--gf-olive-hover, #55721c);
     border-color: var(--gf-olive-hover, #55721c);
+}
+
+/* The room search panel is the most prominent call to action on the site and
+ * wkroomsearchblock hardcodes it to the QloApps blue, at a specificity our
+ * plain .btn-primary rule does not reach. */
+.header-rmsearch-wrapper .btn-primary,
+#search_hotel_block_form #search_room_submit {
+    background-color: var(--gf-olive-dark, #556B2F);
+    border-color: var(--gf-olive-dark, #556B2F);
+    color: #FFFFFF;
+}
+
+.header-rmsearch-wrapper .btn-primary:hover,
+.header-rmsearch-wrapper .btn-primary:focus,
+#search_hotel_block_form #search_room_submit:hover,
+#search_hotel_block_form #search_room_submit:focus {
+    background-color: var(--gf-olive-hover, #55721c);
+    border-color: var(--gf-olive-hover, #55721c);
+}
+
+/* The booking funnel's own calls to action. The theme hardcodes these — the
+ * hero's Make Booking in blue, Book Now in a stock green — so each needs
+ * naming rather than being reached by a .btn-primary rule. */
+#make_booking_btn,
+.newsletter-block .btn,
+#newsletter_block_left .btn,
+.footer-container .btn-primary {
+    background-color: var(--gf-olive-dark, #556B2F) !important;
+    border-color: var(--gf-olive-dark, #556B2F) !important;
+    color: #FFFFFF !important;
+}
+
+#add_to_cart button,
+#add_to_cart input.button,
+.btn-book-now,
+#book_now_btn {
+    background-color: var(--gf-olive, #6b8e23) !important;
+    border-color: var(--gf-olive, #6b8e23) !important;
+}
+
+#add_to_cart button:hover,
+.btn-book-now:hover,
+#book_now_btn:hover {
+    background-color: var(--gf-olive-dark, #556B2F) !important;
+    border-color: var(--gf-olive-dark, #556B2F) !important;
+}
+
+/* The theme's accent blue (#379BF0) reaches these by class name, so each is
+ * named here rather than being caught by a .btn-primary rule. */
+
+/* Section underline used throughout the filters and footer blocks. */
+hr.theme-text-underline {
+    border-color: var(--gf-olive, #6b8e23) !important;
+    background-color: var(--gf-olive, #6b8e23) !important;
+}
+
+/* "View More" on a room card. */
+.rm_desc .view_more,
+a.view_more {
+    color: var(--gf-link, #55721c);
+}
+
+/* Cart count badge, the menu button beside it, and the drawer's close tab. */
+.badge.badge_style,
+button.nav_toggle,
+.close_navbar {
+    background-color: var(--gf-olive-dark, #556B2F) !important;
+    border-color: var(--gf-olive-dark, #556B2F) !important;
+    color: #FFFFFF !important;
+}
+
+/* Range slider on the room filters. */
+.ui-slider .ui-slider-range,
+.ui-slider-horizontal .ui-slider-range {
+    background: var(--gf-olive, #6b8e23) !important;
+}
+
+/* The room search panel on listing pages — navy in stock, charcoal here so it
+ * sits with the footer rather than fighting the olive. */
+#left_column .header-rmsearch-wrapper,
+#right_column .header-rmsearch-wrapper {
+    background-color: var(--gf-charcoal, #2C302E) !important;
 }

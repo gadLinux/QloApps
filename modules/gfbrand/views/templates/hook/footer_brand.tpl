@@ -8,7 +8,10 @@
 <section id="gf-footer" class="gf-footer">
     <div class="container">
         <div class="gf-footer-grid row">
-            {* Column 1: Contact Us *}
+            {* Column 1: Contact Us. Omitted entirely when neither contact
+               detail is configured — a heading with a rule under it and
+               nothing else reads as a broken page, not as an empty column. *}
+            {if $gf_contact_email || $gf_contact_phone}
             <div class="gf-footer-col col-sm-6 col-md-3">
                 <h4>{$gf_footer_contact_title|default:'Contact Us'}</h4>
                 <ul class="gf-contact-list">
@@ -26,8 +29,10 @@
                     {/if}
                 </ul>
             </div>
+            {/if}
 
             {* Column 2: Follow Us *}
+            {if $gf_social_facebook || $gf_social_instagram || $gf_social_linkedin}
             <div class="gf-footer-col col-sm-6 col-md-3">
                 <h4>{$gf_footer_social_title|default:'Follow Us'}</h4>
                 <div class="gf-social-links">
@@ -48,6 +53,7 @@
                     {/if}
                 </div>
             </div>
+            {/if}
 
             {* Column 3: Quick Links *}
             <div class="gf-footer-col col-sm-6 col-md-3">
