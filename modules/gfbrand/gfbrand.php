@@ -102,6 +102,14 @@ class gfbrand extends Module
             return false;
         }
 
+        /* Booking search panel — refills it with the visitor's last search so
+         * they do not retype a destination, dates and occupancy they have
+         * already given us. wkroomsearchblock exposes this hook precisely so
+         * the panel can be extended without editing it. */
+        if (!$this->registerHook('actionSearchPanelParamsModifier')) {
+            return false;
+        }
+
         /* Email branding — prepend/append branded headers and footers to all emails. */
         if (!$this->registerHook('actionEmailAddBeforeContent')) {
             return false;
@@ -443,6 +451,26 @@ class gfbrand extends Module
     public function hookActionEmailAddAfterContent($params)
     {
         // Placeholder — story 1.7 fills this
+    }
+
+    /**
+     * Refill the booking search panel with the visitor's last search.
+     *
+     * Fired by WkRoomSearchHelper with its Smarty variables by reference, so
+     * this runs before the panel renders and the fields come back filled with
+     * no flicker and no JavaScript. A customer who reloads, comes back later,
+     * or moves to another page keeps their destination, dates and occupancy
+     * instead of entering them again.
+     *
+     * @param array $params ['params' => &$smartyVars]
+     */
+    public function hookActionSearchPanelParamsModifier($params)
+    {
+        if (!isset($params['params']) || !is_array($params['params'])) {
+            return;
+        }
+
+        $params['params'] = $this->services->getSearchPanel()->decorate($params['params']);
     }
 
 

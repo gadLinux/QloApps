@@ -24,6 +24,8 @@ $classes = [
     '/lib/Repository/GFEstablishment.php',
     '/lib/Repository/GFRoomType.php',
     '/lib/Repository/GFImagePlaceholder.php',
+    '/lib/Repository/GFSearchPreference.php',
+    '/lib/Repository/GFSearchPreferenceRepository.php',
     // Application
     '/lib/Service/GFImportException.php',
     '/lib/Service/GFImportResult.php',
@@ -32,6 +34,7 @@ $classes = [
     '/lib/Service/GFPlaceholderImageGenerator.php',
     '/lib/Service/GFEstablishmentCsvReader.php',
     '/lib/Service/GFRoomTypeCsvReader.php',
+    '/lib/Service/GFSearchMemory.php',
     // Migrations
     '/migrations/GFMigration20260903001Establishments.php',
     '/migrations/GFMigration20260903002HotelSourceId.php',
@@ -44,3 +47,4 @@ foreach ($classes as $relativePath) {
 // Test doubles, loaded after the classes they extend.
 require_once __DIR__ . '/stubs/GFInMemoryMigrationRepository.php';
 require_once __DIR__ . '/stubs/GFRecordingSchemaHelper.php';
+require_once __DIR__ . '/stubs/GFFakeCookie.php';

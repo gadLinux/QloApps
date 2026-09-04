@@ -77,6 +77,11 @@ if (!class_exists('Tools')) {
             return mb_substr((string) $string, $start, $length, 'UTF-8');
         }
 
+        public static function strlen($string)
+        {
+            return mb_strlen((string) $string, 'UTF-8');
+        }
+
         public static function link_rewrite($string)
         {
             $slug = mb_strtolower((string) $string, 'UTF-8');

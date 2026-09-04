@@ -61,6 +61,8 @@ class GFModuleServices
             'lib/Repository/GFRoomType.php',
             'lib/Repository/GFHotelRepository.php',
             'lib/Repository/GFImagePlaceholder.php',
+            'lib/Repository/GFSearchPreference.php',
+            'lib/Repository/GFSearchPreferenceRepository.php',
             // Application
             'lib/Service/GFImportException.php',
             'lib/Service/GFErrorCollectingController.php',
@@ -78,8 +80,10 @@ class GFModuleServices
             'lib/Service/GFRoomTypeFactory.php',
             'lib/Service/GFHotelProvisioner.php',
             'lib/Service/GFEstablishmentImporter.php',
+            'lib/Service/GFSearchMemory.php',
             // Presentation
             'lib/Admin/GFImportPanel.php',
+            'lib/Front/GFSearchPanel.php',
         ];
 
         foreach ($classes as $relativePath) {
@@ -151,6 +155,20 @@ class GFModuleServices
     {
         return $this->share('hotelImageFactory', function () {
             return new GFHotelImageFactory(new GFImageLocator());
+        });
+    }
+
+    /**
+     * Decorates the booking search panel with the visitor's last search.
+     *
+     * @return GFSearchPanel
+     */
+    public function getSearchPanel()
+    {
+        return $this->share('searchPanel', function () {
+            $repository = new GFSearchPreferenceRepository(Context::getContext()->cookie);
+
+            return new GFSearchPanel(new GFSearchMemory($repository));
         });
     }
 
