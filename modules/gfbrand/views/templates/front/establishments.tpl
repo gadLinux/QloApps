@@ -63,57 +63,7 @@
     {else}
         <ul class="gf-establishment-grid">
             {foreach from=$gf_establishments item=establishment}
-                <li class="gf-establishment-card">
-
-                    <div class="gf-card-media">
-                        {if $establishment.image_url}
-                            {* Decorative: the name below is the accessible label
-                               for the whole card, so alt text here would repeat it. *}
-                            <img src="{$establishment.image_url|escape:'html':'UTF-8'}"
-                                 alt=""
-                                 loading="lazy"
-                                 width="720" height="720">
-                        {else}
-                            <span class="gf-card-media-blank" aria-hidden="true"></span>
-                        {/if}
-                    </div>
-
-                    <div class="gf-card-body">
-                        <p class="gf-card-tags">
-                            <span class="gf-tag gf-tag-type gf-tag-{$establishment.type|lower|escape:'html':'UTF-8'}">{$establishment.type_label|escape:'htmlall':'UTF-8'}</span>
-                            {if $establishment.city}
-                                <span class="gf-tag gf-tag-place">{$establishment.city|escape:'htmlall':'UTF-8'}</span>
-                            {/if}
-                        </p>
-
-                        <h2 class="gf-card-name">{$establishment.name|escape:'htmlall':'UTF-8'}</h2>
-
-                        {if $establishment.description}
-                            <div class="gf-card-text">{$establishment.description|strip_tags|escape:'htmlall':'UTF-8'}</div>
-                        {/if}
-                    </div>
-
-                    {* Pinned to the card foot so the CTAs line up across a row
-                       whatever the description length. Story 1.10 owns the full
-                       conditional-CTA treatment. *}
-                    <p class="gf-card-cta">
-                        {if $establishment.cta == 'external'}
-                            <a href="{$establishment.cta_url|escape:'html':'UTF-8'}"
-                               target="_blank" rel="noopener noreferrer">
-                                {l s='Visit Website' mod='gfbrand'}
-                                <span class="gf-cta-mark" aria-hidden="true">&#8599;</span>
-                                <span class="sr-only">{l s='(opens in a new tab)' mod='gfbrand'}</span>
-                            </a>
-                        {else}
-                            <a href="{$establishment.cta_url|escape:'html':'UTF-8'}">
-                                {l s='Inquire to Book' mod='gfbrand'}
-                                <span class="gf-cta-mark" aria-hidden="true">&#8594;</span>
-                            </a>
-                        {/if}
-                        <span class="sr-only">&mdash; {$establishment.name|escape:'htmlall':'UTF-8'}</span>
-                    </p>
-
-                </li>
+                <li>{include file=$gf_card_template establishment=$establishment}</li>
             {/foreach}
         </ul>
     {/if}

@@ -517,6 +517,19 @@ class gfbrand extends Module
     }
 
     /**
+     * Hotels as the reservation system stores them — story 1.10.
+     *
+     * The establishments listing needs it to resolve "Book Now" to a hotel's
+     * room types rather than to its informational product.
+     *
+     * @return GFHotelRepository
+     */
+    public function getHotelRepository()
+    {
+        return $this->services->getHotelRepository();
+    }
+
+    /**
      * Friendly URL for the establishments listing — story 1.9 AC-8, D9.
      *
      * OQ-a resolved the disagreement between the nav's "GF Establishments" and

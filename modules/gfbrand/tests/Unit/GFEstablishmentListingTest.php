@@ -187,27 +187,74 @@ class GFEstablishmentListingTest extends TestCase
     }
 
     #[Test]
-    public function an_establishment_with_its_own_site_links_out_to_it(): void
+    public function a_restaurant_with_its_own_site_links_out_to_it(): void
     {
         $card = $this->listing($this->catalogue())->forRequest('Costa Rica', 1, self::LANG)
             ->getEstablishments()[0];
 
-        $this->assertSame(GFEstablishmentListing::CTA_EXTERNAL, $card['cta']);
+        $this->assertSame(GFEstablishmentCta::VISIT, $card['cta']);
         $this->assertSame('https://example.test/gallos', $card['cta_url']);
+        $this->assertTrue($card['cta_new_tab']);
     }
 
     /**
-     * Story 1.10 owns the full conditional-CTA decision table; this only has
-     * to not send the visitor to an empty href in the meantime.
+     * The decision itself is GFEstablishmentCta's, and tested there. This
+     * pins that the card actually carries the answer.
      */
     #[Test]
-    public function an_establishment_without_a_site_falls_back_to_an_enquiry(): void
+    public function a_hotel_we_cannot_book_yet_invites_an_enquiry(): void
     {
         $card = $this->listing($this->catalogue())->forRequest('Spain', 1, self::LANG)
             ->getEstablishments()[0];
 
-        $this->assertSame(GFEstablishmentListing::CTA_INQUIRE, $card['cta']);
+        $this->assertSame(GFEstablishmentCta::INQUIRE, $card['cta']);
+        $this->assertSame('Inquire to Book', $card['cta_label']);
         $this->assertSame('', $card['cta_url'], 'The controller supplies the internal URL.');
+    }
+
+    #[Test]
+    public function a_hotel_with_a_live_channel_manager_can_be_booked(): void
+    {
+        $bookable = $this->row('Bookable Hotel', 'Norway', 'Oslo', GFEstablishment::TYPE_HOTEL);
+        $bookable['gf_has_channel_manager'] = 1;
+        $bookable['gf_channel_manager_status'] = GFEstablishment::CHANNEL_MANAGER_ACTIVE;
+
+        $card = $this->listing([$bookable])->forRequest('Norway', 1, self::LANG)
+            ->getEstablishments()[0];
+
+        $this->assertSame(GFEstablishmentCta::BOOK, $card['cta']);
+        $this->assertSame('Book Now', $card['cta_label']);
+    }
+
+    /* ---- Certification pill (AC-7) ------------------------------------- */
+
+    #[Test]
+    public function the_two_certification_levels_are_named_differently(): void
+    {
+        $this->assertSame(
+            'GF Dedicated',
+            GFEstablishmentListing::labelForCertification(GFEstablishment::CERTIFICATION_DEDICATED)
+        );
+        $this->assertSame(
+            'GF Options',
+            GFEstablishmentListing::labelForCertification(GFEstablishment::CERTIFICATION_OPTIONS)
+        );
+    }
+
+    /**
+     * An establishment we have no certification answer for shows no pill.
+     * Defaulting to either one would be a reassurance we have not earned.
+     */
+    #[Test]
+    public function an_uncertified_establishment_gets_no_pill(): void
+    {
+        $row = $this->row('Unknown Place', 'Norway', 'Oslo');
+        $row['gf_certification'] = null;
+
+        $card = $this->listing([$row])->forRequest('Norway', 1, self::LANG)
+            ->getEstablishments()[0];
+
+        $this->assertSame('', $card['certification_label']);
     }
 
     /* ---- Fixtures ------------------------------------------------------ */

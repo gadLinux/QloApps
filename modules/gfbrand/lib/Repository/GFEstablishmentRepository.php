@@ -193,7 +193,7 @@ class GFEstablishmentRepository
     public function findListing($country, $limit, $offset, $idLang)
     {
         $rows = $this->readDb()->executeS(
-            'SELECT p.`id_product`, p.`gf_type`, p.`gf_country`, p.`gf_city`,
+            'SELECT p.`id_product`, p.`gf_source_id`, p.`gf_type`, p.`gf_country`, p.`gf_city`,
                     p.`gf_destination_url`, p.`gf_certification`,
                     p.`gf_has_channel_manager`, p.`gf_channel_manager_status`,
                     pl.`name`, pl.`description_short`, pl.`link_rewrite`,

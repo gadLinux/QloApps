@@ -84,6 +84,10 @@ class GfbrandEstablishmentsModuleFrontController extends ModuleFrontController
             'gf_show_all_url' => $this->urlFor('', 1),
             'gf_heading' => $this->heading($filter),
             'gf_tagline' => Configuration::get('GFBRAND_TAGLINE'),
+            // Absolute, so the include resolves the same whichever template
+            // pulls the card in — this one, or the homepage in story 1.13.
+            'gf_card_template' => _PS_MODULE_DIR_
+                . 'gfbrand/views/templates/front/_establishment-card.tpl',
         ]);
 
         $this->setTemplate('establishments.tpl');
@@ -134,7 +138,8 @@ class GfbrandEstablishmentsModuleFrontController extends ModuleFrontController
 
     /**
      * Add the URLs the cards need. The listing service deliberately produces
-     * none: building them needs Link and Image, which are framework concerns.
+     * none but the off-site one: building internal links needs Link and Image,
+     * which are framework concerns.
      *
      * @param  array[] $cards
      * @return array[]
@@ -148,15 +153,74 @@ class GfbrandEstablishmentsModuleFrontController extends ModuleFrontController
                 $card['link_rewrite']
             );
 
-            // Story 1.10 owns the conditional CTA proper. Until then an
-            // establishment with no site of its own points at its own page
-            // rather than at an empty href.
-            if ($card['cta'] === GFEstablishmentListing::CTA_INQUIRE) {
-                $cards[$index]['cta_url'] = $cards[$index]['url'];
+            if ($card['cta'] === GFEstablishmentCta::INQUIRE) {
+                $cards[$index]['cta_url'] = $this->inquiryUrl($card['id_product']);
+            }
+
+            if ($card['cta'] === GFEstablishmentCta::BOOK) {
+                $cards[$index]['cta_url'] = $this->bookingUrl($card);
             }
         }
 
         return $cards;
+    }
+
+    /**
+     * Where "Inquire to Book" goes: the questionnaire, carrying the
+     * establishment id.
+     *
+     * The id pass-through is a deliberate fix, not a port. The current
+     * WordPress form makes the guest re-pick, by hand, the very hotel they
+     * just clicked "inquire" on; story 1.12 pre-fills from ?hotel=.
+     *
+     * TEMPORARY FALLBACK: story 1.12 owns controllers/front/inquiry.php and it
+     * does not exist yet. Rather than publish a link that 404s on every hotel
+     * card, the contact page stands in until then. Delete the guard — not the
+     * getModuleLink call — when 1.12 lands.
+     *
+     * @param  int $idProduct
+     * @return string
+     */
+    private function inquiryUrl($idProduct)
+    {
+        if (!file_exists(_PS_MODULE_DIR_ . 'gfbrand/controllers/front/inquiry.php')) {
+            return $this->context->link->getPageLink('contact', true);
+        }
+
+        return $this->context->link->getModuleLink(
+            'gfbrand',
+            'inquiry',
+            ['hotel' => (int) $idProduct]
+        );
+    }
+
+    /**
+     * Where "Book Now" goes: the hotel's room types.
+     *
+     * NOT the establishment product. That row is the informational record —
+     * it is not bookable, and QloApps reserves room-type products underneath
+     * the hotel's category. Linking to the product would land the guest on a
+     * page with nothing to reserve, which is the exact failure AC-3 exists to
+     * prevent.
+     *
+     * @param  array $card
+     * @return string
+     */
+    private function bookingUrl(array $card)
+    {
+        $idCategory = $this->module->getHotelRepository()
+            ->findCategoryIdBySourceId($card['source_id']);
+
+        // A hotel flagged bookable but never provisioned has nowhere to send
+        // anyone; its own page is at least truthful.
+        if (!$idCategory) {
+            return $this->context->link->getProductLink(
+                $card['id_product'],
+                $card['link_rewrite']
+            );
+        }
+
+        return $this->context->link->getCategoryLink($idCategory);
     }
 
     /**

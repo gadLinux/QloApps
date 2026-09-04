@@ -23,14 +23,8 @@ if (!defined('_PS_VERSION_')) {
 
 class GFEstablishmentListing
 {
-    /** Cards per page (AC-7). */
+    /** Cards per page (story 1.9 AC-7). */
     const PER_PAGE = 12;
-
-    /** The establishment has its own site: send the visitor there. */
-    const CTA_EXTERNAL = 'external';
-
-    /** No site of its own: keep the visitor here and let them enquire. */
-    const CTA_INQUIRE = 'inquire';
 
     /** @var GFEstablishmentRepository */
     private $repository;
@@ -105,23 +99,55 @@ class GFEstablishmentListing
     }
 
     /**
-     * Turn a database row into what the grid renders.
+     * A human label for a certification level.
      *
-     * Story 1.10 owns the card component and the full conditional-CTA decision
-     * table (D11/D12). This produces only what the grid needs to be coherent
-     * today, and names the CTA by intent rather than by label so 1.10 can
-     * change the wording without touching this.
+     * "GF Dedicated" (a dedicated gluten-free kitchen) and "GF Options" (a
+     * kitchen that can accommodate) mean materially different things to a
+     * coeliac traveller, so they are never collapsed into one word. An
+     * establishment we have no answer for gets no pill at all rather than a
+     * reassuring-looking default (D11).
+     *
+     * @param  string $certification
+     * @return string Empty when unknown.
+     */
+    public static function labelForCertification($certification)
+    {
+        switch ((string) $certification) {
+            case GFEstablishment::CERTIFICATION_DEDICATED:
+                return 'GF Dedicated';
+            case GFEstablishment::CERTIFICATION_OPTIONS:
+                return 'GF Options';
+            default:
+                return '';
+        }
+    }
+
+    /**
+     * Turn a database row into what a card renders.
+     *
+     * The CTA is decided here, in one place, by GFEstablishmentCta — the card
+     * template only renders the answer. That is what makes AC-4 true: an admin
+     * flipping the channel-manager flag changes the button, because the branch
+     * is a function of the row and nothing else.
      *
      * @param  array $row
      * @return array
      */
     private function toCard(array $row)
     {
-        $destination = isset($row['gf_destination_url']) ? trim((string) $row['gf_destination_url']) : '';
         $type = isset($row['gf_type']) ? (string) $row['gf_type'] : '';
+        $certification = isset($row['gf_certification']) ? (string) $row['gf_certification'] : '';
+
+        $cta = new GFEstablishmentCta(
+            $type,
+            isset($row['gf_destination_url']) ? $row['gf_destination_url'] : '',
+            isset($row['gf_has_channel_manager']) ? $row['gf_has_channel_manager'] : false,
+            isset($row['gf_channel_manager_status']) ? $row['gf_channel_manager_status'] : ''
+        );
 
         return [
             'id_product' => (int) $row['id_product'],
+            'source_id' => isset($row['gf_source_id']) ? (string) $row['gf_source_id'] : '',
             'name' => (string) $row['name'],
             'description' => (string) $row['description_short'],
             'link_rewrite' => isset($row['link_rewrite']) ? (string) $row['link_rewrite'] : '',
@@ -130,11 +156,16 @@ class GFEstablishmentListing
             'type_label' => self::labelForType($type),
             'city' => isset($row['gf_city']) ? (string) $row['gf_city'] : '',
             'country' => isset($row['gf_country']) ? (string) $row['gf_country'] : '',
-            'certification' => isset($row['gf_certification']) ? (string) $row['gf_certification'] : '',
-            'cta' => $destination === '' ? self::CTA_INQUIRE : self::CTA_EXTERNAL,
-            // Empty for CTA_INQUIRE: the enquiry URL is an internal route, and
-            // routing is the front controller's job, not this layer's.
-            'cta_url' => $destination,
+            'certification' => $certification,
+            'certification_label' => self::labelForCertification($certification),
+            'cta' => $cta->getKind(),
+            'cta_label' => $cta->getLabel(),
+            'cta_present' => $cta->isPresent(),
+            'cta_new_tab' => $cta->opensInNewTab(),
+            // Only the off-site URL is known here. The enquiry and booking
+            // targets are internal routes, and routing is the front
+            // controller's job, not this layer's.
+            'cta_url' => $cta->getExternalUrl(),
         ];
     }
 }

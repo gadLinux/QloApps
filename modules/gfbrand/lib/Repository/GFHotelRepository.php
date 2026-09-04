@@ -56,6 +56,28 @@ class GFHotelRepository
     }
 
     /**
+     * The category holding a hotel's bookable room types.
+     *
+     * This is where "Book Now" goes (story 1.10 AC-3). It deliberately does
+     * not go to the establishment product: that row is the informational
+     * record, and the thing a guest actually books is a room type underneath
+     * this category. Linking to the product would land them on a page with
+     * nothing to reserve.
+     *
+     * @param  string $sourceId The establishment's source id.
+     * @return int|null Null when the hotel was never provisioned.
+     */
+    public function findCategoryIdBySourceId($sourceId)
+    {
+        $id = $this->readDb()->getValue(
+            'SELECT `id_category` FROM `' . $this->table() . '`
+             WHERE `gf_source_id` = \'' . pSQL($sourceId) . '\''
+        );
+
+        return $id ? (int) $id : null;
+    }
+
+    /**
      * @return int[]
      */
     public function findImportedIds()

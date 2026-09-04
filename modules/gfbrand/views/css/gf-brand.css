@@ -304,9 +304,214 @@ body:not(.index) #header .shopping_cart > a:hover {
 
 /* ==========================================================================
    3. Establishment card and conditional CTA — Story 1.10
+   FR-20. One component, consumed by the listing (1.9) and the homepage (1.13).
+
+   Deliberately NOT scoped to the listing page: this is a shared component,
+   and scoping it under .gf-establishments would have made story 1.13 either
+   duplicate it or wrap the homepage in a class that means nothing there.
    ========================================================================== */
 
-/* TO BE ADDED BY STORY 1.10 */
+.gf-establishment-card {
+    display: flex;
+    flex-direction: column;
+    /* Fills its grid cell, which is what lets the foot pin to the bottom of
+       the TALLEST card in the row rather than to its own content. */
+    width: 100%;
+    padding: var(--gf-space-5);
+    border: 1px solid var(--gf-rule);
+    border-radius: var(--gf-radius-card);
+    background: #FFF;
+    box-shadow: var(--gf-shadow-card-rest);
+    transition: var(--gf-transition-card);
+}
+
+.gf-establishment-card:hover {
+    transform: var(--gf-lift-card-hover);
+    box-shadow: var(--gf-shadow-card-hover);
+}
+
+/* AC-8. The global reduced-motion block in section 10 already collapses every
+   transition-duration, so the shadow stops animating there. What it cannot do
+   is remove the movement itself — a transform still jumps 4px, it just jumps
+   instantly — so the lift is cancelled here. */
+@media (prefers-reduced-motion: reduce) {
+    .gf-establishment-card:hover {
+        transform: none;
+    }
+}
+
+/* --- Photo: 3:2 (AC-5) ---------------------------------------------------- */
+
+.gf-card-media {
+    overflow: hidden;
+    border-radius: 8px;
+    /* Shows through while a lazy image is still arriving, so the card does not
+       flash white-on-white. */
+    background: var(--gf-sand-light);
+}
+
+.gf-card-media img,
+.gf-card-media-blank {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 3 / 2;
+    object-fit: cover;
+}
+
+/* --- Body ----------------------------------------------------------------- */
+
+.gf-card-body {
+    /* Takes the slack. This single line is what pins the foot and aligns CTAs
+       across a row of unequal descriptions. */
+    flex: 1 1 auto;
+    padding-top: var(--gf-space-4);
+}
+
+.gf-card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--gf-space-2);
+    margin: 0 0 var(--gf-space-3);
+}
+
+.gf-tag {
+    display: inline-block;
+    padding: 3px var(--gf-space-2);
+    border-radius: 3px;
+    font-family: var(--gf-font-body);
+    font-size: var(--gf-pill-size);
+    font-weight: 600;
+    letter-spacing: var(--gf-pill-tracking);
+    text-transform: uppercase;
+}
+
+/* Type and location pills. Each carries its meaning in the word; the tint is
+   secondary, never the only signal. */
+.gf-tag-type {
+    background: #F1EADB;
+    color: #6B4E16;
+}
+
+.gf-tag-hotel {
+    background: #E7EDD9;
+    color: var(--gf-olive-dark);
+}
+
+.gf-tag-place {
+    background: #ECECEC;
+    color: var(--gf-charcoal);
+}
+
+.gf-card-name {
+    margin: 0 0 var(--gf-space-3);
+    font-family: var(--gf-font-display);
+    font-size: var(--gf-h3-size);
+    line-height: 1.3;
+    color: var(--gf-heading);
+}
+
+/* Five lines, then ellipsis (AC-5). -webkit-line-clamp is the only widely
+   supported mechanism and works in every current engine including Firefox;
+   where it does not apply the text simply runs on, which is a longer card,
+   not a broken one. */
+.gf-card-text {
+    display: -webkit-box;
+    -webkit-line-clamp: 5;
+    line-clamp: 5;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    font-family: var(--gf-font-body);
+    font-size: var(--gf-card-body-size);
+    line-height: var(--gf-card-body-lh);
+    color: var(--gf-charcoal);
+}
+
+/* Homepage variant: no pills, a shorter blurb (story 1.13). */
+.gf-establishment-card--compact .gf-card-text {
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+}
+
+/* --- Foot: CTA and certification pill ------------------------------------- */
+
+.gf-card-foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--gf-space-3);
+    margin-top: var(--gf-space-5);
+}
+
+.gf-establishment-card .gf-cta {
+    font-family: var(--gf-font-body);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: var(--gf-pill-tracking);
+    text-transform: uppercase;
+    text-decoration: underline;
+    color: var(--gf-olive-dark);
+}
+
+.gf-establishment-card .gf-cta:hover,
+.gf-establishment-card .gf-cta:focus {
+    color: var(--gf-olive-hover);
+}
+
+.gf-cta-mark {
+    margin-left: var(--gf-space-1);
+}
+
+/* --- Certification pills (AC-7, OQ-e / D11) -------------------------------
+
+   "GF Dedicated" (a dedicated gluten-free kitchen) and "GF Options" (a kitchen
+   that can accommodate) mean materially different things to a coeliac
+   traveller, and on the live site they render identically. They are separated
+   on three axes at once — fill, text colour and a tick glyph — so the
+   distinction survives greyscale and colour blindness (WCAG 1.4.1).
+
+   The fill is --gf-olive-dark, NOT --gf-olive. The story proposed olive; at
+   11px this is not large text, and #6b8e23 behind white is 3.81:1, below AA.
+   #556B2F behind white measures 5.76:1 (D4).                                */
+
+.gf-cert-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--gf-space-1);
+    padding: 3px var(--gf-space-2);
+    border-radius: var(--gf-radius-pill);
+    font-family: var(--gf-font-body);
+    font-size: var(--gf-pill-size);
+    font-weight: 600;
+    letter-spacing: var(--gf-pill-tracking);
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.gf-cert-pill--dedicated {
+    background: var(--gf-olive-dark);
+    color: #FFF;
+}
+
+.gf-cert-pill--options {
+    background: rgba(107, 142, 35, 0.10);
+    color: var(--gf-olive-dark);
+}
+
+.gf-cert-tick {
+    font-size: 12px;
+    line-height: 1;
+}
+
+@media (max-width: 767px) {
+    .gf-card-foot {
+        /* Stacked rather than squeezed: side by side, the CTA and a long
+           certification pill wrap mid-word on a 360px card. */
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
 
 
 /* ==========================================================================
@@ -434,131 +639,12 @@ body:not(.index) #header .shopping_cart > a:hover {
     list-style: none;
 }
 
-.gf-establishment-card {
+/* The grid item is a bare <li>; the card component inside it (section 3) is
+   what stretches, so a row of unequal descriptions still lines its CTAs up. */
+.gf-establishment-grid > li {
     display: flex;
-    flex-direction: column;
-    padding: var(--gf-space-5);
-    border: 1px solid var(--gf-rule);
-    border-radius: var(--gf-radius-card);
-    background: #FFF;
-    box-shadow: var(--gf-shadow-card-rest);
-    transition: var(--gf-transition-card);
 }
 
-.gf-establishment-card:hover {
-    transform: var(--gf-lift-card-hover);
-    box-shadow: var(--gf-shadow-card-hover);
-}
-
-/* Anyone who has asked their system not to animate gets the shadow change
-   without the movement. */
-@media (prefers-reduced-motion: reduce) {
-    .gf-establishment-card,
-    .gf-establishments .gf-pill {
-        transition: none;
-    }
-
-    .gf-establishment-card:hover {
-        transform: none;
-    }
-}
-
-.gf-card-media {
-    overflow: hidden;
-    border-radius: 8px;
-    background: var(--gf-sand-light);
-}
-
-/* A fixed ratio box, so a row of cards keeps its rhythm whatever the
-   photographs' own proportions are. */
-.gf-card-media img,
-.gf-card-media-blank {
-    display: block;
-    width: 100%;
-    height: auto;
-    aspect-ratio: 16 / 10;
-    object-fit: cover;
-}
-
-.gf-card-body {
-    /* Takes the slack, which is what pins the CTA to the card foot and lines
-       the CTAs up across a row. */
-    flex: 1 1 auto;
-    padding-top: var(--gf-space-4);
-}
-
-.gf-card-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--gf-space-2);
-    margin: 0 0 var(--gf-space-3);
-}
-
-.gf-tag {
-    display: inline-block;
-    padding: 3px var(--gf-space-2);
-    border-radius: 3px;
-    font-family: var(--gf-font-body);
-    font-size: var(--gf-pill-size);
-    font-weight: 600;
-    letter-spacing: var(--gf-pill-tracking);
-    text-transform: uppercase;
-}
-
-/* Type pill, tinted per type; location pill, neutral. Both carry their meaning
-   in the word, never in the colour alone. */
-.gf-tag-type {
-    background: #F1EADB;
-    color: #6B4E16;
-}
-
-.gf-tag-hotel {
-    background: #E7EDD9;
-    color: var(--gf-olive-dark);
-}
-
-.gf-tag-place {
-    background: #ECECEC;
-    color: var(--gf-charcoal);
-}
-
-.gf-card-name {
-    margin: 0 0 var(--gf-space-3);
-    font-family: var(--gf-font-display);
-    font-size: var(--gf-h3-size);
-    line-height: 1.3;
-    color: var(--gf-heading);
-}
-
-.gf-card-text {
-    font-family: var(--gf-font-body);
-    font-size: var(--gf-card-body-size);
-    line-height: var(--gf-card-body-lh);
-    color: var(--gf-charcoal);
-}
-
-.gf-card-cta {
-    margin: var(--gf-space-5) 0 0;
-}
-
-.gf-establishments .gf-card-cta a {
-    font-family: var(--gf-font-body);
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: var(--gf-pill-tracking);
-    text-transform: uppercase;
-    text-decoration: underline;
-    color: var(--gf-olive-dark);
-}
-
-.gf-establishments .gf-card-cta a:hover,
-.gf-establishments .gf-card-cta a:focus {
-    color: var(--gf-olive-hover);
-}
-
-.gf-cta-mark {
-    margin-left: var(--gf-space-1);
-}
 
 /* --- Empty state (AC-6) --------------------------------------------------- */
 

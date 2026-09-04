@@ -26,6 +26,7 @@ $classes = [
     '/lib/Repository/GFImagePlaceholder.php',
     '/lib/Repository/GFCountryFilter.php',
     '/lib/Repository/GFPagination.php',
+    '/lib/Repository/GFEstablishmentCta.php',
     '/lib/Repository/GFEstablishmentRepository.php',
     '/lib/Repository/GFSearchPreference.php',
     '/lib/Repository/GFSearchPreferenceRepository.php',
