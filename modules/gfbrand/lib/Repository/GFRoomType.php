@@ -42,8 +42,8 @@ class GFRoomType
 
     /**
      * @var string Bare file name of this room type's own photograph.
-     *      Empty means none was supplied, and the room type gets a branded
-     *      placeholder instead — see GFRoomTypeFactory::attachImage().
+     *      Empty means none was supplied, and the room type falls back to its
+     *      hotel's picture — see GFRoomTypeFactory::attachImage().
      */
     public $imageFile = '';
 

@@ -76,12 +76,13 @@ class GFRoomTypeFactory
     }
 
     /**
-     * A room type shows its own photograph when it has one.
+     * Its own photograph, else its hotel's, else a branded placeholder.
      *
-     * It deliberately does not borrow the hotel's: every room of a hotel would
-     * then carry the same picture, which reads as a fault rather than as a
-     * room list. A branded placeholder, distinct per room and plainly not a
-     * photograph, is the honest stand-in until real room photography arrives.
+     * Borrowing the hotel's picture does mean every room of a hotel shows the
+     * same one until real room photography exists. That is the lesser evil: a
+     * booking listing carrying a generated card instead of a photograph reads
+     * as unfinished, and a real photograph of the property is at least true.
+     * The placeholder stays for the case where even the hotel has no picture.
      */
     private function attachImage($idProduct, GFRoomType $roomType, GFEstablishment $hotel = null)
     {
@@ -89,13 +90,14 @@ class GFRoomTypeFactory
             return;
         }
 
-        $placeholder = new GFImagePlaceholder(
-            $roomType->name,
-            $roomType->getSourceId(),
-            $hotel !== null ? $hotel->name : ''
-        );
+        $hotelName = $hotel !== null ? $hotel->name : '';
+        $photograph = $roomType->imageFile !== '' || $hotel === null
+            ? $roomType->imageFile
+            : $hotel->imageFile;
 
-        $this->imageFactory->attach($idProduct, $roomType->imageFile, $placeholder);
+        $placeholder = new GFImagePlaceholder($roomType->name, $roomType->getSourceId(), $hotelName);
+
+        $this->imageFactory->attach($idProduct, $photograph, $placeholder);
     }
 
     private function applyProductFields(Product $product, GFRoomType $roomType, $idHotelCategory, $isNew)

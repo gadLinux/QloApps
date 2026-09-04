@@ -241,10 +241,17 @@ class gfbrand extends Module
             );
         }
 
-        /* Roll the schema back through the migrations that created it.
-         * Imported products are deliberately left in place: deleting a shop's
-         * catalogue on uninstall would be destructive beyond this module. */
-        $this->services->getMigrationRunner()->rollback();
+        /* The schema is deliberately NOT rolled back.
+         *
+         * Imported products and hotels are left in place — deleting a shop's
+         * catalogue on uninstall would be destructive beyond this module — and
+         * the migrations own the gf_source_id columns that identify those
+         * rows. Dropping the columns while keeping the rows made them
+         * unrecognisable, so the next install imported the whole catalogue a
+         * second time instead of updating it.
+         *
+         * Rolling back stays available to the migration runner for a
+         * deliberate, operator-initiated teardown. */
 
         return parent::uninstall();
     }

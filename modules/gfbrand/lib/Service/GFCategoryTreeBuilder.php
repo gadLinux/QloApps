@@ -2,12 +2,17 @@
 /**
  * 2026 GF Experiences
  *
- * Builds the Country → City → Hotel category path QloApps expects.
+ * Builds the Country → State → City → Hotel category path QloApps expects.
  *
- * QloApps locates hotels through the category tree: the hotel's own category
- * sits under its city, which sits under its country. The search block and the
- * room-type listings all read that structure, so a hotel without it is
- * invisible even when its row exists.
+ * QloApps locates hotels through the category tree, rooted at the Locations
+ * category — not at Home. WkRoomSearchHelper asks the hotel's category
+ * hasParent(PS_LOCATIONS_CATEGORY) before it populates anything, and the stock
+ * search template then reads values it assumes are set: rooted anywhere else,
+ * every room-type page dies on `1 + ""` under PHP 8.
+ *
+ * The four levels match AdminAddHotelController exactly, including its
+ * fallback of naming the state after the city when there is no state — the
+ * location autocomplete filters on depth, so the shape is not decorative.
  *
  * APPLICATION LAYER
  *
@@ -37,10 +42,17 @@ class GFCategoryTreeBuilder
      */
     public function buildPathFor(GFEstablishment $establishment)
     {
-        $root = (int) Configuration::get('PS_HOME_CATEGORY');
+        $root = (int) Configuration::get('PS_LOCATIONS_CATEGORY');
 
-        $country = $this->findOrCreate($establishment->country ?: 'International', $root);
-        $city = $this->findOrCreate($establishment->city ?: $establishment->country, $country);
+        $countryName = $establishment->country ?: 'International';
+        $cityName = $establishment->city ?: $countryName;
+
+        $country = $this->findOrCreate($countryName, $root);
+        // The source data carries no state. QloApps' own hotel form repeats
+        // the city at this level in that case; matching it keeps our tree the
+        // same shape as a hand-created hotel's.
+        $state = $this->findOrCreate($cityName, $country);
+        $city = $this->findOrCreate($cityName, $state);
 
         return $this->findOrCreate($establishment->name, $city);
     }

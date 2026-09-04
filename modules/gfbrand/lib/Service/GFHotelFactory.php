@@ -6,7 +6,8 @@
  *
  * A bookable hotel is four things: a htl_branch_info row, an Address carrying
  * its location, a category path, and the branch row pointing back at that
- * category. This creates all four, in the order QloApps' own installer uses.
+ * category. This creates all four, in the order QloApps' own installer uses,
+ * and gives the hotel its photograph.
  *
  * APPLICATION LAYER
  *
@@ -30,10 +31,17 @@ class GFHotelFactory
     /** @var GFHotelRepository */
     private $repository;
 
-    public function __construct(GFCategoryTreeBuilder $categoryTree, GFHotelRepository $repository)
-    {
+    /** @var GFHotelImageFactory|null Optional: without it, hotels have no photograph. */
+    private $imageFactory;
+
+    public function __construct(
+        GFCategoryTreeBuilder $categoryTree,
+        GFHotelRepository $repository,
+        GFHotelImageFactory $imageFactory = null
+    ) {
         $this->categoryTree = $categoryTree;
         $this->repository = $repository;
+        $this->imageFactory = $imageFactory;
     }
 
     /**
@@ -68,8 +76,22 @@ class GFHotelFactory
         $hotel->save();
 
         $this->persistAddress($idHotel, $establishment);
+        $this->attachImage($idHotel, $establishment);
 
         return $idHotel;
+    }
+
+    /**
+     * The hotel's own picture, which is not the same thing as its room types'.
+     * A missing photograph is not a failed import.
+     */
+    private function attachImage($idHotel, GFEstablishment $establishment)
+    {
+        if ($this->imageFactory === null) {
+            return;
+        }
+
+        $this->imageFactory->attach($idHotel, $establishment->imageFile);
     }
 
     private function applyFields(HotelBranchInformation $hotel, GFEstablishment $establishment, $isNew)

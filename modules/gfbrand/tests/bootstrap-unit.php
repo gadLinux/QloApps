@@ -28,6 +28,7 @@ $classes = [
     '/lib/Service/GFImportException.php',
     '/lib/Service/GFImportResult.php',
     '/lib/Service/GFImageLocator.php',
+    '/lib/Service/GFReadableImage.php',
     '/lib/Service/GFPlaceholderImageGenerator.php',
     '/lib/Service/GFEstablishmentCsvReader.php',
     '/lib/Service/GFRoomTypeCsvReader.php',

@@ -31,12 +31,17 @@ class GFProductImageFactory
     /** @var GFPlaceholderImageGenerator|null Optional: without it, no fallback. */
     private $placeholderGenerator;
 
+    /** @var GFReadableImage */
+    private $readableImage;
+
     public function __construct(
         GFImageLocator $locator,
-        GFPlaceholderImageGenerator $placeholderGenerator = null
+        GFPlaceholderImageGenerator $placeholderGenerator = null,
+        GFReadableImage $readableImage = null
     ) {
         $this->locator = $locator;
         $this->placeholderGenerator = $placeholderGenerator;
+        $this->readableImage = $readableImage ?: new GFReadableImage();
     }
 
     /**
@@ -105,7 +110,7 @@ class GFProductImageFactory
      */
     private function addCoverImage($idProduct, $sourcePath)
     {
-        $readablePath = $this->toReadableJpeg($sourcePath);
+        $readablePath = $this->readableImage->pathFor($sourcePath);
 
         if ($readablePath === null) {
             return false;
@@ -117,13 +122,13 @@ class GFProductImageFactory
         $image->cover = true;
 
         if (!$image->add()) {
-            $this->discardTemporary($readablePath, $sourcePath);
+            $this->readableImage->discard($readablePath, $sourcePath);
 
             return false;
         }
 
         $written = $this->writeImageFiles($image, $readablePath);
-        $this->discardTemporary($readablePath, $sourcePath);
+        $this->readableImage->discard($readablePath, $sourcePath);
 
         if (!$written) {
             $image->delete();
@@ -134,54 +139,6 @@ class GFProductImageFactory
         $this->setLegend($image, $idProduct);
 
         return true;
-    }
-
-    /**
-     * A path ImageManager can actually read, converting when it cannot.
-     *
-     * The supplied photographs are not always the format their extension
-     * claims — the library currently holds a WebP and two PNGs all named
-     * .jpg — and PrestaShop 1.6's ImageManager fatals on anything but JPEG,
-     * PNG or GIF. Converting here keeps the client's library untouched and
-     * copes with whatever they add next.
-     *
-     * @return string|null Path to read, or null when the file is not an image.
-     */
-    private function toReadableJpeg($sourcePath)
-    {
-        $info = @getimagesize($sourcePath);
-
-        if ($info === false) {
-            return null;
-        }
-
-        $supported = [IMAGETYPE_JPEG, IMAGETYPE_PNG, IMAGETYPE_GIF];
-
-        if (in_array($info[2], $supported, true)) {
-            return $sourcePath;
-        }
-
-        $resource = @imagecreatefromstring(file_get_contents($sourcePath));
-
-        if ($resource === false) {
-            return null;
-        }
-
-        $temporaryPath = tempnam(sys_get_temp_dir(), 'gf-img-') . '.jpg';
-        $converted = imagejpeg($resource, $temporaryPath, 90);
-        imagedestroy($resource);
-
-        return $converted ? $temporaryPath : null;
-    }
-
-    /**
-     * Remove the converted copy, never the original.
-     */
-    private function discardTemporary($usedPath, $sourcePath)
-    {
-        if ($usedPath !== $sourcePath && is_file($usedPath)) {
-            unlink($usedPath);
-        }
     }
 
     private function hasImage($idProduct)
