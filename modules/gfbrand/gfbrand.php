@@ -109,6 +109,13 @@ class gfbrand extends Module
             return false;
         }
 
+        /* Friendly URL for the establishments listing (story 1.9). Without
+         * this the page is only reachable as ?fc=module&module=gfbrand, which
+         * is not a URL to publish or to 301 the old WordPress path onto. */
+        if (!$this->registerHook('moduleRoutes')) {
+            return false;
+        }
+
         /* Booking search panel — refills it with the visitor's last search so
          * they do not retype a destination, dates and occupancy they have
          * already given us. wkroomsearchblock exposes this hook precisely so
@@ -425,6 +432,12 @@ class gfbrand extends Module
             'gf_social_facebook'   => Configuration::get($prefix . 'SOCIAL_FACEBOOK'),
             'gf_social_instagram'  => Configuration::get($prefix . 'SOCIAL_INSTAGRAM'),
             'gf_social_linkedin'   => Configuration::get($prefix . 'SOCIAL_LINKEDIN'),
+            /* Story 1.9: the quick-links column has always had the markup for
+             * this, guarded on the variable. The route only exists now. */
+            'gf_establishments_url' => $this->context->link->getModuleLink(
+                'gfbrand',
+                'establishments'
+            ),
         ]);
 
         return $tpl->fetch();
@@ -487,6 +500,48 @@ class gfbrand extends Module
         $tpl->assign(['id_product' => $idProduct]);
 
         return $tpl->fetch();
+    }
+
+    /**
+     * The establishments listing service — story 1.9.
+     *
+     * Exposed so the front controller can ask the container for it rather than
+     * building a repository of its own. The controller is presentation; wiring
+     * stays in GFModuleServices.
+     *
+     * @return GFEstablishmentListing
+     */
+    public function getEstablishmentListing()
+    {
+        return $this->services->getEstablishmentListing();
+    }
+
+    /**
+     * Friendly URL for the establishments listing — story 1.9 AC-8, D9.
+     *
+     * OQ-a resolved the disagreement between the nav's "GF Establishments" and
+     * the live site's /hotel-collection/ in favour of /establishments/. The old
+     * path 301s to this one from Nginx (addendum A6), not from PHP.
+     *
+     * The country stays a query parameter rather than becoming a path segment:
+     * /hotel-collection/?country=Canada is already published and may be linked
+     * externally, so preserving ?country= keeps those links one redirect away
+     * from working instead of lost.
+     */
+    public function hookModuleRoutes($params)
+    {
+        return [
+            'module-gfbrand-establishments' => [
+                'controller' => 'establishments',
+                'rule' => 'establishments',
+                'keywords' => [],
+                'params' => [
+                    'fc' => 'module',
+                    'module' => 'gfbrand',
+                    'controller' => 'establishments',
+                ],
+            ],
+        ];
     }
 
     /**

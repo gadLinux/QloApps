@@ -82,6 +82,12 @@ if (!class_exists('Tools')) {
             return mb_strlen((string) $string, 'UTF-8');
         }
 
+        /** Mirrors the real one: multibyte-safe, and it lower-cases nothing. */
+        public static function ucfirst($string)
+        {
+            return self::strtoupper(self::substr($string, 0, 1)) . self::substr($string, 1);
+        }
+
         public static function link_rewrite($string)
         {
             $slug = mb_strtolower((string) $string, 'UTF-8');

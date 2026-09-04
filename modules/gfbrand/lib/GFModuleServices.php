@@ -61,6 +61,8 @@ class GFModuleServices
             'lib/Repository/GFRoomType.php',
             'lib/Repository/GFHotelRepository.php',
             'lib/Repository/GFImagePlaceholder.php',
+            'lib/Repository/GFCountryFilter.php',
+            'lib/Repository/GFPagination.php',
             'lib/Repository/GFSearchPreference.php',
             'lib/Repository/GFSearchPreferenceRepository.php',
             // Application
@@ -81,6 +83,8 @@ class GFModuleServices
             'lib/Service/GFHotelProvisioner.php',
             'lib/Service/GFEstablishmentImporter.php',
             'lib/Service/GFSearchMemory.php',
+            'lib/Service/GFEstablishmentListingResult.php',
+            'lib/Service/GFEstablishmentListing.php',
             // Presentation
             'lib/Admin/GFImportPanel.php',
             'lib/Front/GFSearchPanel.php',
@@ -169,6 +173,18 @@ class GFModuleServices
             $repository = new GFSearchPreferenceRepository(Context::getContext()->cookie);
 
             return new GFSearchPanel(new GFSearchMemory($repository));
+        });
+    }
+
+    /**
+     * The establishments listing page — story 1.9.
+     *
+     * @return GFEstablishmentListing
+     */
+    public function getEstablishmentListing()
+    {
+        return $this->share('establishmentListing', function () {
+            return new GFEstablishmentListing($this->getEstablishmentRepository());
         });
     }
 

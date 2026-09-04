@@ -24,6 +24,9 @@ $classes = [
     '/lib/Repository/GFEstablishment.php',
     '/lib/Repository/GFRoomType.php',
     '/lib/Repository/GFImagePlaceholder.php',
+    '/lib/Repository/GFCountryFilter.php',
+    '/lib/Repository/GFPagination.php',
+    '/lib/Repository/GFEstablishmentRepository.php',
     '/lib/Repository/GFSearchPreference.php',
     '/lib/Repository/GFSearchPreferenceRepository.php',
     // Application
@@ -35,6 +38,8 @@ $classes = [
     '/lib/Service/GFEstablishmentCsvReader.php',
     '/lib/Service/GFRoomTypeCsvReader.php',
     '/lib/Service/GFSearchMemory.php',
+    '/lib/Service/GFEstablishmentListingResult.php',
+    '/lib/Service/GFEstablishmentListing.php',
     // Migrations
     '/migrations/GFMigration20260903001Establishments.php',
     '/migrations/GFMigration20260903002HotelSourceId.php',
@@ -48,3 +53,4 @@ foreach ($classes as $relativePath) {
 require_once __DIR__ . '/stubs/GFInMemoryMigrationRepository.php';
 require_once __DIR__ . '/stubs/GFRecordingSchemaHelper.php';
 require_once __DIR__ . '/stubs/GFFakeCookie.php';
+require_once __DIR__ . '/stubs/GFFakeEstablishmentRepository.php';

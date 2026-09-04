@@ -138,12 +138,123 @@ class GFEstablishmentRepository
     }
 
     /**
+     * Every country the catalogue actually stocks, alphabetical.
+     *
+     * This is what makes the filter row derived rather than declared: the pill
+     * list is a SELECT DISTINCT, so a Portugal establishment produces a
+     * Portugal pill with no code change (story 1.9 AC-2).
+     *
+     * @return string[]
+     */
+    public function findCountries()
+    {
+        $rows = $this->readDb()->executeS(
+            'SELECT DISTINCT `gf_country` FROM `' . $this->table() . '`
+             WHERE ' . $this->listableCondition() . '
+               AND `gf_country` != \'\'
+             ORDER BY `gf_country` ASC'
+        );
+
+        if (!is_array($rows)) {
+            return [];
+        }
+
+        return array_column($rows, 'gf_country');
+    }
+
+    /**
+     * How many establishments the listing would show under this filter.
+     *
+     * @param  string $country Canonical country name, or '' for all.
+     * @return int
+     */
+    public function countListing($country = '')
+    {
+        return (int) $this->readDb()->getValue(
+            'SELECT COUNT(*) FROM `' . $this->table() . '`
+             WHERE ' . $this->listableCondition() . $this->countryCondition($country)
+        );
+    }
+
+    /**
+     * One page of the listing, ordered by name.
+     *
+     * Filtering and paging happen here, in SQL, rather than in PHP over the
+     * whole catalogue: story 1.9 D6 requires the filter to work with
+     * JavaScript disabled, which means the server must return only the rows
+     * the visitor asked for.
+     *
+     * @param  string $country Canonical country name, or '' for all.
+     * @param  int    $limit
+     * @param  int    $offset
+     * @param  int    $idLang
+     * @return array[] Raw rows; the caller turns them into view models.
+     */
+    public function findListing($country, $limit, $offset, $idLang)
+    {
+        $rows = $this->readDb()->executeS(
+            'SELECT p.`id_product`, p.`gf_type`, p.`gf_country`, p.`gf_city`,
+                    p.`gf_destination_url`, p.`gf_certification`,
+                    p.`gf_has_channel_manager`, p.`gf_channel_manager_status`,
+                    pl.`name`, pl.`description_short`, pl.`link_rewrite`,
+                    (SELECT i.`id_image` FROM `' . _DB_PREFIX_ . 'image` i
+                      WHERE i.`id_product` = p.`id_product`
+                      ORDER BY i.`cover` DESC, i.`position` ASC LIMIT 1) AS `id_image`
+             FROM `' . $this->table() . '` p
+             INNER JOIN `' . _DB_PREFIX_ . 'product_lang` pl
+                     ON pl.`id_product` = p.`id_product`
+                    AND pl.`id_lang` = ' . (int) $idLang . '
+             WHERE ' . $this->listableCondition('p') . $this->countryCondition($country, 'p') . '
+             ORDER BY pl.`name` ASC
+             LIMIT ' . (int) $offset . ', ' . (int) $limit
+        );
+
+        return is_array($rows) ? $rows : [];
+    }
+
+    /**
      * Rows the importer owns. Products created by hand have no source id and
      * are therefore never matched by a reload.
      */
-    private function importedCondition()
+    private function importedCondition($alias = '')
     {
-        return '`gf_source_id` IS NOT NULL AND `gf_source_id` != \'\'';
+        $prefix = $alias === '' ? '' : $alias . '.';
+
+        return $prefix . '`gf_source_id` IS NOT NULL AND ' . $prefix . '`gf_source_id` != \'\'';
+    }
+
+    /**
+     * What the establishments listing is a listing OF.
+     *
+     * booking_product separates the two kinds of product the importer creates:
+     * an establishment is an informational record (0), a room type is bookable
+     * inventory (1). Without this the listing would show "Standard Room" and
+     * "Deluxe Room" as if they were establishments in their own right.
+     */
+    private function listableCondition($alias = '')
+    {
+        $prefix = $alias === '' ? '' : $alias . '.';
+
+        return $this->importedCondition($alias)
+            . ' AND ' . $prefix . '`booking_product` = 0'
+            . ' AND ' . $prefix . '`active` = 1';
+    }
+
+    /**
+     * Matched case-insensitively so a shared ?country=canada link still
+     * filters, rather than quietly returning nothing.
+     */
+    private function countryCondition($country, $alias = '')
+    {
+        $country = trim((string) $country);
+
+        if ($country === '') {
+            return '';
+        }
+
+        $prefix = $alias === '' ? '' : $alias . '.';
+
+        return ' AND LOWER(' . $prefix . '`gf_country`) = LOWER(\'' . pSQL($country) . '\')';
     }
 
     /**

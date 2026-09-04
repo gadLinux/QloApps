@@ -311,9 +311,378 @@ body:not(.index) #header .shopping_cart > a:hover {
 
 /* ==========================================================================
    4. Establishments listing with country filter — Story 1.9
+   FR-18 listing, FR-19 country filter.
+
+   Layer 1: the page is a gfbrand front controller with its own template, so
+   nothing here overrides a stock module or a theme file. Class names are all
+   gf-prefixed and scoped under .gf-establishments, so this section cannot
+   reach any page but its own.
    ========================================================================== */
 
-/* TO BE ADDED BY STORY 1.9 */
+.gf-establishments {
+    max-width: var(--gf-container-max);
+    margin: 0 auto;
+    padding: 0 var(--gf-grid-gutter) var(--gf-space-20);
+}
+
+/* --- Inner-page hero ------------------------------------------------------ */
+
+.gf-establishments-hero {
+    padding: var(--gf-space-15) 0 var(--gf-space-10);
+    text-align: center;
+}
+
+.gf-establishments-title {
+    margin: 0;
+    font-family: var(--gf-font-display);
+    font-size: var(--gf-hero-size);
+    line-height: var(--gf-hero-lh);
+    letter-spacing: var(--gf-hero-tracking);
+    color: var(--gf-heading);
+}
+
+.gf-establishments-tagline {
+    margin: var(--gf-space-4) 0 0;
+    font-family: var(--gf-font-body);
+    font-size: var(--gf-body-size);
+    line-height: var(--gf-body-lh);
+    color: var(--gf-charcoal);
+}
+
+/* Decorative rule under the hero, as on the live site. */
+.gf-establishments-rule {
+    display: block;
+    width: 56px;
+    height: 2px;
+    margin: var(--gf-space-6) auto 0;
+    background: var(--gf-olive);
+}
+
+/* --- Country filter pills ------------------------------------------------- */
+
+.gf-filter-bar {
+    margin: 0 0 var(--gf-space-6);
+}
+
+.gf-filter-pills {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--gf-space-3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+/* The pills are anchors, so the theme's link colour and underline have to be
+   reset here rather than assumed away. */
+.gf-establishments .gf-pill {
+    display: inline-block;
+    padding: 9px var(--gf-space-5);
+    border: 1px solid var(--gf-rule);
+    border-radius: var(--gf-radius-pill);
+    background: #FFF;
+    font-family: var(--gf-font-body);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: var(--gf-pill-tracking);
+    text-transform: uppercase;
+    /* Underlined at rest, not only on hover: the pills sit in a row of their
+       own, where colour alone would be the only thing marking them as
+       controls (WCAG 1.4.1, "colour is not the only visual means"). */
+    text-decoration: underline;
+    color: var(--gf-charcoal);
+    transition: background-color .2s, border-color .2s, color .2s;
+}
+
+.gf-establishments .gf-pill:hover,
+.gf-establishments .gf-pill:focus {
+    border-color: var(--gf-olive);
+    background: var(--gf-beige-deep);
+    color: var(--gf-olive-dark);
+}
+
+/* Active pill: olive fill with white text. Large-enough UI text, and the fill
+   is a background rather than text colour, so restricted olive is in bounds
+   here (D4) — measured 4.6:1 against white. */
+.gf-establishments .gf-pill-active,
+.gf-establishments .gf-pill-active:hover,
+.gf-establishments .gf-pill-active:focus {
+    border-color: var(--gf-olive-dark);
+    background: var(--gf-olive-dark);
+    color: #FFF;
+}
+
+/* --- Result count --------------------------------------------------------- */
+
+.gf-filter-count {
+    margin: 0 0 var(--gf-space-8);
+    font-family: var(--gf-font-body);
+    font-size: 14px;
+    text-align: center;
+    color: var(--gf-muted);
+}
+
+/* --- Card grid ------------------------------------------------------------ */
+
+.gf-establishment-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--gf-space-6);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.gf-establishment-card {
+    display: flex;
+    flex-direction: column;
+    padding: var(--gf-space-5);
+    border: 1px solid var(--gf-rule);
+    border-radius: var(--gf-radius-card);
+    background: #FFF;
+    box-shadow: var(--gf-shadow-card-rest);
+    transition: var(--gf-transition-card);
+}
+
+.gf-establishment-card:hover {
+    transform: var(--gf-lift-card-hover);
+    box-shadow: var(--gf-shadow-card-hover);
+}
+
+/* Anyone who has asked their system not to animate gets the shadow change
+   without the movement. */
+@media (prefers-reduced-motion: reduce) {
+    .gf-establishment-card,
+    .gf-establishments .gf-pill {
+        transition: none;
+    }
+
+    .gf-establishment-card:hover {
+        transform: none;
+    }
+}
+
+.gf-card-media {
+    overflow: hidden;
+    border-radius: 8px;
+    background: var(--gf-sand-light);
+}
+
+/* A fixed ratio box, so a row of cards keeps its rhythm whatever the
+   photographs' own proportions are. */
+.gf-card-media img,
+.gf-card-media-blank {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 10;
+    object-fit: cover;
+}
+
+.gf-card-body {
+    /* Takes the slack, which is what pins the CTA to the card foot and lines
+       the CTAs up across a row. */
+    flex: 1 1 auto;
+    padding-top: var(--gf-space-4);
+}
+
+.gf-card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--gf-space-2);
+    margin: 0 0 var(--gf-space-3);
+}
+
+.gf-tag {
+    display: inline-block;
+    padding: 3px var(--gf-space-2);
+    border-radius: 3px;
+    font-family: var(--gf-font-body);
+    font-size: var(--gf-pill-size);
+    font-weight: 600;
+    letter-spacing: var(--gf-pill-tracking);
+    text-transform: uppercase;
+}
+
+/* Type pill, tinted per type; location pill, neutral. Both carry their meaning
+   in the word, never in the colour alone. */
+.gf-tag-type {
+    background: #F1EADB;
+    color: #6B4E16;
+}
+
+.gf-tag-hotel {
+    background: #E7EDD9;
+    color: var(--gf-olive-dark);
+}
+
+.gf-tag-place {
+    background: #ECECEC;
+    color: var(--gf-charcoal);
+}
+
+.gf-card-name {
+    margin: 0 0 var(--gf-space-3);
+    font-family: var(--gf-font-display);
+    font-size: var(--gf-h3-size);
+    line-height: 1.3;
+    color: var(--gf-heading);
+}
+
+.gf-card-text {
+    font-family: var(--gf-font-body);
+    font-size: var(--gf-card-body-size);
+    line-height: var(--gf-card-body-lh);
+    color: var(--gf-charcoal);
+}
+
+.gf-card-cta {
+    margin: var(--gf-space-5) 0 0;
+}
+
+.gf-establishments .gf-card-cta a {
+    font-family: var(--gf-font-body);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: var(--gf-pill-tracking);
+    text-transform: uppercase;
+    text-decoration: underline;
+    color: var(--gf-olive-dark);
+}
+
+.gf-establishments .gf-card-cta a:hover,
+.gf-establishments .gf-card-cta a:focus {
+    color: var(--gf-olive-hover);
+}
+
+.gf-cta-mark {
+    margin-left: var(--gf-space-1);
+}
+
+/* --- Empty state (AC-6) --------------------------------------------------- */
+
+.gf-establishments-empty {
+    padding: var(--gf-space-20) var(--gf-space-6);
+    border: 1px solid var(--gf-rule);
+    border-radius: var(--gf-radius-card);
+    background: var(--gf-beige);
+    text-align: center;
+}
+
+.gf-empty-message {
+    margin: 0 0 var(--gf-space-3);
+    font-family: var(--gf-font-display);
+    font-size: var(--gf-h2-size-mobile);
+    color: var(--gf-heading);
+}
+
+.gf-empty-help {
+    margin: 0;
+    font-family: var(--gf-font-body);
+    font-size: var(--gf-body-size);
+    color: var(--gf-charcoal);
+}
+
+.gf-establishments .gf-empty-help a {
+    font-weight: 600;
+    text-decoration: underline;
+    color: var(--gf-olive-dark);
+}
+
+/* --- Pager (AC-7) --------------------------------------------------------- */
+
+.gf-pager {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: var(--gf-space-3);
+    margin-top: var(--gf-space-10);
+}
+
+.gf-pager-pages {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--gf-space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.gf-establishments .gf-pager-page,
+.gf-establishments .gf-pager-step {
+    display: inline-block;
+    /* 44px minimum touch target (WCAG 2.5.5). */
+    min-width: 44px;
+    padding: 11px var(--gf-space-3);
+    border: 1px solid var(--gf-rule);
+    border-radius: var(--gf-radius-btn);
+    background: #FFF;
+    font-family: var(--gf-font-body);
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+    text-decoration: none;
+    color: var(--gf-charcoal);
+}
+
+.gf-establishments .gf-pager-page:hover,
+.gf-establishments .gf-pager-step:hover {
+    border-color: var(--gf-olive);
+    color: var(--gf-olive-dark);
+}
+
+.gf-establishments .gf-pager-current {
+    border-color: var(--gf-olive-dark);
+    background: var(--gf-olive-dark);
+    color: #FFF;
+}
+
+/* --- Responsive: 3 / 2 / 1 columns --------------------------------------- */
+
+@media (max-width: 991px) {
+    .gf-establishment-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .gf-establishments-title {
+        font-size: var(--gf-h2-size);
+    }
+}
+
+@media (max-width: 767px) {
+    .gf-establishments {
+        padding-bottom: var(--gf-space-15);
+    }
+
+    .gf-establishment-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .gf-establishments-hero {
+        padding: var(--gf-space-10) 0 var(--gf-space-6);
+    }
+
+    .gf-establishments-title {
+        font-size: var(--gf-hero-size-mobile);
+    }
+
+    /* The pill row scrolls sideways INSIDE ITSELF rather than letting the page
+       scroll (AC-4). Wrapping instead would push the grid below the fold on a
+       360px screen once a handful of countries are in the data. */
+    .gf-filter-pills {
+        flex-wrap: nowrap;
+        justify-content: flex-start;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: var(--gf-space-2);
+    }
+
+    .gf-filter-pills > li {
+        flex: 0 0 auto;
+    }
+}
 
 
 /* ==========================================================================
