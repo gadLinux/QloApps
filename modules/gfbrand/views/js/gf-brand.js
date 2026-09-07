@@ -94,16 +94,80 @@
     /* ==========================================================================
      * Booking questionnaire — Story 1.12
      * Conditional establishment select, live character counters, validation
+     *
+     * AC-10: everything here is additive. The country and establishment
+     * selects already work — every establishment is a real, submittable
+     * <option> from first render (AC-3) — with no script at all; this only
+     * narrows which of those options are visible once a country is chosen,
+     * which is what makes "JavaScript disabled" and "no country chosen yet"
+     * look like the exact same, correct state: every establishment shown.
      * ========================================================================== */
 
-    // TO BE ADDED BY STORY 1.12
+    function initInquiryEstablishmentFilter() {
+        var countrySelect = document.querySelector('[data-gf-country-select]');
+        var establishmentSelect = document.querySelector('[data-gf-establishment-select]');
+
+        if (!countrySelect || !establishmentSelect) {
+            return;
+        }
+
+        var options = Array.prototype.slice.call(establishmentSelect.options);
+
+        function applyFilter() {
+            var country = countrySelect.value;
+
+            options.forEach(function (option) {
+                if (!option.value) {
+                    return; // "Not sure yet" always stays.
+                }
+
+                var matches = !country || option.getAttribute('data-gf-country') === country;
+                option.hidden = !matches;
+
+                if (!matches && option.selected) {
+                    establishmentSelect.value = '';
+                }
+            });
+        }
+
+        countrySelect.addEventListener('change', applyFilter);
+        applyFilter();
+    }
+
+    function initInquiryReferralOther() {
+        var select = document.querySelector('[data-gf-referral-select]');
+        var otherField = document.querySelector('.gf-referral-other');
+
+        if (!select || !otherField) {
+            return;
+        }
+
+        function toggle() {
+            var isOther = select.value === 'other';
+            otherField.hidden = !isOther;
+        }
+
+        select.addEventListener('change', toggle);
+        toggle();
+    }
+
+    if (typeof window.addEventListener === 'function') {
+        window.addEventListener('DOMContentLoaded', function () {
+            initInquiryEstablishmentFilter();
+            initInquiryReferralOther();
+        });
+    }
 
 
     /* ==========================================================================
      * Honeypot spam protection (forms) — Story 1.12
      * Hidden field that bots fill but humans never see
+     *
+     * Nothing to add here: the honeypot (.gf-hp) is hidden by CSS alone
+     * (position off-screen, no display:none — see gf-brand.css §6) and
+     * rejected server-side in controllers/front/inquiry.php. A CSS-only,
+     * server-checked honeypot needs no script, which also means it still
+     * works — and still catches bots — with JavaScript disabled.
      * ========================================================================== */
-
-    // TO BE ADDED BY STORY 1.12
 
 })();

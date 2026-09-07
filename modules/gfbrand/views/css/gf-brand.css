@@ -782,7 +782,196 @@ body:not(.index) #header .shopping_cart > a:hover {
    6. Booking questionnaire form — Story 1.12
    ========================================================================== */
 
-/* TO BE ADDED BY STORY 1.12 */
+.gf-inquiry {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 40px 20px 80px;
+}
+
+.gf-inquiry-title {
+    font-family: var(--gf-font-display, 'DM Serif Display', serif);
+    color: var(--gf-ink);
+    margin-bottom: 8px;
+}
+
+.gf-inquiry-reassurance {
+    color: var(--gf-text);
+    margin-bottom: 32px;
+}
+
+.gf-inquiry-sent {
+    text-align: center;
+    padding: 60px 20px;
+}
+
+/* .gf-btn is not scoped to the card: this is the first CTA in the module
+   that needs one outside .gf-establishment-card. Story 1.6 (transaction
+   rebrand) is expected to consolidate this with whatever it builds for
+   cart/checkout buttons; until it lands, this is the one definition. */
+.gf-btn {
+    display: inline-block;
+    font: inherit;
+    font-weight: 600;
+    text-align: center;
+    text-decoration: none;
+    border: none;
+    border-radius: 4px;
+    padding: 12px 28px;
+    cursor: pointer;
+}
+
+.gf-btn--primary {
+    background-color: var(--gf-btn-bg);
+    color: #fff;
+}
+
+.gf-btn--primary:hover,
+.gf-btn--primary:focus {
+    background-color: var(--gf-olive-hover);
+}
+
+.gf-inquiry-errors {
+    background-color: #fdf2f2;
+    border: 1px solid #c0392b;
+    border-radius: 4px;
+    padding: 16px 20px;
+    margin-bottom: 24px;
+}
+
+.gf-inquiry-errors-title {
+    font-weight: 600;
+    margin: 0 0 8px;
+    color: #942a25;
+}
+
+.gf-inquiry-errors ul {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.gf-inquiry-errors a {
+    color: #942a25;
+    text-decoration: underline;
+}
+
+.gf-inquiry-group {
+    border: none;
+    border-top: 1px solid var(--gf-rule);
+    padding: 24px 0;
+    margin: 0;
+}
+
+.gf-inquiry-group legend {
+    font-family: var(--gf-font-display, 'DM Serif Display', serif);
+    font-size: 1.1rem;
+    color: var(--gf-ink);
+    padding: 0;
+    margin-bottom: 16px;
+    width: auto;
+    border: none;
+}
+
+.gf-field {
+    margin-bottom: 18px;
+}
+
+.gf-field label,
+.gf-field .gf-field-legend {
+    display: block;
+    font-weight: 600;
+    color: var(--gf-charcoal);
+    margin-bottom: 6px;
+}
+
+.gf-field input[type="text"],
+.gf-field input[type="email"],
+.gf-field input[type="tel"],
+.gf-field input[type="number"],
+.gf-field select,
+.gf-field textarea {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 12px;
+    border: 1px solid var(--gf-rule);
+    border-radius: 4px;
+    font: inherit;
+    color: var(--gf-charcoal);
+    background-color: #fff;
+}
+
+.gf-field input:focus,
+.gf-field select:focus,
+.gf-field textarea:focus {
+    outline: 2px solid var(--gf-olive-dark);
+    outline-offset: 1px;
+}
+
+.gf-field-hint {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--gf-muted);
+    margin-bottom: 6px;
+}
+
+.gf-field-inline {
+    display: flex;
+    gap: 12px;
+}
+
+.gf-field-inline select {
+    flex: 1;
+}
+
+.gf-field--checkbox label {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-weight: normal;
+}
+
+.gf-field--checkbox input[type="checkbox"] {
+    margin-top: 4px;
+    flex-shrink: 0;
+}
+
+.gf-field--error input,
+.gf-field--error select,
+.gf-field--error textarea {
+    border-color: #c0392b;
+}
+
+.gf-field-error {
+    color: #942a25;
+    font-size: 0.85rem;
+    margin: 6px 0 0;
+}
+
+.gf-referral-other {
+    margin-top: 8px;
+}
+
+/* Honeypot (AC-7): off-screen rather than display:none. A script that reads
+   computed style to skip hidden inputs is defeated by the same trick a
+   sighted, mouse-using bot operator would need to defeat visually — this
+   field is simply never where anything looks. */
+.gf-hp {
+    position: absolute;
+    left: -9999px;
+    top: -9999px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+}
+
+.gf-inquiry-submit {
+    margin-top: 8px;
+}
+
+@media (max-width: 767px) {
+    .gf-field-inline {
+        flex-wrap: wrap;
+    }
+}
 
 
 /* ==========================================================================

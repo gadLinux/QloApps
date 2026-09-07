@@ -213,6 +213,36 @@ class GFEstablishmentRepository
     }
 
     /**
+     * Every establishment, every country, ordered by name — story 1.12.
+     *
+     * The questionnaire's establishment select is one query covering every
+     * country rather than one query per selection: AC-10 requires the
+     * country/establishment dependency to degrade to "show all establishments"
+     * with JavaScript disabled, and the simplest way to guarantee that is to
+     * never depend on JavaScript to fetch the options in the first place. The
+     * front controller renders every option up front, tagged with its
+     * country; a small script narrows what is visible on change, and doing
+     * nothing at all is what "show all" already looks like.
+     *
+     * @param  int $idLang
+     * @return array[] Each ['id_product' => int, 'name' => string, 'gf_country' => string].
+     */
+    public function findAllForSelect($idLang)
+    {
+        $rows = $this->readDb()->executeS(
+            'SELECT p.`id_product`, pl.`name`, p.`gf_country`
+             FROM `' . $this->table() . '` p
+             INNER JOIN `' . _DB_PREFIX_ . 'product_lang` pl
+                     ON pl.`id_product` = p.`id_product`
+                    AND pl.`id_lang` = ' . (int) $idLang . '
+             WHERE ' . $this->listableCondition('p') . '
+             ORDER BY pl.`name` ASC'
+        );
+
+        return is_array($rows) ? $rows : [];
+    }
+
+    /**
      * Rows the importer owns. Products created by hand have no source id and
      * are therefore never matched by a reload.
      */

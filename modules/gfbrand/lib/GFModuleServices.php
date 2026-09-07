@@ -87,10 +87,17 @@ class GFModuleServices
             'lib/Service/GFEstablishmentListingResult.php',
             'lib/Service/GFEstablishmentListing.php',
             'lib/Service/GFRoomTypeBookability.php',
+            'lib/Service/GFInquiryValidationResult.php',
+            'lib/Service/GFInquiryValidator.php',
             // Presentation
             'lib/Admin/GFImportPanel.php',
             'lib/Front/GFSearchPanel.php',
             'lib/Front/GFInquiryLink.php',
+            // ObjectModel — extends a PrestaShop core class, so it must load
+            // after the framework itself, which is guaranteed here: nothing
+            // constructs GFModuleServices before PrestaShop's own classes are
+            // available.
+            'classes/GfInquiry.php',
         ];
 
         foreach ($classes as $relativePath) {

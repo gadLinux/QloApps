@@ -97,3 +97,29 @@ if (!class_exists('Tools')) {
         }
     }
 }
+
+if (!class_exists('Validate')) {
+    /**
+     * Simplified equivalents of the two rules GFInquiryValidator relies on.
+     * The real regexes (classes/Validate.php) are exercised by the
+     * integration suite, which loads PrestaShop's actual classes; this stub
+     * only has to agree with them on the well-formed and obviously-malformed
+     * cases the unit tests assert.
+     */
+    class Validate
+    {
+        public static function isEmail($email)
+        {
+            return (bool) preg_match('/^[^@\s]+@[^@\s]+\.[^@\s]+$/u', (string) $email);
+        }
+
+        public static function isDate($date)
+        {
+            if (!preg_match('/^([0-9]{4})-(0?[0-9]|1[0-2])-(0?[0-9]|[1-2][0-9]|3[01])( [0-9]{2}:[0-9]{2}:[0-9]{2})?$/', (string) $date, $matches)) {
+                return false;
+            }
+
+            return checkdate((int) $matches[2], (int) $matches[3], (int) $matches[1]);
+        }
+    }
+}

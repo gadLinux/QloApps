@@ -63,6 +63,16 @@ class GFRecordingSchemaHelper extends GFSchemaHelper
         return $this->record('dropIndex', $table, $indexName, !$this->indexExists($table, $indexName));
     }
 
+    public function createTable($table, $body)
+    {
+        return $this->record('createTable', $table, '', $this->tableExists($table));
+    }
+
+    public function dropTable($table)
+    {
+        return $this->record('dropTable', $table, '', !$this->tableExists($table));
+    }
+
     /**
      * @return array<int, array{op: string, table: string, name: string}>
      */
@@ -77,6 +87,10 @@ class GFRecordingSchemaHelper extends GFSchemaHelper
     public function getOperationKeys()
     {
         return array_map(function (array $operation) {
+            if ($operation['name'] === '') {
+                return $operation['op'] . ':' . $operation['table'];
+            }
+
             return $operation['op'] . ':' . $operation['table'] . '.' . $operation['name'];
         }, $this->operations);
     }

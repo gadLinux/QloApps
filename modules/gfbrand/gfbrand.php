@@ -160,6 +160,62 @@ class gfbrand extends Module
 
         $this->importEstablishmentsOnFirstInstall();
 
+        if (!$this->installInquiriesTab()) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * The admin inbox for story 1.12's questionnaire — AC-6.
+     *
+     * Parented under Customer Service: an enquiry pipeline (new / in
+     * progress / quoted / won / lost) is closer in kind to a support inbox
+     * than to a catalogue or order screen.
+     *
+     * @return bool
+     */
+    private function installInquiriesTab()
+    {
+        $idTab = (int) Tab::getIdFromClassName('AdminGfInquiries');
+
+        if (!$idTab) {
+            $tab = new Tab();
+            $tab->active = 1;
+            $tab->class_name = 'AdminGfInquiries';
+            $tab->module = $this->name;
+            $tab->id_parent = (int) Tab::getIdFromClassName('AdminParentCustomer');
+            $tab->name = [];
+            foreach (Language::getLanguages(false) as $language) {
+                $tab->name[(int) $language['id_lang']] = 'GF Enquiries';
+            }
+
+            // Tab::add() also calls Tab::initAccess(), which grants the
+            // *installing employee's* profile access to the new tab — and
+            // returns false, with the row already inserted, when there is no
+            // employee in context. That is exactly this project's deploy
+            // path (make dev-story-deploy runs a bare CLI script, not an
+            // authenticated admin request), so add()'s return value is not
+            // trusted here: re-querying for the row it created either way is
+            // what tells us whether this actually failed.
+            $tab->add();
+            $idTab = (int) Tab::getIdFromClassName('AdminGfInquiries');
+
+            if (!$idTab) {
+                return false;
+            }
+        }
+
+        // SuperAdmin (profile 1) always has access to every tab; granted
+        // directly so the tab is usable even when initAccess() above had no
+        // employee to seed rights from. Idempotent, so re-running this is
+        // harmless once a real admin session has already set permissions.
+        Db::getInstance()->execute(
+            'REPLACE INTO `' . _DB_PREFIX_ . 'access` (`id_profile`, `id_tab`, `view`, `add`, `edit`, `delete`)
+             VALUES (1, ' . $idTab . ', 1, 1, 1, 1)'
+        );
+
         return true;
     }
 
@@ -243,6 +299,12 @@ class gfbrand extends Module
      */
     public function uninstall()
     {
+        $idTab = (int) Tab::getIdFromClassName('AdminGfInquiries');
+        if ($idTab) {
+            $tab = new Tab($idTab);
+            $tab->delete();
+        }
+
         /* Delete the main configuration values first — always exists. */
         Db::getInstance()->execute(
             'DELETE FROM `' . _DB_PREFIX_ . 'configuration` WHERE `name` LIKE \''
@@ -579,6 +641,18 @@ class gfbrand extends Module
     }
 
     /**
+     * The raw establishment repository — story 1.12's questionnaire needs
+     * the country and establishment lists directly, not the paginated
+     * listing story 1.9 built around them.
+     *
+     * @return GFEstablishmentRepository
+     */
+    public function getEstablishmentRepository()
+    {
+        return $this->services->getEstablishmentRepository();
+    }
+
+    /**
      * Where "Inquire to Book" goes — story 1.10.
      *
      * @return GFInquiryLink
@@ -640,6 +714,21 @@ class gfbrand extends Module
                     'fc' => 'module',
                     'module' => 'gfbrand',
                     'controller' => 'establishments',
+                ],
+            ],
+            // Story 1.12, AC-11: renamed from the live site's "Internal
+            // Booking Questionnaire" — public and customer-facing, so
+            // "Internal" was never accurate. The old /internal-booking-
+            // questionnaire/ path 301s here from Nginx (deploy/nginx/conf.d),
+            // not from PHP — same pattern as the establishments 301 (A6).
+            'module-gfbrand-inquiry' => [
+                'controller' => 'inquiry',
+                'rule' => 'booking-questionnaire',
+                'keywords' => [],
+                'params' => [
+                    'fc' => 'module',
+                    'module' => 'gfbrand',
+                    'controller' => 'inquiry',
                 ],
             ],
         ];

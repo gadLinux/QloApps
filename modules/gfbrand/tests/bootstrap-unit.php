@@ -42,9 +42,12 @@ $classes = [
     '/lib/Service/GFEstablishmentListingResult.php',
     '/lib/Service/GFEstablishmentListing.php',
     '/lib/Service/GFRoomTypeBookability.php',
+    '/lib/Service/GFInquiryValidationResult.php',
+    '/lib/Service/GFInquiryValidator.php',
     // Migrations
     '/migrations/GFMigration20260903001Establishments.php',
     '/migrations/GFMigration20260903002HotelSourceId.php',
+    '/migrations/GFMigration20260907001BookingInquiry.php',
 ];
 
 foreach ($classes as $relativePath) {
