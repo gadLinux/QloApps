@@ -116,6 +116,15 @@ class gfbrand extends Module
             return false;
         }
 
+        /* Booking-restriction assignment (story 1.10 extension) needs to run
+         * before the room list template is rendered, on every request that
+         * can render it — including the AJAX re-render CategoryController
+         * performs for its own filter/sort controls, which never fires
+         * actionFrontControllerSetMedia (see hookActionDispatcher). */
+        if (!$this->registerHook('actionDispatcher')) {
+            return false;
+        }
+
         /* Booking search panel — refills it with the visitor's last search so
          * they do not retype a destination, dates and occupancy they have
          * already given us. wkroomsearchblock exposes this hook precisely so
@@ -330,7 +339,19 @@ class gfbrand extends Module
                 $this->context->controller->page_title = $gfShopName . ' — ' . $this->context->controller->page_title;
             }
         }
+    }
 
+    /**
+     * actionDispatcher fires for every front-office request — including the
+     * AJAX request CategoryController serves for its own filter/sort widget
+     * (wkhotelfilterblock.js), which re-fetches _partials/room_type_list.tpl
+     * via Smarty and never calls actionFrontControllerSetMedia (that hook is
+     * gated on $this->ajax being false). Assigning the restriction map here,
+     * before the controller renders anything, is what keeps the two request
+     * shapes agreeing (Story 1.10 extension).
+     */
+    public function hookActionDispatcher($params)
+    {
         $this->assignBookingRestrictions();
     }
 
@@ -578,6 +599,22 @@ class gfbrand extends Module
     public function getHotelRepository()
     {
         return $this->services->getHotelRepository();
+    }
+
+    /**
+     * Whether a room type belongs to a hotel that is not cleared for online
+     * booking — story 1.10's booking-consistency extension.
+     *
+     * Exposed publicly so the CartController override (layer 5 — that
+     * controller fires no hook on the add-to-cart path) can ask the same
+     * question the card and the room list already answer, rather than
+     * re-deriving the rule and risking it drifting from theirs.
+     *
+     * @return GFRoomTypeBookability
+     */
+    public function getRoomTypeBookability()
+    {
+        return $this->services->getRoomTypeBookability();
     }
 
     /**

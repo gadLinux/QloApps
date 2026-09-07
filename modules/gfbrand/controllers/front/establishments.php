@@ -76,6 +76,14 @@ class GfbrandEstablishmentsModuleFrontController extends ModuleFrontController
         $this->context->smarty->assign([
             'gf_pills' => $this->decoratePills($filter),
             'gf_establishments' => $this->decorateCards($result->getEstablishments()),
+            // Raw on purpose: {l s='...' mod='gfbrand' sprintf=[...]} routes
+            // through Translate::getModuleTranslation(), which
+            // htmlspecialchars()'s the whole result (including substituted
+            // sprintf args) as long as the module ships a translations file
+            // (it does — modules/gfbrand/translations/en.php). Escaping here
+            // too would double-encode a legitimate country name containing
+            // '&' or similar. Verified: an unrecognised country carrying
+            // <script> renders as inert text, not markup.
             'gf_selected_country' => $filter->getSelected(),
             'gf_is_showing_all' => $filter->isShowingAll(),
             'gf_total' => $result->getTotal(),
