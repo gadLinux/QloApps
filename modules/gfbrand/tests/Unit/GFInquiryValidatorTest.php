@@ -16,12 +16,19 @@ use PHPUnit\Framework\Attributes\Test;
 #[CoversClass(GFInquiryValidationResult::class)]
 class GFInquiryValidatorTest extends TestCase
 {
+    /** Fixed rather than the real current year, so this suite is not
+     *  flaky as time passes — the validator's travel-date window slides
+     *  against whatever year it is handed (see the sliding-window tests
+     *  below), and every other test just needs *a* stable year to build
+     *  submissions against. */
+    const FIXED_YEAR = 2027;
+
     /** @var GFInquiryValidator */
     private $validator;
 
     protected function setUp(): void
     {
-        $this->validator = new GFInquiryValidator();
+        $this->validator = new GFInquiryValidator(self::FIXED_YEAR);
     }
 
     private function context(array $overrides = [])
@@ -215,15 +222,50 @@ class GFInquiryValidatorTest extends TestCase
         $this->assertSame('invalid', $result->errorCodeFor('travel_date'));
     }
 
+    /** The window slides with the year it is built against (FIXED_YEAR + TRAVEL_YEAR_SPAN),
+     *  so these tests speak in terms of the injected clock, never an absolute year. */
     #[Test]
-    public function a_travel_year_outside_2026_to_2030_is_rejected(): void
+    public function a_travel_year_before_the_current_year_is_rejected(): void
     {
         $result = $this->validator->validate(
-            $this->validSubmission(['travel_day' => '1', 'travel_month' => '1', 'travel_year' => '2031']),
+            $this->validSubmission(['travel_day' => '1', 'travel_month' => '1', 'travel_year' => (string) (self::FIXED_YEAR - 1)]),
             $this->context()
         );
 
         $this->assertSame('invalid', $result->errorCodeFor('travel_date'));
+    }
+
+    #[Test]
+    public function a_travel_year_past_the_window_is_rejected(): void
+    {
+        $validator = new GFInquiryValidator(self::FIXED_YEAR);
+        $result = $validator->validate(
+            $this->validSubmission(['travel_day' => '1', 'travel_month' => '1', 'travel_year' => (string) ($validator->maxTravelYear() + 1)]),
+            $this->context()
+        );
+
+        $this->assertSame('invalid', $result->errorCodeFor('travel_date'));
+    }
+
+    #[Test]
+    public function the_travel_window_spans_travelling_years_from_now_to_the_span_limit(): void
+    {
+        $validator = new GFInquiryValidator(self::FIXED_YEAR);
+        $this->assertSame(self::FIXED_YEAR, $validator->minTravelYear());
+        $this->assertSame(self::FIXED_YEAR + GFInquiryValidator::TRAVEL_YEAR_SPAN - 1, $validator->maxTravelYear());
+
+        // Both edges of the window are bookable travel dates.
+        $first = $validator->validate(
+            $this->validSubmission(['travel_day' => '1', 'travel_month' => '1', 'travel_year' => (string) $validator->minTravelYear()]),
+            $this->context()
+        );
+        $last = $validator->validate(
+            $this->validSubmission(['travel_day' => '1', 'travel_month' => '1', 'travel_year' => (string) $validator->maxTravelYear()]),
+            $this->context()
+        );
+
+        $this->assertTrue($first->isValid());
+        $this->assertTrue($last->isValid());
     }
 
     #[Test]

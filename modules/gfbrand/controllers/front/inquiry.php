@@ -94,8 +94,8 @@ class GfbrandInquiryModuleFrontController extends ModuleFrontController
             return;
         }
 
-        $this->renderForm(new GFInquiryValidationResult(), $this->applySearchPreference(
-            $this->prefillFromHotelParam()
+        $this->renderForm(new GFInquiryValidationResult(), $this->detectHomeCountry(
+            $this->applySearchPreference($this->prefillFromHotelParam())
         ));
     }
 
@@ -268,10 +268,18 @@ class GfbrandInquiryModuleFrontController extends ModuleFrontController
     private function renderForm(GFInquiryValidationResult $result, array $input)
     {
         $errors = $result->getErrors();
+        $validator = new GFInquiryValidator();
+
+        // Done here rather than in the GET prefill chain so it also applies
+        // when a failed submission re-renders: that path passes $_POST
+        // straight in, and the form always POSTs travel_year — empty string
+        // when unchosen — so only seeing blank as "not chosen" is what makes
+        // the default survive a validation round-trip.
+        $input = $this->defaultTravelYear(array_merge($this->emptyInput(), $input));
 
         $this->context->smarty->assign([
             'gf_inquiry_sent' => false,
-            'gf_input' => array_merge($this->emptyInput(), $input),
+            'gf_input' => $input,
             'gf_errors' => $errors,
             'gf_field_labels' => self::FIELD_LABELS,
             // AC-5, without JavaScript: the browser autofocuses whichever
@@ -291,7 +299,7 @@ class GfbrandInquiryModuleFrontController extends ModuleFrontController
             'gf_consent_text' => $this->consentText(),
             'gf_days' => range(1, 31),
             'gf_months' => range(1, 12),
-            'gf_years' => range(GFInquiryValidator::MIN_TRAVEL_YEAR, GFInquiryValidator::MAX_TRAVEL_YEAR),
+            'gf_years' => range($validator->minTravelYear(), $validator->maxTravelYear()),
         ]);
 
         $this->setTemplate('inquiry.tpl');
@@ -404,6 +412,75 @@ class GfbrandInquiryModuleFrontController extends ModuleFrontController
             if (!isset($input['children'])) {
                 $input['children'] = $preference->countChildren();
             }
+        }
+
+        return $input;
+    }
+
+    /**
+     * Offers a starting travel year on a fresh form: the current year, i.e.
+     * the first year of the window GFInquiryValidator validates against, so
+     * a guest who only wants "sometime this year" touches one select, not
+     * three — same "enter the minimum" reasoning as every other prefill here.
+     * Day and month stay blank: unlike the year they have no sensible
+     * default we can guess on the guest's behalf.
+     *
+     * Gaps only: it fills travel_year just when no more specific source put a
+     * year there — the search preference (which sets day, month and year
+     * together from a remembered check-in) or a value the guest themselves
+     * chose on a previous submission. Called from renderForm() after the
+     * merge with emptyInput(), so both the fresh-GET path and the re-render
+     * after a failed submission go through it, and "blank" is unambiguous:
+     * an empty string, never a missing key.
+     *
+     * @param  array $input
+     * @return array
+     */
+    private function defaultTravelYear(array $input)
+    {
+        if ((string) $input['travel_year'] === '') {
+            $input['travel_year'] = (int) date('Y');
+        }
+
+        return $input;
+    }
+
+    /**
+     * Defaults Home Country from the browser's Accept-Language header — one
+     * fewer field the guest has to touch, in the same "enter only the
+     * minimum" spirit as pre-filling the establishment and the last search.
+     *
+     * This is not new machinery: Tools::getCountry() is core PrestaShop,
+     * already enabled in this shop (PS_DETECT_COUNTRY), and already used
+     * for exactly this purpose elsewhere (tax/currency defaults at
+     * checkout). It reads the same header a browser always sends — no
+     * JavaScript, no geolocation permission prompt, nothing to ask the
+     * guest for — and falls back to the shop's configured default country
+     * when the header is missing or unparseable, so this always proposes
+     * something rather than leaving the select on its blank placeholder.
+     * It is still only ever a starting point: the field stays a required,
+     * fully-editable select, and server-side validation (AC-8) does not
+     * trust this any more than a guest's own choice.
+     *
+     * A more accurate alternative, GeoIP-by-address, is not wired up here:
+     * this install has no GeoLite2 database in tools/geoip, so it would be
+     * dead code — nothing to look up against — rather than a working
+     * feature. Tools::getCountry() already knows how to prefer it
+     * ($address argument) if that database is ever added.
+     *
+     * @param  array $input
+     * @return array
+     */
+    private function detectHomeCountry(array $input)
+    {
+        if (isset($input['home_country'])) {
+            return $input;
+        }
+
+        $iso = Country::getIsoById((int) Tools::getCountry());
+
+        if ($iso) {
+            $input['home_country'] = $iso;
         }
 
         return $input;

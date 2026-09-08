@@ -30,8 +30,45 @@ class GFInquiryValidator
 
     const MAX_ADULTS = 20;
     const MAX_CHILDREN = 20;
-    const MIN_TRAVEL_YEAR = 2026;
-    const MAX_TRAVEL_YEAR = 2030;
+
+    /** How many years, including the current one, the travel-date select spans. */
+    const TRAVEL_YEAR_SPAN = 5;
+
+    /** @var int */
+    private $minTravelYear;
+
+    /** @var int */
+    private $maxTravelYear;
+
+    /**
+     * @param int|null $currentYear Injected so the travel-date window is
+     *                 testable without the system clock; defaults to the
+     *                 real current year. The window was previously a fixed
+     *                 2026-2030, which would have started rejecting valid
+     *                 near-term travel dates the moment the calendar passed
+     *                 it — sliding it against "now" is the fix.
+     */
+    public function __construct($currentYear = null)
+    {
+        $this->minTravelYear = $currentYear !== null ? (int) $currentYear : (int) date('Y');
+        $this->maxTravelYear = $this->minTravelYear + self::TRAVEL_YEAR_SPAN - 1;
+    }
+
+    /**
+     * @return int
+     */
+    public function minTravelYear()
+    {
+        return $this->minTravelYear;
+    }
+
+    /**
+     * @return int
+     */
+    public function maxTravelYear()
+    {
+        return $this->maxTravelYear;
+    }
 
     /**
      * @param  array $input   Raw request values, as Tools::getValue() returns
@@ -188,7 +225,7 @@ class GFInquiryValidator
         }
 
         $year = (int) $year;
-        if ($year < self::MIN_TRAVEL_YEAR || $year > self::MAX_TRAVEL_YEAR) {
+        if ($year < $this->minTravelYear || $year > $this->maxTravelYear) {
             $result->addError('travel_date', 'invalid');
 
             return null;
