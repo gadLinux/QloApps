@@ -173,6 +173,20 @@ class GFModuleServices
     }
 
     /**
+     * The visitor's last search — story 1.12 reads it too, to pre-fill the
+     * questionnaire's travel date and party size, not only the booking
+     * panel.
+     *
+     * @return GFSearchPreferenceRepository
+     */
+    public function getSearchPreferenceRepository()
+    {
+        return $this->share('searchPreferenceRepository', function () {
+            return new GFSearchPreferenceRepository(Context::getContext()->cookie);
+        });
+    }
+
+    /**
      * Decorates the booking search panel with the visitor's last search.
      *
      * @return GFSearchPanel

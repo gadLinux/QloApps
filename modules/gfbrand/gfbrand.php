@@ -653,6 +653,17 @@ class gfbrand extends Module
     }
 
     /**
+     * The visitor's last search — story 1.12 reads dates and party size out
+     * of it to pre-fill the questionnaire.
+     *
+     * @return GFSearchPreferenceRepository
+     */
+    public function getSearchPreferenceRepository()
+    {
+        return $this->services->getSearchPreferenceRepository();
+    }
+
+    /**
      * Where "Inquire to Book" goes — story 1.10.
      *
      * @return GFInquiryLink

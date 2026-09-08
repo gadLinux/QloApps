@@ -94,7 +94,9 @@ class GfbrandInquiryModuleFrontController extends ModuleFrontController
             return;
         }
 
-        $this->renderForm(new GFInquiryValidationResult(), $this->prefillFromHotelParam());
+        $this->renderForm(new GFInquiryValidationResult(), $this->applySearchPreference(
+            $this->prefillFromHotelParam()
+        ));
     }
 
     /**
@@ -342,6 +344,69 @@ class GfbrandInquiryModuleFrontController extends ModuleFrontController
         }
 
         return [];
+    }
+
+    /**
+     * Fills travel date and party size from the visitor's last search — the
+     * same GFSearchPreference story 1.5 built to refill the booking panel.
+     * A guest who arrives at "Inquire to Book" from a hotel page they were
+     * just searching dates and occupancy on should not have to type either
+     * again; this is the same "enter the minimum" reasoning that already
+     * justified passing the establishment id through in the URL.
+     *
+     * Gaps only, same policy GFSearchMemory itself uses: nothing here
+     * overwrites what prefillFromHotelParam() (or, on a re-render, the
+     * guest's own prior input) already put in $input. Dates and party size
+     * are trip-level facts, not hotel-specific, so they are filled
+     * regardless of which hotel the preference remembers — unlike
+     * dest_country/id_product, which the ?hotel= link always wins on.
+     *
+     * @param  array $input
+     * @return array
+     */
+    private function applySearchPreference(array $input)
+    {
+        $preference = $this->module->getSearchPreferenceRepository()->find();
+
+        if ($preference === null) {
+            return $input;
+        }
+
+        if ($preference->datesAreStale(date('Y-m-d'))) {
+            // A check-in that has already passed is not a date to offer back.
+            $preference = $preference->withoutDates();
+        }
+
+        if ($preference->hasDates() && !isset($input['travel_day'])) {
+            $checkIn = date_create($preference->dateFrom);
+            $checkOut = date_create($preference->dateTo);
+
+            if ($checkIn) {
+                $input['travel_day'] = (int) $checkIn->format('j');
+                $input['travel_month'] = (int) $checkIn->format('n');
+                $input['travel_year'] = (int) $checkIn->format('Y');
+            }
+
+            if ($checkIn && $checkOut && !isset($input['duration'])) {
+                $nights = (int) round(($checkOut->getTimestamp() - $checkIn->getTimestamp()) / 86400);
+
+                if ($nights > 0) {
+                    $input['duration'] = $nights . ' ' . ($nights === 1 ? 'day' : 'days');
+                }
+            }
+        }
+
+        if (!empty($preference->occupancies)) {
+            if (!isset($input['adults'])) {
+                $input['adults'] = $preference->countAdults();
+            }
+
+            if (!isset($input['children'])) {
+                $input['children'] = $preference->countChildren();
+            }
+        }
+
+        return $input;
     }
 
     /**
