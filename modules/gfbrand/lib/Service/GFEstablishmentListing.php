@@ -133,7 +133,7 @@ class GFEstablishmentListing
      * @param  array $row
      * @return array
      */
-    private function toCard(array $row)
+    protected function toCard(array $row)
     {
         $type = isset($row['gf_type']) ? (string) $row['gf_type'] : '';
         $certification = isset($row['gf_certification']) ? (string) $row['gf_certification'] : '';
@@ -167,5 +167,17 @@ class GFEstablishmentListing
             // controller's job, not this layer's.
             'cta_url' => $cta->getExternalUrl(),
         ];
+    }
+
+    /**
+     * Exposed so other pages (the homepage strip, story 1.13) build the exact
+     * same card shape rather than forking the logic.
+     *
+     * @param  array $row
+     * @return array
+     */
+    public function toCardForTest(array $row)
+    {
+        return $this->toCard($row);
     }
 }

@@ -39,6 +39,7 @@ $classes = [
     '/lib/Service/GFAdvisorPartnerImporter.php',
     '/lib/Service/GFAdvisorPartnerListing.php',
     '/lib/Service/GFAssetUploader.php',
+    '/lib/Service/GFHomepage.php',
     '/lib/Service/GFImageLocator.php',
     '/lib/Service/GFReadableImage.php',
     '/lib/Service/GFPlaceholderImageGenerator.php',

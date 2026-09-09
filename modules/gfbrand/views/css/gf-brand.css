@@ -1765,3 +1765,331 @@ button.nav_toggle,
         transition: none;
     }
 }
+
+
+/* ==========================================================================
+ * 10. Homepage assembly — Story 1.13
+ * Pillars, featured strip, Why Choose Us. The hero lives in the theme header
+ * (already restyled in §1); this owns the middle sections.
+ * ========================================================================== */
+
+/* --- Pillars (AC-3) --- */
+
+/* Four equal columns separated by hairline rules, not card borders. The
+ * border sits on every column except the first, so a single rule divides the
+ * pair. On a two-up mobile layout the same trick gives one vertical rule. */
+.gf-pillars {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    border-top: 1px solid var(--gf-rule, #E5E9E6);
+    border-bottom: 1px solid var(--gf-rule, #E5E9E6);
+}
+
+.gf-pillar {
+    padding: 40px 28px;
+    border-left: 1px solid var(--gf-rule, #E5E9E6);
+}
+
+.gf-pillar:first-child {
+    border-left: 0;
+}
+
+/* A pillar is one unit, top to bottom. The link variant wraps everything in a
+ * single anchor; the disclosure variant uses a button for the same footprint. */
+.gf-pillar-link,
+.gf-pillar-disclosure {
+    display: block;
+    height: 100%;
+}
+
+.gf-pillar-link,
+.gf-pillar-trigger {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: 0;
+    padding: 0;
+    font-family: var(--gf-font-body, sans-serif);
+    color: inherit;
+    cursor: pointer;
+}
+
+/* The filled olive circle icon, shared by all four pillars. */
+.gf-pillar-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    margin-bottom: 20px;
+    border-radius: 50%;
+    background: var(--gf-olive-dark, #556B2F);
+    color: #FFFFFF;
+}
+
+.gf-pillar-title {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gf-heading, #1A1C1B);
+    margin: 0 0 10px;
+}
+
+.gf-pillar-copy {
+    font-size: var(--gf-card-body-size, 14px);
+    line-height: var(--gf-card-body-lh, 1.55);
+    color: var(--gf-charcoal, #2C302E);
+    margin: 0 0 18px;
+}
+
+.gf-pillar-cta {
+    margin-top: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--gf-link, #55721c);
+}
+
+.gf-pillar-arrow {
+    font-size: 16px;
+}
+
+.gf-pillar-link:hover .gf-pillar-cta,
+.gf-pillar-trigger:hover .gf-pillar-cta {
+    color: var(--gf-link-hover, #6b8e23);
+}
+
+.gf-pillar-link:focus-visible,
+.gf-pillar-trigger:focus-visible {
+    outline: 2px solid var(--gf-olive-dark, #556B2F);
+    outline-offset: 4px;
+}
+
+/* --- Featured strip (AC-4) --- */
+
+.gf-featured {
+    padding: 72px 0;
+    background: var(--gf-beige, #FDFBF7);
+}
+
+.gf-featured-title {
+    font-family: var(--gf-font-display, Georgia, serif);
+    font-size: var(--gf-h2-size, 34px);
+    line-height: var(--gf-h2-lh, 1.25);
+    color: var(--gf-heading, #1A1C1B);
+    text-align: center;
+    margin: 0 0 40px;
+}
+
+.gf-featured-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 28px;
+}
+
+.gf-featured-more {
+    text-align: center;
+    margin: 40px 0 0;
+}
+
+.gf-featured-more a {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--gf-link, #55721c);
+    text-decoration: none;
+}
+
+.gf-featured-more a:hover {
+    color: var(--gf-link-hover, #6b8e23);
+    text-decoration: underline;
+}
+
+/* --- Why Choose Us (AC-1) --- */
+
+.gf-why {
+    padding: 72px 0;
+}
+
+.gf-why-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 56px;
+    align-items: center;
+}
+
+.gf-why-photo img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 4px;
+}
+
+.gf-why-eyebrow {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gf-sage, #657a5a);
+    margin: 0 0 10px;
+}
+
+.gf-why-title {
+    font-family: var(--gf-font-display, Georgia, serif);
+    font-size: var(--gf-h2-size, 34px);
+    line-height: var(--gf-h2-lh, 1.25);
+    color: var(--gf-heading, #1A1C1B);
+    margin: 0 0 24px;
+}
+
+.gf-why-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.gf-why-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 10px 0;
+}
+
+/* Filled olive circle tick, echoing the pillar icons. */
+.gf-why-tick {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    margin-top: 1px;
+    border-radius: 50%;
+    background: var(--gf-olive-dark, #556B2F);
+    color: #FFFFFF;
+    font-size: 14px;
+}
+
+.gf-why-item-text {
+    font-size: 16px;
+    line-height: var(--gf-body-lh, 1.65);
+    color: var(--gf-charcoal, #2C302E);
+}
+
+/* --- Embedded trust drawers (homepage) --- */
+
+/* On the homepage the pillar row is the trigger, so the drawer sits directly
+ * beneath the pillar it belongs to. The hairline top border the standalone
+ * drawer carries would double up against the pillar rule, so it is dropped. */
+.gf-trust-drawer--embedded {
+    border-top: 0;
+}
+
+/* --- Responsive (AC-8) --- */
+
+@media (max-width: 991px) {
+    .gf-pillars {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .gf-pillar:nth-child(3) {
+        border-left: 0;
+        border-top: 1px solid var(--gf-rule, #E5E9E6);
+    }
+
+    .gf-pillar:nth-child(4) {
+        border-top: 1px solid var(--gf-rule, #E5E9E6);
+    }
+
+    .gf-featured-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .gf-why-row {
+        grid-template-columns: 1fr;
+        gap: 32px;
+    }
+}
+
+@media (max-width: 767px) {
+    .gf-pillars {
+        grid-template-columns: 1fr;
+    }
+
+    .gf-pillar {
+        border-left: 0;
+        border-top: 1px solid var(--gf-rule, #E5E9E6);
+        padding: 32px 24px;
+    }
+
+    .gf-pillar:first-child {
+        border-top: 0;
+    }
+
+    .gf-featured-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .gf-featured,
+    .gf-why {
+        padding: 48px 0;
+    }
+}
+
+
+/* --- Homepage hero (Task 1, AC-2) -----------------------------------------
+ * The hero is the theme's header on the landing page (a full-bleed photo with
+ * the welcome text). Story 1.13 restyles it in place — the two-line DM Serif
+ * headline, the one-sentence subhead, the scrim — rather than editing the
+ * theme template. The scrim already exists (§1); here the type is brought to
+ * the brand spec. */
+
+/* Two-line DM Serif Display headline, sentence case, the brand's display face. */
+body.index .header-desc-container .header-hotel-name {
+    font-family: var(--gf-font-display, 'DM Serif Display', Georgia, serif);
+    font-size: var(--gf-hero-size, 56px);
+    line-height: var(--gf-hero-lh, 1.1);
+    letter-spacing: -0.5px;
+    font-weight: 400;
+    max-width: 18ch;
+}
+
+/* One-sentence subhead, the brand's body face. */
+body.index .header-desc-container .header-hotel-desc {
+    font-family: var(--gf-font-body, 'Source Sans 3', sans-serif);
+    font-size: 17px;
+    line-height: 1.6;
+    max-width: 46ch;
+    color: #FFFFFF;
+}
+
+/* The "Welcome To" eyebrow takes the brand's secondary accent. */
+body.index .header-desc-container .header-desc-welcome {
+    font-family: var(--gf-font-body, 'Source Sans 3', sans-serif);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-size: 13px;
+    color: #FFFFFF;
+}
+
+@media (max-width: 767px) {
+    body.index .header-desc-container .header-hotel-name {
+        font-size: var(--gf-hero-size-mobile, 34px);
+    }
+
+    body.index .header-desc-container .header-hotel-desc {
+        font-size: 15px;
+    }
+}

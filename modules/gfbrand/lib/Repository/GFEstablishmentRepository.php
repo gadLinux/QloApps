@@ -243,6 +243,40 @@ class GFEstablishmentRepository
     }
 
     /**
+     * Establishments an admin has flagged for the homepage strip — story 1.13, AC-4.
+     *
+     * An editorial decision lives in a column, not in code: flipping the flag
+     * on a different establishment changes the strip with no deploy. There is
+     * no fixed count — the strip shows however many are flagged (the design is
+     * four, but the query must not hardcode that).
+     *
+     * @param  int $idLang
+     * @return array[] Same shape as findListing(), so the card decorator
+     *                 serves both the listing and the homepage strip.
+     */
+    public function findFeaturedForHome($idLang)
+    {
+        $rows = $this->readDb()->executeS(
+            'SELECT p.`id_product`, p.`gf_source_id`, p.`gf_type`, p.`gf_country`, p.`gf_city`,
+                    p.`gf_destination_url`, p.`gf_certification`,
+                    p.`gf_has_channel_manager`, p.`gf_channel_manager_status`,
+                    pl.`name`, pl.`description_short`, pl.`link_rewrite`,
+                    (SELECT i.`id_image` FROM `' . _DB_PREFIX_ . 'image` i
+                      WHERE i.`id_product` = p.`id_product`
+                      ORDER BY i.`cover` DESC, i.`position` ASC LIMIT 1) AS `id_image`
+             FROM `' . $this->table() . '` p
+             INNER JOIN `' . _DB_PREFIX_ . 'product_lang` pl
+                     ON pl.`id_product` = p.`id_product`
+                    AND pl.`id_lang` = ' . (int) $idLang . '
+             WHERE ' . $this->listableCondition('p') . '
+               AND p.`gf_featured_home` = 1
+             ORDER BY p.`id_product` ASC'
+        );
+
+        return is_array($rows) ? $rows : [];
+    }
+
+    /**
      * Rows the importer owns. Products created by hand have no source id and
      * are therefore never matched by a reload.
      */

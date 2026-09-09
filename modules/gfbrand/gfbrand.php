@@ -165,6 +165,13 @@ class gfbrand extends Module
              ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)'
         );
 
+        /* Story 1.13, AC-2: the theme's landing hero reads these two keys for
+         * its headline and subhead. Point them at the brand copy so the hero
+         * carries GF Experiences' words without editing the theme template
+         * (layer 3 CSS handles the type). Only set when empty, so a customer
+         * who has already written their own is not overwritten on upgrade. */
+        $this->seedHeroCopy();
+
         if (!$this->runMigrations()) {
             return false;
         }
@@ -185,6 +192,33 @@ class gfbrand extends Module
         }
 
         return true;
+    }
+
+    /**
+     * Point the theme's landing hero at the brand copy — story 1.13, AC-2.
+     *
+     * The theme reads WK_HTL_CHAIN_NAME / WK_HTL_TAG_LINE for its headline and
+     * subhead. Writing them here, rather than in the theme template, keeps the
+     * brand layer upgrade-safe and the copy changeable in the back office.
+     *
+     * These are per-language keys (the hotel block reads them with the current
+     * language), so every active language gets the copy. The values are plain
+     * text: the template escapes them on render, so no pre-escaped entities.
+     */
+    private function seedHeroCopy()
+    {
+        $hero = [
+            'WK_HTL_CHAIN_NAME' => 'Gluten-Free Travel Made Safe & Easy',
+            'WK_HTL_TAG_LINE' => 'Discover certified gluten-free hotels, restaurants, and experiences around the world — curated by celiac travelers, for celiac travelers.',
+        ];
+
+        $languages = Language::getLanguages(false);
+
+        foreach ($hero as $key => $value) {
+            foreach ($languages as $language) {
+                Configuration::updateValue($key, $value, false, null, (int) $language['id_lang']);
+            }
+        }
     }
 
     /**
@@ -630,14 +664,183 @@ class gfbrand extends Module
     }
 
     /**
-     * Homepage injection point.
-     * Renders hero, pillars, hotel collection strip, etc.
-     * Populated by stories 1.13 and onwards.
+     * Homepage assembly — story 1.13.
+     *
+     * The theme's header is the hero (restyled by CSS, copy via config); the
+     * advisor and partner drawers are the trust hooks from story 1.11. This
+     * hook renders the middle sections — pillars, featured strip, Why Choose
+     * Us — so the brand layer owns the page without touching the theme
+     * template.
      */
     public function hookDisplayHome($params)
     {
-        // Placeholder — story 1.13 fills this
-        return '';
+        if (!Configuration::get(self::CONFIG_PREFIX . 'ENABLED')) {
+            return '';
+        }
+
+        $idLang = (int) $this->context->language->id;
+
+        $featured = $this->services->getHomepage()->featuredCards($idLang);
+        $featured = $this->decorateFeaturedCards($featured);
+
+        $tpl = $this->context->smarty->createTemplate(
+            $this->local_path . 'views/templates/hook/homepage.tpl',
+            $this->context->smarty
+        );
+
+        $tpl->assign([
+            'gf_pillars' => $this->buildPillars(),
+            'gf_pillar_icon_file' => $this->local_path . 'views/templates/hook/pillar-icon.tpl',
+            'gf_featured' => $featured,
+            'gf_has_featured' => count($featured) > 0,
+            'gf_why_choose' => $this->whyChooseItems(),
+            'gf_establishments_url' => $this->context->link->getModuleLink(
+                'gfbrand',
+                'establishments'
+            ),
+            'gf_experiences_url' => $this->context->link->getModuleLink(
+                'gfbrand',
+                'establishments'
+            ),
+            // The shared card component, reused in its homepage variant.
+            'gf_card_template' => _PS_MODULE_DIR_
+                . 'gfbrand/views/templates/front/_establishment-card.tpl',
+            'gf_why_photo' => __PS_BASE_URI__ . 'modules/gfbrand/assets/why-choose.jpg',
+        ]);
+
+        return $tpl->fetch();
+    }
+
+    /**
+     * The four pillar columns, in order (AC-3).
+     *
+     * The first two are links; the last two are disclosure triggers that open
+     * the advisor and partner drawers in place (story 1.11 owns the drawers,
+     * this story owns the trigger placement). EXPLORE EXPERIENCES has no
+     * destination yet — the experiences listing does not exist — so it points
+     * at the establishments listing for now. That is a known gap to raise, not
+     * a page to invent (see the story).
+     *
+     * @return array[]
+     */
+    private function buildPillars()
+    {
+        return [
+            [
+                'type' => 'link',
+                'icon' => 'hotel',
+                'title' => $this->l('GF HOTELS'),
+                'copy' => $this->l('Stay at certified gluten-free hotels worldwide.'),
+                'cta' => $this->l('EXPLORE HOTELS'),
+                'url' => $this->context->link->getModuleLink('gfbrand', 'establishments'),
+                'new_tab' => false,
+            ],
+            [
+                'type' => 'link',
+                'icon' => 'experience',
+                'title' => $this->l('GF EXPERIENCES'),
+                'copy' => $this->l('Discover gluten-free experiences and activities.'),
+                'cta' => $this->l('EXPLORE EXPERIENCES'),
+                'url' => $this->context->link->getModuleLink('gfbrand', 'establishments'),
+                'new_tab' => false,
+            ],
+            [
+                'type' => 'disclosure',
+                'icon' => 'advisor',
+                'title' => $this->l('GF ADVISORS'),
+                'copy' => $this->l('Get expert advice for your gluten-free travel needs.'),
+                'cta' => $this->l('MEET ADVISORS'),
+                'drawer_id' => 'gf-drawer-advisors',
+            ],
+            [
+                'type' => 'disclosure',
+                'icon' => 'partner',
+                'title' => $this->l('PARTNERS'),
+                'copy' => $this->l('Working with trusted partners for your safety and comfort.'),
+                'cta' => $this->l('OUR PARTNERS'),
+                'drawer_id' => 'gf-drawer-partners',
+            ],
+        ];
+    }
+
+    /**
+     * Whether this render lands on the homepage, where the pillar row supplies
+     * the drawer triggers.
+     *
+     * @return bool
+     */
+    private function isHomepage()
+    {
+        $controller = Tools::getValue('controller');
+
+        return $controller === '' || $controller === 'index';
+    }
+
+    /**
+     * The Why Choose Us checklist (AC-1).
+     *
+     * @return string[]
+     */
+    private function whyChooseItems()
+    {
+        return [
+            $this->l('Certified gluten-free kitchens, verified by independent auditors.'),
+            $this->l('Places vouched for by celiac travelers, not just listed.'),
+            $this->l('Advice from real experts when a meal is on the line.'),
+            $this->l('One team to call from booking to checkout, in your language.'),
+        ];
+    }
+
+    /**
+     * Add the URLs the featured cards need: image links and the internal CTA
+     * targets. The listing service builds none of these — routing and images
+     * are framework concerns that belong to the module facade.
+     *
+     * @param  array[] $cards
+     * @return array[]
+     */
+    private function decorateFeaturedCards(array $cards)
+    {
+        foreach ($cards as $index => $card) {
+            $cards[$index]['image_url'] = $this->featuredImageUrl($card);
+
+            if ($card['cta'] === GFEstablishmentCta::INQUIRE) {
+                $cards[$index]['cta_url'] = $this->services->getInquiryLink()->forEstablishment($card['id_product']);
+            }
+
+            if ($card['cta'] === GFEstablishmentCta::BOOK) {
+                $idCategory = $this->services->getHotelRepository()
+                    ->findCategoryIdBySourceId($card['source_id']);
+
+                if ($idCategory) {
+                    $cards[$index]['cta_url'] = $this->context->link->getCategoryLink($idCategory);
+                } else {
+                    $cards[$index]['cta_url'] = $this->context->link->getProductLink(
+                        $card['id_product'],
+                        $card['link_rewrite']
+                    );
+                }
+            }
+        }
+
+        return $cards;
+    }
+
+    /**
+     * @param  array $card
+     * @return string '' when there is no photograph: the card shows a branded blank.
+     */
+    private function featuredImageUrl(array $card)
+    {
+        if ((int) $card['id_image'] === 0) {
+            return '';
+        }
+
+        return $this->context->link->getImageLink(
+            $card['link_rewrite'],
+            (int) $card['id_image'],
+            'large_default'
+        );
     }
 
     /**
@@ -692,6 +895,9 @@ class gfbrand extends Module
             'gf_partner_image_base' => __PS_BASE_URI__ . 'uploads/establishments/partners/',
             'gf_section_template' => $this->local_path
                 . 'views/templates/front/_advisor-partner-section.tpl',
+            // On the homepage the pillar row is the trigger, so the drawer
+            // renders its panel only.
+            'gf_drawer_embedded' => $this->isHomepage(),
         ]);
 
         return $tpl->fetch();
@@ -814,6 +1020,16 @@ class gfbrand extends Module
     public function getEstablishmentListing()
     {
         return $this->services->getEstablishmentListing();
+    }
+
+    /**
+     * The homepage assembly service — story 1.13.
+     *
+     * @return GFHomepage
+     */
+    public function getHomepage()
+    {
+        return $this->services->getHomepage();
     }
 
     /**

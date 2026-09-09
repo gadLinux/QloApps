@@ -82,6 +82,7 @@ class GFModuleServices
             'lib/Service/GFAdvisorPartnerImporter.php',
             'lib/Service/GFAdvisorPartnerListing.php',
             'lib/Service/GFAssetUploader.php',
+            'lib/Service/GFHomepage.php',
             'lib/Service/GFEstablishmentCsvReader.php',
             'lib/Service/GFRoomTypeCsvReader.php',
             'lib/Service/GFImageLocator.php',
@@ -215,7 +216,7 @@ class GFModuleServices
     }
 
     /**
-     * The establishments listing page — story 1.9.
+     * The establishments listing service — story 1.9.
      *
      * @return GFEstablishmentListing
      */
@@ -223,6 +224,18 @@ class GFModuleServices
     {
         return $this->share('establishmentListing', function () {
             return new GFEstablishmentListing($this->getEstablishmentRepository());
+        });
+    }
+
+    /**
+     * The homepage assembly service — story 1.13.
+     *
+     * @return GFHomepage
+     */
+    public function getHomepage()
+    {
+        return $this->share('homepage', function () {
+            return new GFHomepage($this->getEstablishmentRepository());
         });
     }
 
