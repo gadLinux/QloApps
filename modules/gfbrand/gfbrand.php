@@ -92,6 +92,17 @@ class gfbrand extends Module
             return false;
         }
 
+        /* Advisor and partner drawers (story 1.11). Custom hooks so the
+         * sections render exactly where the homepage wants them, and so the
+         * homepage story (1.13) can place the pillar-row triggers against a
+         * known container. */
+        if (!$this->registerHook('displayGfAdvisors')) {
+            return false;
+        }
+        if (!$this->registerHook('displayGfPartners')) {
+            return false;
+        }
+
         /* Product page — conditional CTA rendering on establishment detail. */
         if (!$this->registerHook('displayProductActions')) {
             return false;
@@ -159,10 +170,116 @@ class gfbrand extends Module
         }
 
         $this->importEstablishmentsOnFirstInstall();
+        $this->importAdvisorsPartnersOnFirstInstall();
 
         if (!$this->installInquiriesTab()) {
             return false;
         }
+
+        if (!$this->installAdvisorsTab()) {
+            return false;
+        }
+
+        if (!$this->installPartnersTab()) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Seed the trust section the first time only — story 1.11, AC-2. The
+     * source files are the client's own, and a re-install must not duplicate
+     * what it imported before (the import matches on source id).
+     */
+    private function importAdvisorsPartnersOnFirstInstall()
+    {
+        $importer = $this->services->getAdvisorPartnerImporter();
+        $advisorsPath = $this->services->getAdvisorsCsvPath();
+        $partnersPath = $this->services->getPartnersCsvPath();
+
+        if (!file_exists($advisorsPath) || !file_exists($partnersPath)) {
+            return;
+        }
+
+        $result = $importer->importAdvisors($advisorsPath);
+        $result->addErrors($importer->importPartners($partnersPath)->getErrors());
+
+        if (!$result->isSuccessful()) {
+            PrestaShopLogger::addLog(
+                '[gfbrand] advisor/partner import: ' . implode('; ', $result->getErrors()),
+                2,
+                null,
+                'Module',
+                (int) $this->id
+            );
+        }
+    }
+
+    /**
+     * The admin screen for the trust section's people.
+     *
+     * Parented under Customers: advisors are the humans a guest can call, and
+     * a reference list of them sits closer to a customer directory than to
+     * the catalogue or a support inbox.
+     *
+     * @return bool
+     */
+    private function installAdvisorsTab()
+    {
+        return $this->installTab('AdminGfAdvisors', 'AdminCustomers', 'GF Advisors');
+    }
+
+    /**
+     * The admin screen for the trust section's organisations.
+     *
+     * @return bool
+     */
+    private function installPartnersTab()
+    {
+        return $this->installTab('AdminGfPartners', 'AdminParentStats', 'GF Partners');
+    }
+
+    /**
+     * Create a module tab if the row does not exist yet and make sure the
+     * SuperAdmin profile can open it.
+     *
+     * The Tab::add() / initAccess() dance mirrors installInquiriesTab(): on a
+     * CLI deploy there is no employee in context, so the row is re-queried
+     * and SuperAdmin access is granted directly.
+     *
+     * @param  string $className
+     * @param  string $parentClassName
+     * @param  string $label
+     * @return bool
+     */
+    private function installTab($className, $parentClassName, $label)
+    {
+        $idTab = (int) Tab::getIdFromClassName($className);
+
+        if (!$idTab) {
+            $tab = new Tab();
+            $tab->active = 1;
+            $tab->class_name = $className;
+            $tab->module = $this->name;
+            $tab->id_parent = (int) Tab::getIdFromClassName($parentClassName);
+            $tab->name = [];
+            foreach (Language::getLanguages(false) as $language) {
+                $tab->name[(int) $language['id_lang']] = $label;
+            }
+
+            $tab->add();
+            $idTab = (int) Tab::getIdFromClassName($className);
+
+            if (!$idTab) {
+                return false;
+            }
+        }
+
+        Db::getInstance()->execute(
+            'REPLACE INTO `' . _DB_PREFIX_ . 'access` (`id_profile`, `id_tab`, `view`, `add`, `edit`, `delete`)
+             VALUES (1, ' . $idTab . ', 1, 1, 1, 1)'
+        );
 
         return true;
     }
@@ -299,10 +416,12 @@ class gfbrand extends Module
      */
     public function uninstall()
     {
-        $idTab = (int) Tab::getIdFromClassName('AdminGfInquiries');
-        if ($idTab) {
-            $tab = new Tab($idTab);
-            $tab->delete();
+        foreach (['AdminGfInquiries', 'AdminGfAdvisors', 'AdminGfPartners'] as $tabClassName) {
+            $idTab = (int) Tab::getIdFromClassName($tabClassName);
+            if ($idTab) {
+                $tab = new Tab($idTab);
+                $tab->delete();
+            }
         }
 
         /* Delete the main configuration values first — always exists. */
@@ -522,6 +641,63 @@ class gfbrand extends Module
     }
 
     /**
+     * The advisors drawer — story 1.11, AC-4..8.
+     *
+     * Renders the complete disclosure: a <button> trigger that stays visible
+     * with a flipped label, and the drawer it controls. The homepage (1.13)
+     * places this at the pillar row; with JavaScript disabled the drawer is
+     * open by default (D6), so the content is never unreachable.
+     */
+    public function hookDisplayGfAdvisors($params)
+    {
+        return $this->renderTrustDrawer('advisors');
+    }
+
+    /**
+     * The partners drawer — story 1.11, AC-4..8.
+     */
+    public function hookDisplayGfPartners($params)
+    {
+        return $this->renderTrustDrawer('partners');
+    }
+
+    /**
+     * Shared markup for the two trust drawers.
+     *
+     * @param  string $section 'advisors' or 'partners'
+     * @return string
+     */
+    private function renderTrustDrawer($section)
+    {
+        if (!Configuration::get(self::CONFIG_PREFIX . 'ENABLED')) {
+            return '';
+        }
+
+        $listing = $this->getAdvisorPartnerListing();
+
+        $tpl = $this->context->smarty->createTemplate(
+            $this->local_path . 'views/templates/hook/trust_drawer.tpl',
+            $this->context->smarty
+        );
+
+        $tpl->assign([
+            'gf_section' => $section,
+            'gf_advisors' => $listing->advisorCards(),
+            'gf_has_advisors' => $listing->hasAdvisors(),
+            'gf_partners' => $listing->partnerCards(),
+            'gf_has_partners' => $listing->hasPartners(),
+            // Image URLs are a framework concern, so they are built here rather
+            // than in the listing service.
+            'gf_advisor_image_base' => __PS_BASE_URI__ . 'uploads/establishments/advisors/',
+            'gf_partner_image_base' => __PS_BASE_URI__ . 'uploads/establishments/partners/',
+            'gf_section_template' => $this->local_path
+                . 'views/templates/front/_advisor-partner-section.tpl',
+        ]);
+
+        return $tpl->fetch();
+    }
+
+    /**
      * Left column injection.
      * Used by establishments listing (story 1.9) for country filter pills
      * when not using the wkhotelfilterblock left-column slot.
@@ -641,6 +817,26 @@ class gfbrand extends Module
     }
 
     /**
+     * The advisor/partner section data — story 1.11.
+     *
+     * @return GFAdvisorPartnerListing
+     */
+    public function getAdvisorPartnerListing()
+    {
+        return GFAdvisorPartnerListing::forLanguage((int) $this->context->language->id);
+    }
+
+    /**
+     * The advisor/partner importer — story 1.11's seed and re-import.
+     *
+     * @return GFAdvisorPartnerImporter
+     */
+    public function getAdvisorPartnerImporter()
+    {
+        return $this->services->getAdvisorPartnerImporter();
+    }
+
+    /**
      * The raw establishment repository — story 1.12's questionnaire needs
      * the country and establishment lists directly, not the paginated
      * listing story 1.9 built around them.
@@ -740,6 +936,29 @@ class gfbrand extends Module
                     'fc' => 'module',
                     'module' => 'gfbrand',
                     'controller' => 'inquiry',
+                ],
+            ],
+            // Story 1.11: the trust section's linkable twins. The homepage
+            // drawers are the primary affordance; these routes exist so a
+            // section is not only reachable behind a button.
+            'module-gfbrand-advisors' => [
+                'controller' => 'advisors',
+                'rule' => 'advisors',
+                'keywords' => [],
+                'params' => [
+                    'fc' => 'module',
+                    'module' => 'gfbrand',
+                    'controller' => 'advisors',
+                ],
+            ],
+            'module-gfbrand-partners' => [
+                'controller' => 'partners',
+                'rule' => 'partners',
+                'keywords' => [],
+                'params' => [
+                    'fc' => 'module',
+                    'module' => 'gfbrand',
+                    'controller' => 'partners',
                 ],
             ],
         ];

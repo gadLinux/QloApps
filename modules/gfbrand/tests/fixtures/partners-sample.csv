@@ -1,0 +1,5 @@
+id,name,logo_url,website_url,description,category,display_order,active
+1,Gluten-Free Food Program,../../uploads/establishments/partners/gluten-free-food-program-logo.png,https://www.glutenfreefoodprogram.com/,5ppm gluten-free certification program for food service establishments,certification,1,1
+2,National Celiac Association,../../uploads/establishments/partners/national-celiac-association-logo.png,https://nationalceliac.org/,US non-profit advocating for people with celiac disease,certification,2,1
+3,Coeliaque Quebec,../../uploads/establishments/partners/coeliaque-quebec-logo.png,https://www.coeliaque.quebec/,Quebec celiac association,organization,3,1
+4,Familia Sin Gluten,../../uploads/establishments/partners/familia-sin-gluten-logo.jpeg,http://www.familiasingluten.com,Spanish-language gluten-free community,organization,4,1

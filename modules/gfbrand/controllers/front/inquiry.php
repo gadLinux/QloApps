@@ -507,10 +507,12 @@ class GfbrandInquiryModuleFrontController extends ModuleFrontController
 
     /**
      * "Select Partner" (Dev Notes): source from gf_partner (story 1.11), not
-     * a literal list. 1.11 has not landed yet, so this degrades to an empty
-     * list — the field is optional, and it is better to offer nothing than
-     * to invent placeholder partners. The query already matches the table
-     * 1.11's own story names; no code here will need to change when it ships.
+     * a literal list. The table is owned by 1.11, so until it ships this
+     * degrades to an empty list — the field is optional, and it is better to
+     * offer nothing than to invent placeholder partners.
+     *
+     * name is a multilang field, so it is read from the _lang table in the
+     * current language (1.11's schema is born with the lang split).
      *
      * @return array[] ['id_gf_partner' => int, 'name' => string]
      */
@@ -518,12 +520,19 @@ class GfbrandInquiryModuleFrontController extends ModuleFrontController
     {
         $schema = new GFSchemaHelper();
 
-        if (!$schema->tableExists('gf_partner')) {
+        if (!$schema->tableExists('gf_partner') || !$schema->tableExists('gf_partner_lang')) {
             return [];
         }
 
+        $idLang = (int) $this->context->language->id;
+
         $rows = Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS(
-            'SELECT `id_gf_partner`, `name` FROM `' . _DB_PREFIX_ . 'gf_partner` ORDER BY `name` ASC'
+            'SELECT p.`id_gf_partner`, l.`name`
+             FROM `' . _DB_PREFIX_ . 'gf_partner` p
+             INNER JOIN `' . _DB_PREFIX_ . 'gf_partner_lang` l
+                 ON (l.`id_gf_partner` = p.`id_gf_partner` AND l.`id_lang` = ' . $idLang . ')
+             WHERE p.`active` = 1
+             ORDER BY l.`name` ASC'
         );
 
         return is_array($rows) ? $rows : [];

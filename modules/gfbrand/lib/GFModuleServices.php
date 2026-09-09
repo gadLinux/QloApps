@@ -25,6 +25,12 @@ class GFModuleServices
     /** Bookable room types, keyed to the establishments by hotel id. */
     const ROOM_TYPES_CSV = 'data/room-types.csv';
 
+    /** The trust section's people — story 1.11. */
+    const ADVISORS_CSV = 'data/advisors.csv';
+
+    /** The trust section's organisations — story 1.11. */
+    const PARTNERS_CSV = 'data/partners.csv';
+
     /** @var string Absolute path to the module directory, with trailing slash. */
     private $moduleDir;
 
@@ -66,10 +72,16 @@ class GFModuleServices
             'lib/Repository/GFEstablishmentCta.php',
             'lib/Repository/GFSearchPreference.php',
             'lib/Repository/GFSearchPreferenceRepository.php',
+            'lib/Repository/GFAdvisorSeed.php',
+            'lib/Repository/GFPartnerSeed.php',
             // Application
             'lib/Service/GFImportException.php',
             'lib/Service/GFErrorCollectingController.php',
             'lib/Service/GFImportResult.php',
+            'lib/Service/GFAdvisorPartnerCsvReader.php',
+            'lib/Service/GFAdvisorPartnerImporter.php',
+            'lib/Service/GFAdvisorPartnerListing.php',
+            'lib/Service/GFAssetUploader.php',
             'lib/Service/GFEstablishmentCsvReader.php',
             'lib/Service/GFRoomTypeCsvReader.php',
             'lib/Service/GFImageLocator.php',
@@ -98,6 +110,8 @@ class GFModuleServices
             // constructs GFModuleServices before PrestaShop's own classes are
             // available.
             'classes/GfInquiry.php',
+            'classes/GfAdvisor.php',
+            'classes/GfPartner.php',
         ];
 
         foreach ($classes as $relativePath) {
@@ -278,6 +292,16 @@ class GFModuleServices
     }
 
     /**
+     * @return GFAdvisorPartnerImporter
+     */
+    public function getAdvisorPartnerImporter()
+    {
+        return $this->share('advisorPartnerImporter', function () {
+            return new GFAdvisorPartnerImporter(new GFAdvisorPartnerCsvReader());
+        });
+    }
+
+    /**
      * Absolute path to the establishments source file.
      *
      * @return string
@@ -293,6 +317,22 @@ class GFModuleServices
     public function getRoomTypesCsvPath()
     {
         return $this->moduleDir . self::ROOM_TYPES_CSV;
+    }
+
+    /**
+     * @return string
+     */
+    public function getAdvisorsCsvPath()
+    {
+        return $this->moduleDir . self::ADVISORS_CSV;
+    }
+
+    /**
+     * @return string
+     */
+    public function getPartnersCsvPath()
+    {
+        return $this->moduleDir . self::PARTNERS_CSV;
     }
 
     /**

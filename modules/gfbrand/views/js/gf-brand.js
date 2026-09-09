@@ -70,10 +70,69 @@
 
     /* ==========================================================================
      * Advisor/Partner drawers — Story 1.11
-     * grid-rows 0fr -> 1fr animation with keyboard/screen-reader support
+     *
+     * Progressive enhancement: the markup ships OPEN (D6) so the content is
+     * never unreachable without scripts. When JS runs, it collapses the drawer
+     * on load — and only then, so a no-script page shows everything — and
+     * takes over the toggle.
+     *
+     * The transition itself is CSS (grid-template-rows 0fr -> 1fr), which
+     * reaches intrinsic height and therefore cannot clip a fifth advisor. JS
+     * only flips a class and moves focus; it does no measuring.
      * ========================================================================== */
 
-    // TO BE ADDED BY STORY 1.11
+    function initTrustDrawer(drawer) {
+        var trigger = drawer.querySelector('[data-gf-drawer-trigger]');
+        var body = drawer.querySelector('.gf-trust-drawer-body');
+
+        if (!trigger || !body) {
+            return;
+        }
+
+        // The markup is born open; close it now that we can open it again.
+        drawer.classList.remove('gf-trust-drawer--nojs');
+        drawer.classList.add('gf-trust-drawer--closed');
+        trigger.setAttribute('aria-expanded', 'false');
+
+        function isOpen() {
+            return drawer.classList.contains('gf-trust-drawer--open');
+        }
+
+        function setOpen(open) {
+            drawer.classList.toggle('gf-trust-drawer--open', open);
+            drawer.classList.toggle('gf-trust-drawer--closed', !open);
+            trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+
+            if (open) {
+                // Focus moves into the drawer (AC-5): the first focusable
+                // content element, or the region itself.
+                var focusable = body.querySelector('a[href], button, [tabindex="0"]');
+                var target = focusable || body;
+                target.setAttribute('tabindex', '-1');
+                target.focus({ preventScroll: true });
+                drawer.scrollIntoView({ behavior: 'auto', block: 'nearest' });
+            }
+        }
+
+        trigger.addEventListener('click', function () {
+            setOpen(!isOpen());
+        });
+
+        // Escape closes and returns focus to the trigger (AC-5).
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && isOpen()) {
+                setOpen(false);
+                trigger.focus({ preventScroll: true });
+            }
+        });
+    }
+
+    function initTrustDrawers() {
+        var drawers = document.querySelectorAll('.gf-trust-drawer');
+        for (var i = 0; i < drawers.length; i++) {
+            initTrustDrawer(drawers[i]);
+        }
+    }
 
 
     /* ==========================================================================
@@ -153,6 +212,7 @@
 
     if (typeof window.addEventListener === 'function') {
         window.addEventListener('DOMContentLoaded', function () {
+            initTrustDrawers();
             initInquiryEstablishmentFilter();
             initInquiryReferralOther();
         });

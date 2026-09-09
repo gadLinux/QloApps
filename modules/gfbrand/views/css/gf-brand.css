@@ -1492,3 +1492,276 @@ button.nav_toggle,
 #right_column .header-rmsearch-wrapper {
     background-color: var(--gf-charcoal, #2C302E) !important;
 }
+
+
+/* ==========================================================================
+ * 9. Advisor and partner drawers — Story 1.11
+ * AC-4..8: in-place disclosure, keyboard + screen reader, trigger stays
+ * visible with a flipped label, intrinsic-height animation (no clipping),
+ * default-open without JS, reduced-motion instant.
+ * ========================================================================== */
+
+.gf-trust-drawer {
+    border-top: 1px solid var(--gf-rule, #E5E9E6);
+}
+
+/* The trigger is a real button that never disappears (AC-6): its label flips
+ * and aria-expanded carries the state. */
+.gf-trust-trigger {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 18px 0;
+    background: none;
+    border: 0;
+    font-family: var(--gf-font-body, sans-serif);
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--gf-text, #556B2F);
+    cursor: pointer;
+}
+
+.gf-trust-trigger:hover {
+    color: var(--gf-link-hover, #6b8e23);
+}
+
+/* Focus is visible, because this is a primary interactive control. */
+.gf-trust-trigger:focus-visible {
+    outline: 2px solid var(--gf-olive-dark, #556B2F);
+    outline-offset: 4px;
+}
+
+/* Two labels: exactly one is shown at a time. The drawer is open when it
+ * carries --open, or when JS has not run yet (--nojs): the markup is correct
+ * with scripts disabled precisely because --nojs *is* the open state. */
+.gf-trust-trigger-label--open {
+    display: none;
+}
+
+.gf-trust-drawer--nojs .gf-trust-trigger-label,
+.gf-trust-drawer--open .gf-trust-trigger-label {
+    display: none;
+}
+
+.gf-trust-drawer--nojs .gf-trust-trigger-label--open,
+.gf-trust-drawer--open .gf-trust-trigger-label--open {
+    display: inline;
+}
+
+.gf-trust-trigger-chevron {
+    transition: transform 300ms ease;
+}
+
+.gf-trust-drawer--nojs .gf-trust-trigger-chevron,
+.gf-trust-drawer--open .gf-trust-trigger-chevron {
+    transform: rotate(180deg);
+}
+
+/* The animation is grid-template-rows 0fr -> 1fr (AC-7): it reaches intrinsic
+ * height, so a fifth advisor cannot clip the way a fixed max-height would.
+ * The inner clip is what makes the row trackable by the grid. */
+.gf-trust-drawer-body {
+    display: grid;
+    grid-template-rows: 1fr;
+    transition: grid-template-rows 450ms cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.gf-trust-drawer--closed .gf-trust-drawer-body {
+    grid-template-rows: 0fr;
+}
+
+.gf-trust-drawer-clip {
+    overflow: hidden;
+    min-height: 0;
+}
+
+.gf-trust-drawer-inner {
+    padding: 30px 0 45px;
+}
+
+/* --- Advisor cards --- */
+
+.gf-advisor-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 28px;
+}
+
+.gf-advisor-card {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+}
+
+.gf-advisor-avatar {
+    flex: 0 0 auto;
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: var(--gf-beige-deep, #f5f5dc);
+}
+
+/* The designed "no photograph" state (AC-9): a silhouette, not a broken
+ * image icon. */
+.gf-advisor-avatar--glyph {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--gf-sage, #657a5a);
+    background: var(--gf-beige-deep, #f5f5dc);
+}
+
+.gf-advisor-name {
+    font-family: var(--gf-font-display, Georgia, serif);
+    font-size: var(--gf-h3-size, 18px);
+    color: var(--gf-heading, #1A1C1B);
+    margin: 0 0 6px;
+}
+
+.gf-advisor-regions {
+    margin: 0 0 8px;
+}
+
+.gf-advisor-bio {
+    margin: 0 0 10px;
+    font-size: var(--gf-card-body-size, 14px);
+    line-height: var(--gf-card-body-lh, 1.55);
+    color: var(--gf-charcoal, #2C302E);
+}
+
+.gf-advisor-contact {
+    margin: 0;
+}
+
+.gf-advisor-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-right: 18px;
+    font-size: var(--gf-card-body-size, 14px);
+    font-weight: 600;
+    color: var(--gf-link, #55721c);
+    text-decoration: none;
+}
+
+.gf-advisor-link:hover {
+    color: var(--gf-link-hover, #6b8e23);
+    text-decoration: underline;
+}
+
+/* --- Partner logos --- */
+
+.gf-partner-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 28px;
+}
+
+.gf-partner-card {
+    text-align: center;
+}
+
+.gf-partner-link {
+    display: block;
+    text-decoration: none;
+}
+
+/* Each logo sits on white, constrained by height never width (AC-11): the
+ * assets differ wildly in aspect ratio and background, and height is the only
+ * rule that keeps them optically agreeing. */
+.gf-partner-tile {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #FFFFFF;
+    padding: 14px 18px;
+    border: 1px solid var(--gf-rule, #E5E9E6);
+    min-height: 88px;
+}
+
+.gf-partner-tile img {
+    height: 56px;
+    width: auto;
+    max-width: 100%;
+    object-fit: contain;
+}
+
+.gf-partner-tile--text {
+    font-family: var(--gf-font-display, Georgia, serif);
+    font-size: 16px;
+    color: var(--gf-heading, #1A1C1B);
+}
+
+.gf-partner-desc {
+    margin: 10px 0 0;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--gf-muted, #707571);
+}
+
+/* --- Standalone pages --- */
+
+.gf-page-title {
+    font-family: var(--gf-font-display, Georgia, serif);
+    font-size: var(--gf-h2-size, 34px);
+    color: var(--gf-heading, #1A1C1B);
+    margin: 0 0 10px;
+}
+
+.gf-page-intro {
+    font-size: 17px;
+    color: var(--gf-charcoal, #2C302E);
+    max-width: 60ch;
+    margin: 0 0 34px;
+}
+
+.gf-empty-state {
+    padding: 30px;
+    border: 1px solid var(--gf-rule, #E5E9E6);
+    background: var(--gf-beige, #FDFBF7);
+    color: var(--gf-charcoal, #2C302E);
+}
+
+/* --- Responsive --- */
+
+@media (max-width: 991px) {
+    .gf-advisor-list {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .gf-partner-list {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 767px) {
+    .gf-advisor-list {
+        grid-template-columns: 1fr;
+    }
+
+    .gf-partner-list {
+        grid-template-columns: 1fr;
+    }
+
+    .gf-advisor-card {
+        flex-direction: column;
+    }
+}
+
+/* AC-10: reduced motion opens and closes instantly. */
+@media (prefers-reduced-motion: reduce) {
+    .gf-trust-drawer-body,
+    .gf-trust-trigger-chevron {
+        transition: none;
+    }
+}

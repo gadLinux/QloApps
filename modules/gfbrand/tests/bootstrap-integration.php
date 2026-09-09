@@ -45,7 +45,16 @@ $classes = [
     '/lib/Service/GFRoomTypeFactory.php',
     '/lib/Service/GFHotelProvisioner.php',
     '/lib/Service/GFEstablishmentImporter.php',
+    '/lib/Repository/GFAdvisorSeed.php',
+    '/lib/Repository/GFPartnerSeed.php',
+    '/lib/Service/GFAdvisorPartnerCsvReader.php',
+    '/lib/Service/GFAdvisorPartnerImporter.php',
+    '/lib/Service/GFAdvisorPartnerListing.php',
     '/migrations/GFMigration20260903001Establishments.php',
+    '/migrations/GFMigration20260907001BookingInquiry.php',
+    '/migrations/GFMigration20260909001AdvisorsPartners.php',
+    '/classes/GfAdvisor.php',
+    '/classes/GfPartner.php',
 ];
 
 foreach ($classes as $relativePath) {
