@@ -1932,7 +1932,14 @@ button.nav_toggle,
 
 .gf-why-photo img {
     width: 100%;
+    /* GFE-8: the client photo is 2:3 portrait; the slot is 4:3. The aspect-ratio
+       reserves the slot box (the <img>'s 640x480 attributes back it for CLS) and
+       object-fit: cover scales-to-cover + center-crops at render time, so the
+       stored file is never modified. */
+    aspect-ratio: 4 / 3;
     height: auto;
+    object-fit: cover;
+    object-position: center;
     display: block;
     border-radius: 4px;
 }

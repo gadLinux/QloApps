@@ -705,7 +705,7 @@ class gfbrand extends Module
             // The shared card component, reused in its homepage variant.
             'gf_card_template' => _PS_MODULE_DIR_
                 . 'gfbrand/views/templates/front/_establishment-card.tpl',
-            'gf_why_photo' => __PS_BASE_URI__ . 'modules/gfbrand/assets/why-choose.jpg',
+            'gf_why_photo' => __PS_BASE_URI__ . 'modules/gfbrand/assets/why-us.avif',
         ]);
 
         return $tpl->fetch();
