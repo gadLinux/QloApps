@@ -297,23 +297,30 @@ class gfbrand extends Module
      *
      * Parented under Customers: advisors are the humans a guest can call, and
      * a reference list of them sits closer to a customer directory than to
-     * the catalogue or a support inbox.
+     * the catalogue or a support inbox. AdminParentCustomer is the actual
+     * top-level "Customers" menu tab (id_parent = 0); AdminCustomers is a
+     * leaf tab one level below it, which would bury this screen a level
+     * deeper than PrestaShop's sidebar renders for module tabs.
      *
      * @return bool
      */
     private function installAdvisorsTab()
     {
-        return $this->installTab('AdminGfAdvisors', 'AdminCustomers', 'GF Advisors');
+        return $this->installTab('AdminGfAdvisors', 'AdminParentCustomer', 'GF Advisors');
     }
 
     /**
      * The admin screen for the trust section's organisations.
      *
+     * Parented under Customers, same reasoning and same parent as
+     * installAdvisorsTab() above — partners are the trust section's
+     * organisations, advisors its people.
+     *
      * @return bool
      */
     private function installPartnersTab()
     {
-        return $this->installTab('AdminGfPartners', 'AdminParentStats', 'GF Partners');
+        return $this->installTab('AdminGfPartners', 'AdminParentCustomer', 'GF Partners');
     }
 
     /**
