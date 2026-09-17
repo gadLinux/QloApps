@@ -300,11 +300,10 @@ class GfbrandInquiryModuleFrontController extends ModuleFrontController
      */
     private function notifyTeam(GFInquiryValidationResult $result)
     {
-        $to = Configuration::get('GFBRAND_CONTACT_EMAIL');
-
-        if (!$to) {
-            $to = Configuration::get('PS_SHOP_EMAIL');
-        }
+        // Story 1.18: PS_SHOP_EMAIL is the single source of truth for the
+        // shop's contact address — GFBRAND_CONTACT_EMAIL was a second,
+        // disconnected copy of the same thing and has been retired.
+        $to = Configuration::get('PS_SHOP_EMAIL');
 
         if (!$to) {
             return;

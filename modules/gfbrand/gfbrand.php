@@ -188,6 +188,15 @@ class gfbrand extends Module
              ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)'
         );
 
+        /* Story 1.18: GFBRAND_CONTACT_EMAIL/PHONE used to be their own
+         * source of truth for the footer's contact info, disconnected from
+         * PS_SHOP_EMAIL/PHONE (what hotelreservationsystem's own settings
+         * screen and system emails actually use). Retire them on any
+         * install that still has them from before this fix — a no-op where
+         * they were never set. */
+        Configuration::deleteByName(self::CONFIG_PREFIX . 'CONTACT_EMAIL');
+        Configuration::deleteByName(self::CONFIG_PREFIX . 'CONTACT_PHONE');
+
         /* Story 1.13, AC-2: the theme's landing hero reads these two keys for
          * its headline and subhead. Point them at the brand copy so the hero
          * carries GF Experiences' words without editing the theme template
@@ -215,6 +224,10 @@ class gfbrand extends Module
         }
 
         if (!$this->installEstablishmentsTab()) {
+            return false;
+        }
+
+        if (!$this->installBrandSettingsTab()) {
             return false;
         }
 
@@ -335,6 +348,20 @@ class gfbrand extends Module
     private function installEstablishmentsTab()
     {
         return $this->installTab('AdminGfEstablishments', 'AdminProducts', 'GF Featured Establishments');
+    }
+
+    /**
+     * The consolidated brand settings screen — story 1.18.
+     *
+     * Parented under Preferences: shop contact details, About/amenities/
+     * testimonial copy are shop-wide configuration, not tied to a customer
+     * or a product the way the other gfbrand tabs are.
+     *
+     * @return bool
+     */
+    private function installBrandSettingsTab()
+    {
+        return $this->installTab('AdminGfBrand', 'AdminParentPreferences', 'GF Brand Settings');
     }
 
     /**
@@ -513,7 +540,7 @@ class gfbrand extends Module
      */
     public function uninstall()
     {
-        foreach (['AdminGfInquiries', 'AdminGfAdvisors', 'AdminGfPartners', 'AdminGfEstablishments'] as $tabClassName) {
+        foreach (['AdminGfInquiries', 'AdminGfAdvisors', 'AdminGfPartners', 'AdminGfEstablishments', 'AdminGfBrand'] as $tabClassName) {
             $idTab = (int) Tab::getIdFromClassName($tabClassName);
             if ($idTab) {
                 $tab = new Tab($idTab);
@@ -1056,8 +1083,12 @@ class gfbrand extends Module
 
         $tpl->assign([
             'gf_shop_name'  => Configuration::get($prefix . 'SHOP_NAME'),
-            'gf_contact_email'  => Configuration::get($prefix . 'CONTACT_EMAIL'),
-            'gf_contact_phone'  => Configuration::get($prefix . 'CONTACT_PHONE'),
+            // Story 1.18: contact details are PS_SHOP_EMAIL/PHONE, the same
+            // keys hotelreservationsystem's "Website Contact Details" screen
+            // and system emails read — not a GFBRAND_-namespaced copy that
+            // could silently drift from what an owner actually edits.
+            'gf_contact_email'  => Configuration::get('PS_SHOP_EMAIL'),
+            'gf_contact_phone'  => Configuration::get('PS_SHOP_PHONE'),
             'gf_social_facebook'   => Configuration::get($prefix . 'SOCIAL_FACEBOOK'),
             'gf_social_instagram'  => Configuration::get($prefix . 'SOCIAL_INSTAGRAM'),
             'gf_social_linkedin'   => Configuration::get($prefix . 'SOCIAL_LINKEDIN'),
@@ -1341,8 +1372,6 @@ class gfbrand extends Module
             Configuration::updateValue(self::CONFIG_PREFIX . 'TAGLINE', Tools::getValue(self::CONFIG_PREFIX . 'TAGLINE'));
             Configuration::updateValue(self::CONFIG_PREFIX . 'PRIMARY_COLOR', Tools::getValue(self::CONFIG_PREFIX . 'PRIMARY_COLOR'));
             Configuration::updateValue(self::CONFIG_PREFIX . 'SECONDARY_COLOR', Tools::getValue(self::CONFIG_PREFIX . 'SECONDARY_COLOR'));
-            Configuration::updateValue(self::CONFIG_PREFIX . 'CONTACT_EMAIL', Tools::getValue(self::CONFIG_PREFIX . 'CONTACT_EMAIL'));
-            Configuration::updateValue(self::CONFIG_PREFIX . 'CONTACT_PHONE', Tools::getValue(self::CONFIG_PREFIX . 'CONTACT_PHONE'));
             Configuration::updateValue(self::CONFIG_PREFIX . 'SOCIAL_FACEBOOK', Tools::getValue(self::CONFIG_PREFIX . 'SOCIAL_FACEBOOK'));
             Configuration::updateValue(self::CONFIG_PREFIX . 'SOCIAL_INSTAGRAM', Tools::getValue(self::CONFIG_PREFIX . 'SOCIAL_INSTAGRAM'));
             Configuration::updateValue(self::CONFIG_PREFIX . 'SOCIAL_LINKEDIN', Tools::getValue(self::CONFIG_PREFIX . 'SOCIAL_LINKEDIN'));
@@ -1423,26 +1452,17 @@ class gfbrand extends Module
                         'default' => '#556B2F',
                     ],
 
-                    /* --- Section 3: Contact --- */
-                    [
-                        'col' => 3,
-                        'type' => 'text',
-                        'label' => $this->l('Contact email'),
-                        'name' => $prefix . 'CONTACT_EMAIL',
-                        'size' => 40,
-                        'desc' => $this->l('Email address shown in the footer and contact section.'),
-                        'validate' => 'isEmail',
-                    ],
-                    [
-                        'col' => 3,
-                        'type' => 'text',
-                        'label' => $this->l('Contact phone'),
-                        'name' => $prefix . 'CONTACT_PHONE',
-                        'size' => 20,
-                        'desc' => $this->l('Phone number shown in the header and contact section (international format).'),
-                    ],
+                    /*
+                     * Contact details are deliberately NOT configurable here
+                     * — story 1.18 made PS_SHOP_EMAIL/PS_SHOP_PHONE (set on
+                     * the "GF Brand Settings" tab, or hotelreservationsystem's
+                     * own "Website Contact Details" screen) the single
+                     * source of truth for the footer's contact info, instead
+                     * of the GFBRAND_CONTACT_EMAIL/PHONE keys this form used
+                     * to own.
+                     */
 
-                    /* --- Section 4: Social media --- */
+                    /* --- Section 3: Social media --- */
                     [
                         'col' => 3,
                         'type' => 'text',
@@ -1484,8 +1504,6 @@ class gfbrand extends Module
             $prefix . 'TAGLINE' => Configuration::get($prefix . 'TAGLINE'),
             $prefix . 'PRIMARY_COLOR' => Configuration::get($prefix . 'PRIMARY_COLOR', 1, false, '#6b8e23'),
             $prefix . 'SECONDARY_COLOR' => Configuration::get($prefix . 'SECONDARY_COLOR', 1, false, '#556B2F'),
-            $prefix . 'CONTACT_EMAIL' => Configuration::get($prefix . 'CONTACT_EMAIL'),
-            $prefix . 'CONTACT_PHONE' => Configuration::get($prefix . 'CONTACT_PHONE'),
             $prefix . 'SOCIAL_FACEBOOK' => Configuration::get($prefix . 'SOCIAL_FACEBOOK'),
             $prefix . 'SOCIAL_INSTAGRAM' => Configuration::get($prefix . 'SOCIAL_INSTAGRAM'),
             $prefix . 'SOCIAL_LINKEDIN' => Configuration::get($prefix . 'SOCIAL_LINKEDIN'),
