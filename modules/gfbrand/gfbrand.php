@@ -25,6 +25,29 @@ class gfbrand extends Module
      */
     const CONFIG_PREFIX = 'GFBRAND_';
 
+    /**
+     * The theme directory this brand is tied to — story 1.20.
+     *
+     * gfbrand's storefront presence (CSS/JS, homepage sections, trust
+     * drawers, favicon/OG meta, footer content, the room-type certification
+     * badge, and the /advisors and /partners pages) only appears when this
+     * theme is the shop's active one. hotel-reservation-theme stays a clean,
+     * unbranded QloApps install — the two themes are how an admin toggles
+     * the whole brand layer on and off, without touching gfbrand's own
+     * ENABLED flag or reinstalling anything.
+     */
+    const BRAND_THEME_DIRECTORY = 'gfexperiences';
+
+    /**
+     * Per-request cache for isBrandThemeActive() — a Theme lookup is one
+     * query; every gated hook calling it on the same request should not pay
+     * for it twice. Reset only between requests (a fresh PHP process), which
+     * is exactly when the active theme could have changed anyway.
+     *
+     * @var bool|null
+     */
+    private static $themeActiveCache;
+
     /** @var GFModuleServices Builds and holds this module's collaborators. */
     private $services;
 
@@ -531,10 +554,66 @@ class gfbrand extends Module
      * Note: actionFrontControllerSetMedia dispatches with an empty $params array
      * in QloApps 1.7 / PrestaShop 1.6. Use Context::getContext()->controller.
      */
+    /**
+     * True when the shop's active theme is the GFExperiences fork —
+     * story 1.20.
+     *
+     * Reads Context::getContext()->shop->id_theme, not
+     * Configuration::get('PS_THEME') (dead in this PrestaShop version — see
+     * config/config.inc.php's own resolution: $context->theme = new
+     * Theme((int)$context->shop->id_theme)). A missing/unloadable shop or
+     * theme row reads as "not active" rather than throwing, since every
+     * caller of this method is a hook that must degrade to "render nothing"
+     * on any doubt, never to a fatal error on the storefront.
+     *
+     * @return bool
+     */
+    public static function isBrandThemeActive()
+    {
+        if (self::$themeActiveCache === null) {
+            self::$themeActiveCache = false;
+
+            $shop = Context::getContext()->shop;
+            $idTheme = $shop ? (int) $shop->id_theme : 0;
+
+            if ($idTheme > 0) {
+                $theme = new Theme($idTheme);
+
+                if (Validate::isLoadedObject($theme)) {
+                    self::$themeActiveCache = ($theme->directory === self::BRAND_THEME_DIRECTORY);
+                }
+            }
+        }
+
+        return self::$themeActiveCache;
+    }
+
+    /**
+     * The single gate every storefront-presentational hook checks —
+     * story 1.20.
+     *
+     * Two independent switches, both required: the manual GFBRAND_ENABLED
+     * back-office flag (layer 2 — an admin can still kill the brand outright
+     * without touching themes) AND the active theme being GFExperiences.
+     * Deliberately not used by hookActionDispatcher's booking-restriction
+     * assignment, hookModuleRoutes, hookActionEmailAddBeforeContent/After, or
+     * the admin controllers (AdminGfAdvisors/Partners/Inquiries/
+     * Establishments) — those are booking logic, URL routing, transactional
+     * email, and back-office data management respectively, not visual
+     * branding, and an editor must be able to manage GF data regardless of
+     * which theme happens to be live at the moment.
+     *
+     * @return bool
+     */
+    public static function isBrandActive()
+    {
+        return (bool) Configuration::get(self::CONFIG_PREFIX . 'ENABLED') && self::isBrandThemeActive();
+    }
+
     public function hookActionFrontControllerSetMedia($params)
     {
         /* Guard: disabled from back office? */
-        if (!Configuration::get(self::CONFIG_PREFIX . 'ENABLED')) {
+        if (!self::isBrandActive()) {
             return;
         }
 
@@ -636,7 +715,7 @@ class gfbrand extends Module
      */
     public function hookDisplayHeader($params)
     {
-        if (!Configuration::get(self::CONFIG_PREFIX . 'ENABLED')) {
+        if (!self::isBrandActive()) {
             return '';
         }
 
@@ -654,8 +733,11 @@ class gfbrand extends Module
         $ogTitle = $shopName ?: 'GF Experiences';
         $ogDesc  = $tagline ?: 'Gluten-Free Travel Made Safe & Easy';
 
-        // Current page URL for OG (use PrestaShop's link helper for protocol + host)
-        $ogUrl = rtrim($this->context->link->baseUri, '/') . $_SERVER['REQUEST_URI'];
+        // Current page URL for OG. Link has no $baseUri property in this
+        // PrestaShop version (that was always a silent "Undefined property"
+        // warning on every page load, never actually reflected below) —
+        // getBaseLink() is the real API for the protocol+host prefix.
+        $ogUrl = rtrim($this->context->link->getBaseLink(), '/') . $_SERVER['REQUEST_URI'];
 
         return '
         <!-- GF Brand: Favicon set -->
@@ -669,6 +751,7 @@ class gfbrand extends Module
         <meta property="og:site_name" content="' . htmlspecialchars($ogTitle, ENT_COMPAT, 'UTF-8') . '" />
         <meta property="og:title" content="' . htmlspecialchars($ogTitle, ENT_COMPAT, 'UTF-8') . '" />
         <meta property="og:description" content="' . htmlspecialchars($ogDesc, ENT_COMPAT, 'UTF-8') . '" />
+        <meta property="og:url" content="' . htmlspecialchars($ogUrl, ENT_COMPAT, 'UTF-8') . '" />
         <meta property="og:image" content="' . $assetUrl . 'og-image.png" />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
@@ -689,7 +772,7 @@ class gfbrand extends Module
      */
     public function hookDisplayHome($params)
     {
-        if (!Configuration::get(self::CONFIG_PREFIX . 'ENABLED')) {
+        if (!self::isBrandActive()) {
             return '';
         }
 
@@ -887,7 +970,7 @@ class gfbrand extends Module
      */
     private function renderTrustDrawer($section)
     {
-        if (!Configuration::get(self::CONFIG_PREFIX . 'ENABLED')) {
+        if (!self::isBrandActive()) {
             return '';
         }
 
@@ -936,7 +1019,7 @@ class gfbrand extends Module
      */
     public function hookDisplayFooterBefore($params)
     {
-        if (!Configuration::get(self::CONFIG_PREFIX . 'ENABLED')) {
+        if (!self::isBrandActive()) {
             return '';
         }
 
@@ -1007,7 +1090,7 @@ class gfbrand extends Module
      */
     public function hookDisplayRoomTypeDetailRoomTypeNameAfter($params)
     {
-        if (!Configuration::get(self::CONFIG_PREFIX . 'ENABLED')) {
+        if (!self::isBrandActive()) {
             return '';
         }
 

@@ -38,9 +38,10 @@ class GfbrandPartnersModuleFrontController extends ModuleFrontController
     public function initContent()
     {
         // The drawer this page mirrors is itself suppressed when the brand
-        // module is switched off; this standalone route must not stay public
-        // and indexable while that is true.
-        if (!Configuration::get(Gfbrand::CONFIG_PREFIX . 'ENABLED')) {
+        // is switched off (manually, or by the active theme not being
+        // GFExperiences — story 1.20); this standalone route must not stay
+        // public and indexable while that is true.
+        if (!Gfbrand::isBrandActive()) {
             Tools::redirect('index.php?controller=404');
 
             return;
