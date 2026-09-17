@@ -69,15 +69,20 @@ class GFAdvisorPartnerListing
                 'image' => (string) $advisor->image,
                 // The glyph is a designed state, not an error: no photograph
                 // means a generic person silhouette (AC-9), never a broken
-                // image icon.
-                'has_image' => (string) $advisor->image !== '',
+                // image icon. A filename with no file on disk must fall back
+                // to the glyph too, or AC-9 breaks the moment a file goes
+                // missing (as the seeded partner logos currently do).
+                'has_image' => self::fileExists('advisors', (string) $advisor->image),
                 // The dial form, not the display number: tel: links must not
                 // carry the spaces and dashes humans read.
                 'tel' => (string) $advisor->phone_e164,
                 // Suppressed entirely when empty (the live site shipped dead
                 // href="#" links): a card without a site simply has no link.
+                // Also suppressed for anything but http(s) — core's isUrl
+                // validation accepts a javascript: URL, and this is the last
+                // gate before it becomes a real href.
                 'website' => (string) $advisor->website_url,
-                'has_website' => (string) $advisor->website_url !== '',
+                'has_website' => self::isHttpUrl((string) $advisor->website_url),
             ];
         }
 
@@ -97,8 +102,9 @@ class GFAdvisorPartnerListing
                 'name' => (string) $partner->name,
                 'description' => (string) $partner->description,
                 'logo' => (string) $partner->logo,
-                'has_logo' => (string) $partner->logo !== '',
+                'has_logo' => self::fileExists('partners', (string) $partner->logo),
                 'website' => (string) $partner->website_url,
+                'has_website' => self::isHttpUrl((string) $partner->website_url),
                 'category' => (string) $partner->category,
             ];
         }
@@ -120,5 +126,38 @@ class GFAdvisorPartnerListing
     public function hasPartners()
     {
         return count($this->partners) > 0;
+    }
+
+    /**
+     * Whether a stored file name actually exists on disk. A name is set the
+     * moment an upload or CSV seed points at one — this is what keeps a
+     * missing file (a broken upload, a seed referencing a logo that was
+     * never delivered) from ever reaching the "never a broken image" cards.
+     *
+     * @param  string $directory 'advisors' or 'partners'.
+     * @param  string $fileName
+     * @return bool
+     */
+    private static function fileExists($directory, $fileName)
+    {
+        if ($fileName === '') {
+            return false;
+        }
+
+        $path = rtrim(_PS_ROOT_DIR_, '/') . '/uploads/establishments/' . $directory . '/' . basename($fileName);
+
+        return is_file($path);
+    }
+
+    /**
+     * Core's isUrl validation accepts a javascript: URL; this is the gate
+     * that keeps one from ever becoming a rendered href.
+     *
+     * @param  string $url
+     * @return bool
+     */
+    private static function isHttpUrl($url)
+    {
+        return $url !== '' && (bool) preg_match('#^https?://#i', $url);
     }
 }

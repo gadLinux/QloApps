@@ -61,7 +61,11 @@ class GfAdvisor extends ObjectModel
             /* Lang fields */
             'name' => ['type' => self::TYPE_STRING, 'lang' => true, 'validate' => 'isCatalogName', 'required' => true, 'size' => 255],
             'regions_served' => ['type' => self::TYPE_STRING, 'lang' => true, 'validate' => 'isGenericName', 'size' => 255],
-            'bio' => ['type' => self::TYPE_HTML, 'lang' => true, 'validate' => 'isCleanHtml'],
+            // Plain prose end to end: the admin form is a plain textarea (no
+            // rich-text editor) and the template renders with `htmlall`
+            // escaping, so TYPE_HTML/isCleanHtml only meant any HTML entered
+            // showed up as literal tags on the card.
+            'bio' => ['type' => self::TYPE_STRING, 'lang' => true, 'validate' => 'isMessage'],
         ],
     ];
 
@@ -93,5 +97,48 @@ class GfAdvisor extends ObjectModel
         }
 
         return $advisors;
+    }
+
+    /**
+     * Stock HelperList drag-and-drop position swap — same shape core uses
+     * for Carrier::updatePosition().
+     *
+     * @param  int $way      1 = move down, 0 = move up.
+     * @param  int $position Target position.
+     * @return bool
+     */
+    public function updatePosition($way, $position)
+    {
+        if (!$res = Db::getInstance()->executeS(
+            'SELECT `id_gf_advisor`, `position`
+             FROM `' . _DB_PREFIX_ . 'gf_advisor`
+             ORDER BY `position` ASC'
+        )) {
+            return false;
+        }
+
+        $movedRow = null;
+
+        foreach ($res as $row) {
+            if ((int) $row['id_gf_advisor'] === (int) $this->id) {
+                $movedRow = $row;
+            }
+        }
+
+        if ($movedRow === null) {
+            return false;
+        }
+
+        return Db::getInstance()->execute(
+            'UPDATE `' . _DB_PREFIX_ . 'gf_advisor`
+             SET `position` = `position` ' . ($way ? '- 1' : '+ 1') . '
+             WHERE `position`' . ($way
+                ? ' > ' . (int) $movedRow['position'] . ' AND `position` <= ' . (int) $position
+                : ' < ' . (int) $movedRow['position'] . ' AND `position` >= ' . (int) $position)
+        ) && Db::getInstance()->execute(
+            'UPDATE `' . _DB_PREFIX_ . 'gf_advisor`
+             SET `position` = ' . (int) $position . '
+             WHERE `id_gf_advisor` = ' . (int) $movedRow['id_gf_advisor']
+        );
     }
 }

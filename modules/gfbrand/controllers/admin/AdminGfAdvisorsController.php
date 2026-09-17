@@ -6,12 +6,19 @@
  *
  * A standard ModuleAdminController: create, edit, deactivate and delete with
  * no developer, plus the language tabs ObjectModel gives a _lang table for
- * free. Position reordering is the stock HelperList drag-and-drop.
+ * free (`$this->lang = true` and `'lang' => true` on each translated input —
+ * both are required, or the _lang join is never added to the list query and
+ * the required multilang name can never be posted).
+ *
+ * Position reordering is stock HelperList drag-and-drop, wired through
+ * ajaxProcessUpdatePositions()/GfAdvisor::updatePosition(), the same shape
+ * core uses for Carrier.
  *
  * The photograph is not a Product Image: it is moved into
- * uploads/establishments/advisors/ and stored by file name. The file is
- * handled here, in postProcess(), and its name lands on the object before
- * ObjectModel writes the row.
+ * uploads/establishments/advisors/ and stored by file name. copyFromPost()
+ * is the hook point for that — it runs on the real $object right before
+ * ObjectModel::add()/update(), for both the add and the edit path, which
+ * postProcess() cannot guarantee (the add path has no object yet there).
  *
  * PRESENTATION LAYER
  *
@@ -31,7 +38,8 @@ class AdminGfAdvisorsController extends ModuleAdminController
         $this->table = 'gf_advisor';
         $this->className = 'GfAdvisor';
         $this->identifier = 'id_gf_advisor';
-        $this->lang = false;
+        $this->lang = true;
+        $this->position_identifier = 'id_gf_advisor';
 
         $this->_orderBy = 'position';
         $this->_orderWay = 'ASC';
@@ -52,9 +60,11 @@ class AdminGfAdvisorsController extends ModuleAdminController
             'position' => [
                 'title' => $this->l('Order'),
                 'align' => 'text-center',
+                'position' => 'position',
             ],
             'active' => [
                 'title' => $this->l('Active'),
+                'active' => 'status',
                 'type' => 'bool',
                 'align' => 'text-center',
             ],
@@ -66,19 +76,12 @@ class AdminGfAdvisorsController extends ModuleAdminController
         parent::__construct();
     }
 
-    /**
-     * Move the uploaded photograph into place and put its file name on the
-     * object, then hand off to the normal save path.
-     */
-    public function postProcess()
-    {
-        $this->applyImage();
-
-        return parent::postProcess();
-    }
-
     public function renderForm()
     {
+        /** @var GfAdvisor $advisor */
+        $advisor = $this->object;
+        $currentImage = ($advisor && $advisor->id && (string) $advisor->image !== '') ? (string) $advisor->image : '';
+
         $this->fields_form = [
             'legend' => [
                 'title' => $this->object && $this->object->id
@@ -91,6 +94,7 @@ class AdminGfAdvisorsController extends ModuleAdminController
                     'type' => 'text',
                     'label' => $this->l('Name'),
                     'name' => 'name',
+                    'lang' => true,
                     'required' => true,
                     'size' => 40,
                 ],
@@ -98,12 +102,14 @@ class AdminGfAdvisorsController extends ModuleAdminController
                     'type' => 'text',
                     'label' => $this->l('Regions served'),
                     'name' => 'regions_served',
+                    'lang' => true,
                     'size' => 60,
                 ],
                 [
                     'type' => 'textarea',
                     'label' => $this->l('Bio'),
                     'name' => 'bio',
+                    'lang' => true,
                     'cols' => 20,
                     'rows' => 5,
                 ],
@@ -118,7 +124,7 @@ class AdminGfAdvisorsController extends ModuleAdminController
                     'label' => $this->l('Phone (dial, e.g. +34669771472)'),
                     'name' => 'phone_e164',
                     'size' => 20,
-                    'desc' => $this->l('Used for the tel: link on the card.'),
+                    'desc' => $this->l('Used for the tel: link on the card. Include the leading +.'),
                 ],
                 [
                     'type' => 'text',
@@ -126,19 +132,21 @@ class AdminGfAdvisorsController extends ModuleAdminController
                     'name' => 'website_url',
                     'size' => 60,
                     'validate' => 'isUrl',
+                    'desc' => $this->l('Full http(s):// address.'),
                 ],
                 [
-                    'type' => 'email',
+                    'type' => 'text',
                     'label' => $this->l('Email'),
                     'name' => 'email',
                     'size' => 40,
+                    'validate' => 'isEmail',
                 ],
                 [
-                    'type' => 'image',
+                    'type' => 'file',
                     'label' => $this->l('Photograph'),
                     'name' => 'file',
+                    'file' => $this->assetFieldHtml('file', 'gfRemoveImage', $currentImage, 'advisors'),
                     'desc' => $this->l('JPG, PNG, GIF or WebP, up to 5 MB.'),
-                    'delete' => true,
                 ],
                 [
                     'type' => 'switch',
@@ -156,45 +164,117 @@ class AdminGfAdvisorsController extends ModuleAdminController
             ],
         ];
 
-        /** @var GfAdvisor $advisor */
-        $advisor = $this->object;
-
-        if ($advisor && $advisor->id && (string) $advisor->image !== '') {
-            $this->fields_value['image'] = $advisor->image;
-        }
-
         return parent::renderForm();
     }
 
     /**
-     * Upload or remove the photograph, writing the resulting file name onto
-     * the object so the subsequent ObjectModel save persists it.
+     * Give a newly added advisor the next position, so it sorts after every
+     * existing row instead of defaulting to 0 and sorting first.
+     *
+     * @param  GfAdvisor $object
+     * @return bool
      */
-    private function applyImage()
+    protected function beforeAdd($object)
     {
-        /** @var GfAdvisor|null $advisor */
-        $advisor = $this->object;
+        if (empty($object->position)) {
+            $object->position = (int) Db::getInstance()->getValue(
+                'SELECT MAX(`position`) FROM `' . _DB_PREFIX_ . 'gf_advisor`'
+            ) + 1;
+        }
 
-        if (!$advisor) {
+        return true;
+    }
+
+    /**
+     * Runs on the real object right before add()/update() for both the add
+     * and the edit path — the correct hook point for the upload, unlike
+     * postProcess() (no object exists yet there when adding).
+     *
+     * @param GfAdvisor $object
+     * @param string    $table
+     */
+    protected function copyFromPost(&$object, $table)
+    {
+        parent::copyFromPost($object, $table);
+
+        if ($table === $this->table) {
+            $this->applyImage($object);
+        }
+    }
+
+    /**
+     * Delete the advisor's photograph along with the row, so removing an
+     * advisor does not leave an orphaned file behind.
+     */
+    public function processDelete()
+    {
+        $object = $this->loadObject();
+
+        if (Validate::isLoadedObject($object) && (string) $object->image !== '') {
+            (new GFAssetUploader('advisors'))->remove((string) $object->image);
+        }
+
+        return parent::processDelete();
+    }
+
+    /**
+     * Stock HelperList drag-and-drop position update — same shape core uses
+     * for Carrier::updatePosition().
+     */
+    public function ajaxProcessUpdatePositions()
+    {
+        $way = (int) Tools::getValue('way');
+        $id = (int) Tools::getValue('id');
+        $positions = Tools::getValue($this->table);
+
+        if (!is_array($positions)) {
             return;
         }
 
-        $uploader = new GFAssetUploader('advisors');
+        foreach ($positions as $position => $value) {
+            $chunks = explode('_', $value);
 
+            if (isset($chunks[2]) && (int) $chunks[2] === $id) {
+                $advisor = new GfAdvisor($id);
+
+                if (Validate::isLoadedObject($advisor) && $advisor->updatePosition($way, $position)) {
+                    echo 'ok position ' . (int) $position . ' for advisor ' . $id;
+                } else {
+                    echo '{"hasError" : true, "errors" : "Cannot update advisor ' . $id . ' to position ' . (int) $position . '"}';
+                }
+
+                break;
+            }
+        }
+    }
+
+    /**
+     * Upload or remove the photograph on the real object, replacing any
+     * previous file so uploads do not accumulate as orphans.
+     *
+     * @param GfAdvisor $advisor
+     */
+    private function applyImage($advisor)
+    {
         if (Tools::isSubmit('gfRemoveImage')) {
             if ((string) $advisor->image !== '') {
-                $uploader->remove((string) $advisor->image);
+                (new GFAssetUploader('advisors'))->remove((string) $advisor->image);
             }
 
-            $advisor->image = null;
+            $advisor->image = '';
 
             return;
         }
 
         if ($this->hasUploadedFile('file')) {
+            $uploader = new GFAssetUploader('advisors');
             $result = $uploader->upload('file');
 
             if ($result['success']) {
+                if ((string) $advisor->image !== '') {
+                    $uploader->remove((string) $advisor->image);
+                }
+
                 $advisor->image = $result['file'];
             } else {
                 $this->errors[] = $result['error'];
@@ -210,6 +290,38 @@ class AdminGfAdvisorsController extends ModuleAdminController
     {
         return isset($_FILES[$field])
             && is_array($_FILES[$field])
+            && (int) $_FILES[$field]['error'] !== UPLOAD_ERR_NO_FILE
             && is_uploaded_file((string) $_FILES[$field]['tmp_name']);
+    }
+
+    /**
+     * Build the raw HTML for a `'type' => 'file'` HelperForm input: the
+     * current file's thumbnail plus a genuine "remove" checkbox (the
+     * built-in `'type' => 'image'` / `'delete' => true` pair is not a
+     * supported HelperForm input in this PrestaShop 1.6 codebase, so it
+     * previously rendered nothing at all).
+     *
+     * @param  string $field
+     * @param  string $removeField
+     * @param  string $currentFile
+     * @param  string $directory
+     * @return string
+     */
+    private function assetFieldHtml($field, $removeField, $currentFile, $directory)
+    {
+        $html = '';
+
+        if ($currentFile !== '') {
+            $url = __PS_BASE_URI__ . 'uploads/establishments/' . $directory . '/' . $currentFile;
+            $html .= '<div class="gf-asset-current" style="margin-bottom:8px;">'
+                . '<img src="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . '" alt="" style="max-height:80px;display:block;margin-bottom:4px;">'
+                . '<label><input type="checkbox" name="' . htmlspecialchars($removeField, ENT_QUOTES, 'UTF-8') . '" value="1"> '
+                . $this->l('Remove current file') . '</label>'
+                . '</div>';
+        }
+
+        $html .= '<input type="file" name="' . htmlspecialchars($field, ENT_QUOTES, 'UTF-8') . '" accept="image/*">';
+
+        return $html;
     }
 }

@@ -37,21 +37,28 @@ class GfbrandPartnersModuleFrontController extends ModuleFrontController
 
     public function initContent()
     {
+        // The drawer this page mirrors is itself suppressed when the brand
+        // module is switched off; this standalone route must not stay public
+        // and indexable while that is true.
+        if (!Configuration::get(Gfbrand::CONFIG_PREFIX . 'ENABLED')) {
+            Tools::redirect('index.php?controller=404');
+
+            return;
+        }
+
         parent::initContent();
 
         $listing = $this->module->getAdvisorPartnerListing();
-        $partnerCards = $listing->partnerCards();
-
-        foreach ($partnerCards as $index => $card) {
-            $partnerCards[$index]['logo_url'] = $this->partnerLogoUrl($card);
-        }
 
         $this->context->smarty->assign([
             'gf_advisors' => $listing->advisorCards(),
-            'gf_partners' => $partnerCards,
+            'gf_partners' => $listing->partnerCards(),
             'gf_has_advisors' => $listing->hasAdvisors(),
             'gf_has_partners' => $listing->hasPartners(),
             'gf_section' => 'partners',
+            // The page already renders this exact copy in its own <h1>; the
+            // shared component's <h2> would only duplicate it.
+            'gf_show_section_heading' => false,
             'gf_section_template' => _PS_MODULE_DIR_
                 . 'gfbrand/views/templates/front/_advisor-partner-section.tpl',
             'gf_advisor_image_base' => __PS_BASE_URI__ . 'uploads/establishments/advisors/',
@@ -61,18 +68,5 @@ class GfbrandPartnersModuleFrontController extends ModuleFrontController
         ]);
 
         $this->setTemplate('partners.tpl');
-    }
-
-    /**
-     * @param  array $card
-     * @return string '' when there is no logo: the tile shows the name.
-     */
-    private function partnerLogoUrl(array $card)
-    {
-        if (!$card['has_logo']) {
-            return '';
-        }
-
-        return __PS_BASE_URI__ . 'uploads/establishments/partners/' . rawurlencode($card['logo']);
     }
 }

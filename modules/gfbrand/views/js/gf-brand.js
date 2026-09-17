@@ -81,18 +81,51 @@
      * only flips a class and moves focus; it does no measuring.
      * ========================================================================== */
 
+    /**
+     * The standalone rendering (advisors.tpl/partners.tpl) puts the trigger
+     * button inside the drawer itself. The homepage's embedded rendering
+     * does not (story 1.13): the pillar row supplies the trigger, as a
+     * sibling of .gf-trust-drawer, wired to its panel only by
+     * aria-controls -> the panel's id. Without this fallback, every
+     * homepage "MEET ADVISORS"/"OUR PARTNERS" button did nothing at all.
+     */
+    function findTriggerFor(drawer, body) {
+        var internal = drawer.querySelector('[data-gf-drawer-trigger]');
+
+        if (internal) {
+            return internal;
+        }
+
+        if (body && body.id) {
+            return document.querySelector('[data-gf-drawer-trigger][aria-controls="' + body.id + '"]');
+        }
+
+        return null;
+    }
+
     function initTrustDrawer(drawer) {
-        var trigger = drawer.querySelector('[data-gf-drawer-trigger]');
         var body = drawer.querySelector('.gf-trust-drawer-body');
+        var trigger = findTriggerFor(drawer, body);
 
         if (!trigger || !body) {
             return;
         }
 
-        // The markup is born open; close it now that we can open it again.
+        // The markup is born open; closing it the moment JS runs would
+        // otherwise animate through the full 450ms collapse on every page
+        // load. Suppressing the transition for one frame turns that into an
+        // instant, invisible initial state instead of a flash.
+        drawer.classList.add('gf-trust-drawer--no-transition');
         drawer.classList.remove('gf-trust-drawer--nojs');
         drawer.classList.add('gf-trust-drawer--closed');
         trigger.setAttribute('aria-expanded', 'false');
+        // Force a reflow so the class above is committed before transitions
+        // are re-enabled on the next tick.
+        // eslint-disable-next-line no-unused-expressions
+        drawer.offsetHeight;
+        window.setTimeout(function () {
+            drawer.classList.remove('gf-trust-drawer--no-transition');
+        }, 0);
 
         function isOpen() {
             return drawer.classList.contains('gf-trust-drawer--open');
@@ -105,11 +138,17 @@
 
             if (open) {
                 // Focus moves into the drawer (AC-5): the first focusable
-                // content element, or the region itself.
+                // content element, or the region itself. tabindex="-1" is
+                // only ever added to the region — stamping it on a real
+                // content link would remove that link from the Tab order
+                // for good, since it is never restored.
                 var focusable = body.querySelector('a[href], button, [tabindex="0"]');
-                var target = focusable || body;
-                target.setAttribute('tabindex', '-1');
-                target.focus({ preventScroll: true });
+                if (focusable) {
+                    focusable.focus({ preventScroll: true });
+                } else {
+                    body.setAttribute('tabindex', '-1');
+                    body.focus({ preventScroll: true });
+                }
                 drawer.scrollIntoView({ behavior: 'auto', block: 'nearest' });
             }
         }
@@ -118,9 +157,14 @@
             setOpen(!isOpen());
         });
 
-        // Escape closes and returns focus to the trigger (AC-5).
+        // Escape closes and returns focus to the trigger (AC-5) — but only
+        // when this drawer is the one that has focus. A single document
+        // listener per drawer otherwise means Escape anywhere on the page
+        // (another widget, an unrelated form) closes every open drawer, and
+        // with more than one open, focus lands on whichever trigger's
+        // listener happened to run last.
         document.addEventListener('keydown', function (event) {
-            if (event.key === 'Escape' && isOpen()) {
+            if (event.key === 'Escape' && isOpen() && drawer.contains(document.activeElement)) {
                 setOpen(false);
                 trigger.focus({ preventScroll: true });
             }

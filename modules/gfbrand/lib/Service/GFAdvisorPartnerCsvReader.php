@@ -31,11 +31,21 @@ class GFAdvisorPartnerCsvReader
     private $errors = [];
 
     /**
+     * @var bool Set only when the file itself could not be read at all
+     * (missing, unreadable, empty) — as opposed to a per-row warning, which
+     * leaves the rest of the file importable.
+     */
+    private $fatal = false;
+
+    /**
      * @param  string $path Absolute path to the advisors CSV.
      * @return GFAdvisorSeed[]
      */
     public function readAdvisors($path)
     {
+        $this->errors = [];
+        $this->fatal = false;
+
         $rows = $this->readRows($path);
 
         if ($rows === false) {
@@ -44,8 +54,15 @@ class GFAdvisorPartnerCsvReader
 
         list($columns, $rows) = $rows;
         $advisors = [];
+        $seenSourceIds = [];
 
         foreach ($rows as $lineNumber => $row) {
+            if (count($row) !== count($columns)) {
+                $this->errors[] = 'Line ' . $lineNumber . ': expected ' . count($columns)
+                    . ' columns, found ' . count($row) . ', row skipped';
+                continue;
+            }
+
             $name = $this->value($row, $columns, 'name');
 
             if ($name === '') {
@@ -53,8 +70,17 @@ class GFAdvisorPartnerCsvReader
                 continue;
             }
 
+            $sourceId = $this->sourceId($row, $columns, $name);
+
+            if (isset($seenSourceIds[$sourceId])) {
+                $this->errors[] = 'Line ' . $lineNumber . ': duplicate id "' . $sourceId . '", row skipped';
+                continue;
+            }
+
+            $seenSourceIds[$sourceId] = true;
+
             $advisor = new GFAdvisorSeed();
-            $advisor->sourceId = $this->sourceId($row, $columns, $name);
+            $advisor->sourceId = $sourceId;
             $advisor->name = $name;
             $advisor->regionsServed = $this->value($row, $columns, 'regions_served');
             $advisor->phone = $this->value($row, $columns, 'phone');
@@ -78,6 +104,9 @@ class GFAdvisorPartnerCsvReader
      */
     public function readPartners($path)
     {
+        $this->errors = [];
+        $this->fatal = false;
+
         $rows = $this->readRows($path);
 
         if ($rows === false) {
@@ -86,8 +115,15 @@ class GFAdvisorPartnerCsvReader
 
         list($columns, $rows) = $rows;
         $partners = [];
+        $seenSourceIds = [];
 
         foreach ($rows as $lineNumber => $row) {
+            if (count($row) !== count($columns)) {
+                $this->errors[] = 'Line ' . $lineNumber . ': expected ' . count($columns)
+                    . ' columns, found ' . count($row) . ', row skipped';
+                continue;
+            }
+
             $name = $this->value($row, $columns, 'name');
 
             if ($name === '') {
@@ -95,8 +131,17 @@ class GFAdvisorPartnerCsvReader
                 continue;
             }
 
+            $sourceId = $this->sourceId($row, $columns, $name);
+
+            if (isset($seenSourceIds[$sourceId])) {
+                $this->errors[] = 'Line ' . $lineNumber . ': duplicate id "' . $sourceId . '", row skipped';
+                continue;
+            }
+
+            $seenSourceIds[$sourceId] = true;
+
             $partner = new GFPartnerSeed();
-            $partner->sourceId = $this->sourceId($row, $columns, $name);
+            $partner->sourceId = $sourceId;
             $partner->name = $name;
             $partner->logoFile = basename($this->value($row, $columns, 'logo_url'));
             $partner->websiteUrl = $this->value($row, $columns, 'website_url');
@@ -120,12 +165,23 @@ class GFAdvisorPartnerCsvReader
     }
 
     /**
+     * @return bool True when the file itself could not be read at all — the
+     * importer must not save anything in that case. False for a file that
+     * was read, even if some of its rows were skipped.
+     */
+    public function hasFatalError()
+    {
+        return $this->fatal;
+    }
+
+    /**
      * @return array{0: array<string, int>, 1: array<int, array>}|false
      */
     private function readRows($path)
     {
         if (!is_file($path) || !is_readable($path)) {
             $this->errors[] = 'CSV not found or unreadable: ' . $path;
+            $this->fatal = true;
 
             return false;
         }
@@ -134,6 +190,7 @@ class GFAdvisorPartnerCsvReader
 
         if ($handle === false) {
             $this->errors[] = 'Could not open CSV: ' . $path;
+            $this->fatal = true;
 
             return false;
         }
@@ -143,10 +200,15 @@ class GFAdvisorPartnerCsvReader
         if ($header === false) {
             fclose($handle);
             $this->errors[] = 'CSV is empty: ' . $path;
+            $this->fatal = true;
 
             return false;
         }
 
+        // A file re-saved from Excel carries a UTF-8 BOM on the first header
+        // cell; left in place, 'id' is never found and every source id falls
+        // back to md5(name), duplicating the whole file on the next import.
+        $header[0] = preg_replace('/^\xEF\xBB\xBF/', '', (string) $header[0]);
         $columns = array_flip(array_map('trim', $header));
         $rows = [];
         $lineNumber = 2;

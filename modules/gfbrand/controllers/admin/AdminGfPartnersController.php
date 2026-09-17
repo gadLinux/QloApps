@@ -5,8 +5,10 @@
  * The back-office screen for partner organisations — story 1.11, AC-2.
  *
  * Same shape as the advisors screen: create, edit, deactivate, delete,
- * language tabs and drag-reorder. The logo is stored in
- * uploads/establishments/partners/ by file name.
+ * language tabs (`$this->lang = true` and `'lang' => true` on each translated
+ * input — both are required) and drag-reorder. The logo is stored in
+ * uploads/establishments/partners/ by file name, applied in copyFromPost()
+ * so it runs on the real object for both the add and the edit path.
  *
  * PRESENTATION LAYER
  *
@@ -26,7 +28,8 @@ class AdminGfPartnersController extends ModuleAdminController
         $this->table = 'gf_partner';
         $this->className = 'GfPartner';
         $this->identifier = 'id_gf_partner';
-        $this->lang = false;
+        $this->lang = true;
+        $this->position_identifier = 'id_gf_partner';
 
         $this->_orderBy = 'position';
         $this->_orderWay = 'ASC';
@@ -50,9 +53,11 @@ class AdminGfPartnersController extends ModuleAdminController
             'position' => [
                 'title' => $this->l('Order'),
                 'align' => 'text-center',
+                'position' => 'position',
             ],
             'active' => [
                 'title' => $this->l('Active'),
+                'active' => 'status',
                 'type' => 'bool',
                 'align' => 'text-center',
             ],
@@ -64,19 +69,12 @@ class AdminGfPartnersController extends ModuleAdminController
         parent::__construct();
     }
 
-    /**
-     * Move the uploaded logo into place and put its file name on the object,
-     * then hand off to the normal save path.
-     */
-    public function postProcess()
-    {
-        $this->applyLogo();
-
-        return parent::postProcess();
-    }
-
     public function renderForm()
     {
+        /** @var GfPartner $partner */
+        $partner = $this->object;
+        $currentLogo = ($partner && $partner->id && (string) $partner->logo !== '') ? (string) $partner->logo : '';
+
         $this->fields_form = [
             'legend' => [
                 'title' => $this->object && $this->object->id
@@ -89,6 +87,7 @@ class AdminGfPartnersController extends ModuleAdminController
                     'type' => 'text',
                     'label' => $this->l('Name'),
                     'name' => 'name',
+                    'lang' => true,
                     'required' => true,
                     'size' => 40,
                 ],
@@ -96,6 +95,7 @@ class AdminGfPartnersController extends ModuleAdminController
                     'type' => 'textarea',
                     'label' => $this->l('Description'),
                     'name' => 'description',
+                    'lang' => true,
                     'cols' => 20,
                     'rows' => 4,
                 ],
@@ -105,6 +105,7 @@ class AdminGfPartnersController extends ModuleAdminController
                     'name' => 'website_url',
                     'size' => 60,
                     'validate' => 'isUrl',
+                    'desc' => $this->l('Full http(s):// address.'),
                 ],
                 [
                     'type' => 'text',
@@ -113,11 +114,11 @@ class AdminGfPartnersController extends ModuleAdminController
                     'size' => 30,
                 ],
                 [
-                    'type' => 'image',
+                    'type' => 'file',
                     'label' => $this->l('Logo'),
                     'name' => 'file',
+                    'file' => $this->assetFieldHtml('file', 'gfRemoveImage', $currentLogo, 'partners'),
                     'desc' => $this->l('JPG, PNG, GIF or WebP, up to 5 MB. Displayed on white, constrained by height.'),
-                    'delete' => true,
                 ],
                 [
                     'type' => 'switch',
@@ -135,45 +136,117 @@ class AdminGfPartnersController extends ModuleAdminController
             ],
         ];
 
-        /** @var GfPartner $partner */
-        $partner = $this->object;
-
-        if ($partner && $partner->id && (string) $partner->logo !== '') {
-            $this->fields_value['image'] = $partner->logo;
-        }
-
         return parent::renderForm();
     }
 
     /**
-     * Upload or remove the logo, writing the resulting file name onto the
-     * object so the subsequent ObjectModel save persists it.
+     * Give a newly added partner the next position, so it sorts after every
+     * existing row instead of defaulting to 0 and sorting first.
+     *
+     * @param  GfPartner $object
+     * @return bool
      */
-    private function applyLogo()
+    protected function beforeAdd($object)
     {
-        /** @var GfPartner|null $partner */
-        $partner = $this->object;
+        if (empty($object->position)) {
+            $object->position = (int) Db::getInstance()->getValue(
+                'SELECT MAX(`position`) FROM `' . _DB_PREFIX_ . 'gf_partner`'
+            ) + 1;
+        }
 
-        if (!$partner) {
+        return true;
+    }
+
+    /**
+     * Runs on the real object right before add()/update() for both the add
+     * and the edit path — the correct hook point for the upload, unlike
+     * postProcess() (no object exists yet there when adding).
+     *
+     * @param GfPartner $object
+     * @param string    $table
+     */
+    protected function copyFromPost(&$object, $table)
+    {
+        parent::copyFromPost($object, $table);
+
+        if ($table === $this->table) {
+            $this->applyLogo($object);
+        }
+    }
+
+    /**
+     * Delete the partner's logo along with the row, so removing a partner
+     * does not leave an orphaned file behind.
+     */
+    public function processDelete()
+    {
+        $object = $this->loadObject();
+
+        if (Validate::isLoadedObject($object) && (string) $object->logo !== '') {
+            (new GFAssetUploader('partners'))->remove((string) $object->logo);
+        }
+
+        return parent::processDelete();
+    }
+
+    /**
+     * Stock HelperList drag-and-drop position update — same shape core uses
+     * for Carrier::updatePosition().
+     */
+    public function ajaxProcessUpdatePositions()
+    {
+        $way = (int) Tools::getValue('way');
+        $id = (int) Tools::getValue('id');
+        $positions = Tools::getValue($this->table);
+
+        if (!is_array($positions)) {
             return;
         }
 
-        $uploader = new GFAssetUploader('partners');
+        foreach ($positions as $position => $value) {
+            $chunks = explode('_', $value);
 
+            if (isset($chunks[2]) && (int) $chunks[2] === $id) {
+                $partner = new GfPartner($id);
+
+                if (Validate::isLoadedObject($partner) && $partner->updatePosition($way, $position)) {
+                    echo 'ok position ' . (int) $position . ' for partner ' . $id;
+                } else {
+                    echo '{"hasError" : true, "errors" : "Cannot update partner ' . $id . ' to position ' . (int) $position . '"}';
+                }
+
+                break;
+            }
+        }
+    }
+
+    /**
+     * Upload or remove the logo on the real object, replacing any previous
+     * file so uploads do not accumulate as orphans.
+     *
+     * @param GfPartner $partner
+     */
+    private function applyLogo($partner)
+    {
         if (Tools::isSubmit('gfRemoveImage')) {
             if ((string) $partner->logo !== '') {
-                $uploader->remove((string) $partner->logo);
+                (new GFAssetUploader('partners'))->remove((string) $partner->logo);
             }
 
-            $partner->logo = null;
+            $partner->logo = '';
 
             return;
         }
 
         if ($this->hasUploadedFile('file')) {
+            $uploader = new GFAssetUploader('partners');
             $result = $uploader->upload('file');
 
             if ($result['success']) {
+                if ((string) $partner->logo !== '') {
+                    $uploader->remove((string) $partner->logo);
+                }
+
                 $partner->logo = $result['file'];
             } else {
                 $this->errors[] = $result['error'];
@@ -189,6 +262,38 @@ class AdminGfPartnersController extends ModuleAdminController
     {
         return isset($_FILES[$field])
             && is_array($_FILES[$field])
+            && (int) $_FILES[$field]['error'] !== UPLOAD_ERR_NO_FILE
             && is_uploaded_file((string) $_FILES[$field]['tmp_name']);
+    }
+
+    /**
+     * Build the raw HTML for a `'type' => 'file'` HelperForm input: the
+     * current file's thumbnail plus a genuine "remove" checkbox (the
+     * built-in `'type' => 'image'` / `'delete' => true` pair is not a
+     * supported HelperForm input in this PrestaShop 1.6 codebase, so it
+     * previously rendered nothing at all).
+     *
+     * @param  string $field
+     * @param  string $removeField
+     * @param  string $currentFile
+     * @param  string $directory
+     * @return string
+     */
+    private function assetFieldHtml($field, $removeField, $currentFile, $directory)
+    {
+        $html = '';
+
+        if ($currentFile !== '') {
+            $url = __PS_BASE_URI__ . 'uploads/establishments/' . $directory . '/' . $currentFile;
+            $html .= '<div class="gf-asset-current" style="margin-bottom:8px;">'
+                . '<img src="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . '" alt="" style="max-height:80px;display:block;margin-bottom:4px;">'
+                . '<label><input type="checkbox" name="' . htmlspecialchars($removeField, ENT_QUOTES, 'UTF-8') . '" value="1"> '
+                . $this->l('Remove current file') . '</label>'
+                . '</div>';
+        }
+
+        $html .= '<input type="file" name="' . htmlspecialchars($field, ENT_QUOTES, 'UTF-8') . '" accept="image/*">';
+
+        return $html;
     }
 }

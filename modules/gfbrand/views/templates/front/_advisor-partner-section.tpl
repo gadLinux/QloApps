@@ -8,16 +8,22 @@
  *   $gf_advisors, $gf_has_advisors   from the controller or the trust hooks
  *   $gf_partners, $gf_has_partners   "
  *   $gf_advisor_image_base, $gf_partner_image_base  upload URL prefixes
- *   $gf_section (optional)           'advisors' or 'partners'; when absent the
- *                                    whole component renders (standalone pages)
+ *   $gf_section (optional)           'advisors' or 'partners'; when absent
+ *                                    both halves render
+ *   $gf_show_section_heading (optional, default true)  standalone pages set
+ *                                    this false — their own <h1> already
+ *                                    carries the same title
  *}
 
-{* A drawer shows only its own half; a standalone page shows both. *}
+{* Every current caller (both drawers, both standalone pages) sets
+   $gf_section to its own half; the "both halves" case is a defensive
+   default, not something any consumer currently exercises. *}
 {assign var='gf_show_advisors' value=!isset($gf_section) || $gf_section == 'advisors'}
 {assign var='gf_show_partners' value=!isset($gf_section) || $gf_section == 'partners'}
+{assign var='gf_show_heading' value=!isset($gf_show_section_heading) || $gf_show_section_heading}
 
 {if $gf_show_advisors && $gf_has_advisors}
-    <h2 class="gf-section-title">{l s='Meet the Advisors' mod='gfbrand'}</h2>
+    {if $gf_show_heading}<h2 class="gf-section-title">{l s='Meet the Advisors' mod='gfbrand'}</h2>{/if}
     <ul class="gf-advisor-list" role="list">
         {foreach $gf_advisors as $advisor}
             <li class="gf-advisor-card">
@@ -49,7 +55,7 @@
 
                     <p class="gf-advisor-contact">
                         {if $advisor.tel}
-                            <a class="gf-advisor-link" href="tel:{$advisor.tel|replace:'+':''}">
+                            <a class="gf-advisor-link" href="tel:{$advisor.tel|regex_replace:'/[^0-9+]/':''|escape:'html':'UTF-8'}">
                                 <span aria-hidden="true">&#9742;</span>
                                 {l s='Call' mod='gfbrand'}
                             </a>
@@ -71,29 +77,27 @@
 {/if}
 
 {if $gf_show_partners && $gf_has_partners}
-    <h2 class="gf-section-title">{l s='Our Partners' mod='gfbrand'}</h2>
+    {if $gf_show_heading}<h2 class="gf-section-title">{l s='Our Partners' mod='gfbrand'}</h2>{/if}
     <ul class="gf-partner-list" role="list">
         {foreach $gf_partners as $partner}
             <li class="gf-partner-card">
-                {if $partner.has_logo}
-                    {* Constrained by height on white (AC-11): the logos differ
-                       wildly in aspect and background, so height is the only
-                       rule that keeps them optically agreeing. *}
-                    <a class="gf-partner-link"
-                       href="{$partner.website|escape:'html':'UTF-8'}"
-                       target="_blank" rel="noopener noreferrer">
+                {if $partner.has_website}<a class="gf-partner-link" href="{$partner.website|escape:'html':'UTF-8'}" target="_blank" rel="noopener noreferrer">{/if}
+                    {if $partner.has_logo}
+                        {* Constrained by height on white (AC-11): the logos
+                           differ wildly in aspect and background, so height
+                           is the only rule that keeps them optically agreeing. *}
                         <span class="gf-partner-tile">
                             <img src="{$gf_partner_image_base}{$partner.logo|escape:'html':'UTF-8'}"
                                  alt="{$partner.name|escape:'htmlall':'UTF-8'}"
                                  height="56">
                         </span>
-                        <span class="sr-only">{l s='(opens in a new tab)' mod='gfbrand'}</span>
-                    </a>
-                {else}
-                    <div class="gf-partner-tile gf-partner-tile--text">
-                        <span class="gf-partner-name">{$partner.name|escape:'htmlall':'UTF-8'}</span>
-                    </div>
-                {/if}
+                    {else}
+                        <div class="gf-partner-tile gf-partner-tile--text">
+                            <span class="gf-partner-name">{$partner.name|escape:'htmlall':'UTF-8'}</span>
+                        </div>
+                    {/if}
+                    {if $partner.has_website}<span class="sr-only">{l s='(opens in a new tab)' mod='gfbrand'}</span>{/if}
+                {if $partner.has_website}</a>{/if}
 
                 {if $partner.description}
                     <p class="gf-partner-desc">{$partner.description|escape:'htmlall':'UTF-8'}</p>

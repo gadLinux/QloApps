@@ -47,7 +47,12 @@ class GFAdvisorPartnerImporter
         $seeds = $this->reader->readAdvisors($path);
         $result->addErrors($this->reader->getErrors());
 
-        if ($result->getErrors()) {
+        // Only a fatal read failure (file missing, unreadable, empty) stops
+        // the import outright. A per-row warning ("missing name, row
+        // skipped") must not also discard every valid row in the file — and,
+        // because the reader is shared between the two imports, must not
+        // discard the other file's rows either.
+        if ($this->reader->hasFatalError()) {
             return $result;
         }
 
@@ -68,7 +73,7 @@ class GFAdvisorPartnerImporter
         $seeds = $this->reader->readPartners($path);
         $result->addErrors($this->reader->getErrors());
 
-        if ($result->getErrors()) {
+        if ($this->reader->hasFatalError()) {
             return $result;
         }
 
@@ -86,10 +91,22 @@ class GFAdvisorPartnerImporter
      */
     public function reload($advisorPath, $partnerPath)
     {
-        $this->deleteImported();
+        $result = new GFImportResult();
 
-        $result = $this->importAdvisors($advisorPath);
-        $result->addErrors($this->importPartners($partnerPath)->getErrors());
+        // Confirm both files can actually be read before deleting anything:
+        // deleting first and discovering a missing file second used to empty
+        // the trust section with nothing to re-import.
+        if (!is_file($advisorPath) || !is_readable($advisorPath)
+            || !is_file($partnerPath) || !is_readable($partnerPath)
+        ) {
+            $result->recordFailure('reload aborted: one or both seed files are unreadable, nothing was deleted');
+
+            return $result;
+        }
+
+        $result->recordDeleted($this->deleteImported());
+        $result->merge($this->importAdvisors($advisorPath));
+        $result->merge($this->importPartners($partnerPath));
 
         return $result;
     }
@@ -178,38 +195,54 @@ class GFAdvisorPartnerImporter
     /**
      * A record is "imported" only if it carries a source id the file could
      * have written. Hand-created records have none and survive a reload.
+     *
+     * @return int Rows deleted, across both tables.
      */
     private function deleteImported()
     {
-        foreach (['advisor', 'partner'] as $kind) {
-            $table = $kind === 'advisor' ? 'gf_advisor' : 'gf_partner';
-            $sourceTable = $table . '_source';
+        $deleted = 0;
+        $db = Db::getInstance();
+        $db->execute('START TRANSACTION');
 
-            $rows = Db::getInstance()->executeS(
-                'SELECT `id_' . $table . '` FROM `' . _DB_PREFIX_ . $sourceTable . '`'
-            );
+        try {
+            foreach (['advisor', 'partner'] as $kind) {
+                $table = $kind === 'advisor' ? 'gf_advisor' : 'gf_partner';
+                $sourceTable = $table . '_source';
 
-            if (!$rows) {
-                continue;
+                $rows = $db->executeS(
+                    'SELECT `id_' . $table . '` FROM `' . _DB_PREFIX_ . $sourceTable . '`'
+                );
+
+                if (!$rows) {
+                    continue;
+                }
+
+                $ids = array_map(function ($row) use ($table) {
+                    return (int) $row['id_' . $table];
+                }, $rows);
+
+                $idList = implode(', ', $ids);
+                $deleted += count($ids);
+
+                $db->execute(
+                    'DELETE FROM `' . _DB_PREFIX_ . $table . '` WHERE `id_' . $table . '` IN (' . $idList . ')'
+                );
+                $db->execute(
+                    'DELETE FROM `' . _DB_PREFIX_ . $table . '_lang` WHERE `id_' . $table . '` IN (' . $idList . ')'
+                );
+                $db->execute(
+                    'DELETE FROM `' . _DB_PREFIX_ . $sourceTable . '` WHERE `id_' . $table . '` IN (' . $idList . ')'
+                );
             }
+        } catch (Exception $e) {
+            $db->execute('ROLLBACK');
 
-            $ids = array_map(function ($row) use ($table) {
-                return (int) $row['id_' . $table];
-            }, $rows);
-
-            $idList = implode(', ', $ids);
-            $class = $kind === 'advisor' ? 'GfAdvisor' : 'GfPartner';
-
-            Db::getInstance()->execute(
-                'DELETE FROM `' . _DB_PREFIX_ . $table . '` WHERE `id_' . $table . '` IN (' . $idList . ')'
-            );
-            Db::getInstance()->execute(
-                'DELETE FROM `' . _DB_PREFIX_ . $table . '_lang` WHERE `id_' . $table . '` IN (' . $idList . ')'
-            );
-            Db::getInstance()->execute(
-                'DELETE FROM `' . _DB_PREFIX_ . $sourceTable . '` WHERE `id_' . $table . '` IN (' . $idList . ')'
-            );
+            throw $e;
         }
+
+        $db->execute('COMMIT');
+
+        return $deleted;
     }
 
     /**

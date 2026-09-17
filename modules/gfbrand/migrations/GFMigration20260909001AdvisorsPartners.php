@@ -162,7 +162,7 @@ class GFMigration20260909001AdvisorsPartners implements GFMigrationInterface
             `id_gf_advisor` INT UNSIGNED NOT NULL,
             `source_id` VARCHAR(50) NOT NULL,
             PRIMARY KEY (`id_gf_advisor`),
-            KEY `idx_source` (`source_id`)
+            UNIQUE KEY `idx_source` (`source_id`)
         ';
     }
 
@@ -175,7 +175,7 @@ class GFMigration20260909001AdvisorsPartners implements GFMigrationInterface
             `id_gf_partner` INT UNSIGNED NOT NULL,
             `source_id` VARCHAR(50) NOT NULL,
             PRIMARY KEY (`id_gf_partner`),
-            KEY `idx_source` (`source_id`)
+            UNIQUE KEY `idx_source` (`source_id`)
         ';
     }
 }

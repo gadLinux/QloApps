@@ -64,7 +64,15 @@ class GFAssetUploader
             return $this->fail('Only JPG, PNG, GIF or WebP images are accepted.');
         }
 
-        $targetDir = _PS_ROOT_DIR_ . 'uploads/establishments/' . $this->directory;
+        // Extension allow-listing only checks the client-supplied name; a
+        // polyglot file (e.g. HTML/PHP wearing a .png name) would otherwise
+        // land, unvalidated, in a web-served directory. getimagesize() reads
+        // the actual file header, not the name.
+        if (@getimagesize((string) $upload['tmp_name']) === false) {
+            return $this->fail('The file is not a valid image.');
+        }
+
+        $targetDir = rtrim(_PS_ROOT_DIR_, '/') . '/uploads/establishments/' . $this->directory;
 
         if (!is_dir($targetDir) && !@mkdir($targetDir, 0755, true)) {
             return $this->fail('Could not create the upload directory.');
@@ -100,7 +108,7 @@ class GFAssetUploader
             return false;
         }
 
-        $path = _PS_ROOT_DIR_ . 'uploads/establishments/' . $this->directory . '/' . $fileName;
+        $path = rtrim(_PS_ROOT_DIR_, '/') . '/uploads/establishments/' . $this->directory . '/' . $fileName;
 
         if (!is_file($path)) {
             return false;

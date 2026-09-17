@@ -1541,14 +1541,20 @@ button.nav_toggle,
     display: none;
 }
 
-.gf-trust-drawer--nojs .gf-trust-trigger-label,
 .gf-trust-drawer--open .gf-trust-trigger-label {
     display: none;
 }
 
-.gf-trust-drawer--nojs .gf-trust-trigger-label--open,
 .gf-trust-drawer--open .gf-trust-trigger-label--open {
     display: inline;
+}
+
+/* Without JS the button has no click handler at all — content is simply
+ * always visible below it (D6). Labelling it "Hide the Advisors" would claim
+ * an action that does nothing when clicked; the closed-state label reads
+ * correctly here since nothing ever toggles. */
+.gf-trust-drawer--nojs .gf-trust-trigger-label--open {
+    display: none;
 }
 
 .gf-trust-trigger-chevron {
@@ -1573,9 +1579,30 @@ button.nav_toggle,
     grid-template-rows: 0fr;
 }
 
+/* Suppresses the collapse animation for the one frame in which JS closes a
+ * drawer that was born open — without this, every page load visibly
+ * animates the drawer shut instead of starting closed. */
+.gf-trust-drawer--no-transition .gf-trust-drawer-body,
+.gf-trust-drawer--no-transition .gf-trust-drawer-clip {
+    transition: none !important;
+}
+
 .gf-trust-drawer-clip {
     overflow: hidden;
     min-height: 0;
+    /* The row collapsing to 0fr only hides the content visually: without
+     * this, every advisor/partner link inside stays in the tab order and the
+     * accessibility tree while the drawer looks closed. visibility:hidden
+     * removes both — delayed on close so it does not clip the collapse
+     * animation, immediate on open. */
+    visibility: hidden;
+    transition: visibility 0ms linear 450ms;
+}
+
+.gf-trust-drawer--open .gf-trust-drawer-clip,
+.gf-trust-drawer--nojs .gf-trust-drawer-clip {
+    visibility: visible;
+    transition-delay: 0ms;
 }
 
 .gf-trust-drawer-inner {
@@ -1761,7 +1788,8 @@ button.nav_toggle,
 /* AC-10: reduced motion opens and closes instantly. */
 @media (prefers-reduced-motion: reduce) {
     .gf-trust-drawer-body,
-    .gf-trust-trigger-chevron {
+    .gf-trust-trigger-chevron,
+    .gf-trust-drawer-clip {
         transition: none;
     }
 }
@@ -1860,6 +1888,22 @@ button.nav_toggle,
 
 .gf-pillar-arrow {
     font-size: 16px;
+    display: inline-block;
+    transition: transform 300ms ease;
+}
+
+/* The pillar trigger controls its drawer purely through aria-controls (it is
+ * a sibling of .gf-trust-drawer, not a descendant — story 1.13's embedded
+ * rendering), so its own open/closed indicator has to key off its own
+ * aria-expanded rather than a shared parent state class. */
+.gf-pillar-trigger[aria-expanded="true"] .gf-pillar-arrow {
+    transform: rotate(180deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .gf-pillar-arrow {
+        transition: none;
+    }
 }
 
 .gf-pillar-link:hover .gf-pillar-cta,

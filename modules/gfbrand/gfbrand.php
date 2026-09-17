@@ -224,20 +224,35 @@ class gfbrand extends Module
     /**
      * Seed the trust section the first time only — story 1.11, AC-2. The
      * source files are the client's own, and a re-install must not duplicate
-     * what it imported before (the import matches on source id).
+     * what it imported before (the import matches on source id) NOR
+     * overwrite whatever a back-office admin has since edited (the upsert in
+     * GFAdvisorPartnerImporter rewrites every field on every re-run, which is
+     * fine for a controlled reload but not for an unattended reinstall).
+     *
+     * The config flag is what turns "first install only" from a docblock
+     * claim into an enforced one: without it, `install()` re-runs this on
+     * every reinstall, silently reverting back-office edits.
      */
     private function importAdvisorsPartnersOnFirstInstall()
     {
+        if (Configuration::get(self::CONFIG_PREFIX . 'ADVISORS_SEEDED')) {
+            return;
+        }
+
         $importer = $this->services->getAdvisorPartnerImporter();
         $advisorsPath = $this->services->getAdvisorsCsvPath();
         $partnersPath = $this->services->getPartnersCsvPath();
 
         if (!file_exists($advisorsPath) || !file_exists($partnersPath)) {
+            // Not marked seeded: a future install (once the files exist)
+            // should still get the seed data.
             return;
         }
 
         $result = $importer->importAdvisors($advisorsPath);
         $result->addErrors($importer->importPartners($partnersPath)->getErrors());
+
+        Configuration::updateGlobalValue(self::CONFIG_PREFIX . 'ADVISORS_SEEDED', 1);
 
         if (!$result->isSuccessful()) {
             PrestaShopLogger::addLog(

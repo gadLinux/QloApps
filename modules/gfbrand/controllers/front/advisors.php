@@ -32,6 +32,15 @@ class GfbrandAdvisorsModuleFrontController extends ModuleFrontController
 
     public function initContent()
     {
+        // The drawer this page mirrors is itself suppressed when the brand
+        // module is switched off; this standalone route must not stay public
+        // and indexable while that is true.
+        if (!Configuration::get(Gfbrand::CONFIG_PREFIX . 'ENABLED')) {
+            Tools::redirect('index.php?controller=404');
+
+            return;
+        }
+
         parent::initContent();
 
         $listing = $this->module->getAdvisorPartnerListing();
@@ -42,6 +51,9 @@ class GfbrandAdvisorsModuleFrontController extends ModuleFrontController
             'gf_has_advisors' => $listing->hasAdvisors(),
             'gf_has_partners' => $listing->hasPartners(),
             'gf_section' => 'advisors',
+            // The page already renders this exact copy in its own <h1>; the
+            // shared component's <h2> would only duplicate it.
+            'gf_show_section_heading' => false,
             // The shared section component, included by the page templates and
             // by the homepage drawers alike.
             'gf_section_template' => _PS_MODULE_DIR_

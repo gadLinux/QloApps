@@ -120,10 +120,23 @@ class GFAdvisorPartnerImporterTest extends TestCase
     /**
      * A record created by hand has no source id, which is exactly what
      * protects it from a reload.
+     *
+     * reload() deletes every row this importer has ever created, tracked
+     * only by source id, with no awareness of which file's fixtures those
+     * are — so against a database that already carries the real seed
+     * (source ids 1-4), calling the real reload() here would delete it and
+     * never recreate it, since this test only re-imports the test fixtures.
+     * The snapshot/restore around the call is what makes this test safe to
+     * run against a real dev database instead of quietly destroying it.
      */
     #[Test]
     public function a_reload_leaves_hand_made_records_alone(): void
     {
+        // Snapshot BEFORE creating the hand-made record: the restore below
+        // must bring the tables back to what they held before this test
+        // touched anything, not back to "hand-made record already added".
+        $snapshot = $this->snapshotAdvisorPartnerTables();
+
         $manual = new GfAdvisor();
         $manual->name = array_fill_keys(Language::getIDs(false), 'Hand-made advisor');
         $manual->active = 1;
@@ -131,15 +144,20 @@ class GFAdvisorPartnerImporterTest extends TestCase
         // ObjectModel 1.6 stores the new id in the generic $this->id.
         $manualId = (int) $manual->id;
 
-        $this->importer->importAdvisors($this->advisorsFixture);
+        try {
+            $this->importer->importAdvisors($this->advisorsFixture);
 
-        $result = $this->importer->reload($this->advisorsFixture, $this->partnersFixture);
+            $result = $this->importer->reload($this->advisorsFixture, $this->partnersFixture);
 
-        $this->assertTrue(Validate::isLoadedObject(new GfAdvisor($manualId)));
-        $this->assertSame(2, $this->countTestAdvisors());
-
-        // Clean up the hand-made record.
-        $manual->delete();
+            $this->assertTrue(Validate::isLoadedObject(new GfAdvisor($manualId)));
+            $this->assertSame(2, $this->countTestAdvisors());
+            $this->assertSame(2, $this->countTestPartners());
+            // Pins reload() as actually destructive-then-recreating, not a
+            // no-op upsert a broken deleteImported() could pass as too.
+            $this->assertGreaterThan(0, $result->getDeleted());
+        } finally {
+            $this->restoreAdvisorPartnerTables($snapshot);
+        }
     }
 
     #[Test]
@@ -174,6 +192,52 @@ class GFAdvisorPartnerImporterTest extends TestCase
             'SELECT COUNT(*) FROM `' . _DB_PREFIX_ . 'gf_partner_source`
              WHERE `source_id` LIKE \'' . pSQL(self::FIXTURE_PREFIX) . '%\''
         );
+    }
+
+    /**
+     * @return array<string, array<int, array<string, mixed>>> One row set per
+     * table, keyed by table name without the DB prefix.
+     */
+    private function snapshotAdvisorPartnerTables(): array
+    {
+        $tables = ['gf_advisor', 'gf_advisor_lang', 'gf_advisor_source', 'gf_partner', 'gf_partner_lang', 'gf_partner_source'];
+        $snapshot = [];
+
+        foreach ($tables as $table) {
+            $snapshot[$table] = Db::getInstance()->executeS('SELECT * FROM `' . _DB_PREFIX_ . $table . '`') ?: [];
+        }
+
+        return $snapshot;
+    }
+
+    /**
+     * @param array<string, array<int, array<string, mixed>>> $snapshot
+     */
+    private function restoreAdvisorPartnerTables(array $snapshot): void
+    {
+        // Children first when clearing (lang/source reference the base
+        // table), parents first when restoring.
+        $order = ['gf_advisor_lang', 'gf_advisor_source', 'gf_advisor', 'gf_partner_lang', 'gf_partner_source', 'gf_partner'];
+
+        foreach ($order as $table) {
+            Db::getInstance()->execute('DELETE FROM `' . _DB_PREFIX_ . $table . '`');
+        }
+
+        foreach (array_reverse($order) as $table) {
+            foreach ($snapshot[$table] as $row) {
+                $columns = array_map(function ($column) {
+                    return '`' . bqSQL($column) . '`';
+                }, array_keys($row));
+                $values = array_map(function ($value) {
+                    return $value === null ? 'NULL' : '\'' . pSQL($value) . '\'';
+                }, array_values($row));
+
+                Db::getInstance()->execute(
+                    'INSERT INTO `' . _DB_PREFIX_ . $table . '` (' . implode(', ', $columns) . ')
+                     VALUES (' . implode(', ', $values) . ')'
+                );
+            }
+        }
     }
 
     private function deleteTestRows(): void

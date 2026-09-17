@@ -57,6 +57,22 @@ class GFImportResult
         $this->errors = array_merge($this->errors, $messages);
     }
 
+    /**
+     * Fold another result's counters and errors into this one — used to
+     * combine the advisor and partner halves of a reload() into one total
+     * without silently dropping either side's created/updated/failed counts.
+     *
+     * @param GFImportResult $other
+     */
+    public function merge(GFImportResult $other)
+    {
+        $this->created += $other->created;
+        $this->updated += $other->updated;
+        $this->failed += $other->failed;
+        $this->deleted += $other->deleted;
+        $this->errors = array_merge($this->errors, $other->errors);
+    }
+
     public function getCreated()
     {
         return $this->created;
