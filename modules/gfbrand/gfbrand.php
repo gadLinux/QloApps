@@ -175,6 +175,15 @@ class gfbrand extends Module
             return false;
         }
 
+        /* Story 1.14, AC-6: the theme's contact-form.tpl already fires this
+         * hook right after the #message textarea (READ ONLY — see
+         * hookDisplayContactFormFieldsAfter()'s docblock). Taking it is what
+         * lets the live character-count region ship without editing that
+         * theme template. */
+        if (!$this->registerHook('displayContactFormFieldsAfter')) {
+            return false;
+        }
+
         /* Default configuration values. Layer 2 — back-office configuration.
          * These can be overridden per customer via the back office.
          * Use direct SQL to avoid Configuration::updateValue caching issues during install(). */
@@ -203,6 +212,18 @@ class gfbrand extends Module
          * (layer 3 CSS handles the type). Only set when empty, so a customer
          * who has already written their own is not overwritten on upgrade. */
         $this->seedHeroCopy();
+
+        /* Story 1.14, AC-1/AC-2: the About Us page's five bands read their
+         * copy from GFBRAND_ABOUTUS_* keys, editable afterward via the
+         * "About Us Page" admin tab group. */
+        $this->installAboutUsCopyDefaults();
+
+        /* Story 1.14's route-collision edge case: this install confirmed
+         * (live DB check) that the demo catalogue ships an active CMS page
+         * at id_cms=4 with the identical `about-us` link_rewrite this
+         * module's own route now claims. Deactivating it removes the
+         * ambiguity rather than leaving two pages racing for one URL. */
+        $this->deactivateConflictingAboutUsCmsPage();
 
         if (!$this->runMigrations()) {
             return false;
@@ -258,6 +279,121 @@ class gfbrand extends Module
             foreach ($languages as $language) {
                 Configuration::updateValue($key, $value, false, null, (int) $language['id_lang']);
             }
+        }
+    }
+
+    /**
+     * Seed the About Us page's copy — story 1.14.
+     *
+     * These GFBRAND_ABOUTUS_* keys have no vendor screen to mirror — unlike
+     * AdminGfBrandController::VENDOR_FIELD_SPECS's contact/about/features/
+     * testimonial groups, there is no old WordPress-side module reading
+     * them, since the old site's About Us page has no QloApps equivalent to
+     * borrow copy from. Seeded per-language and only where a key is still
+     * empty, so re-running install() (a redeploy, not a first install)
+     * never overwrites text an owner has already edited via the "About Us
+     * Page" admin tab group — the same guard seedHeroCopy() above documents
+     * for WK_HTL_CHAIN_NAME/TAG_LINE.
+     *
+     * Deliberately NOT seedHeroCopy()'s own Configuration::updateValue(...,
+     * false, null, $idLang) call shape: that passes $idLang into the
+     * $id_shop parameter, not a language selector — Configuration::
+     * updateValue() has no $id_lang argument at all; per-language values are
+     * set by passing $values as an array keyed by id_lang. Following that
+     * existing shape here would silently store every default under
+     * id_lang 0, unreadable by Configuration::get($key, $idLang) with a
+     * real language id — exactly what AdminGfBrandController's textLang/
+     * textareaLang fields (and this page) read.
+     */
+    private function installAboutUsCopyDefaults()
+    {
+        $defaults = [
+            'GFBRAND_ABOUTUS_WHOWEARE_EYEBROW' => 'Who We Are',
+            'GFBRAND_ABOUTUS_WHOWEARE_HEADING' => 'Travel Freely. Eat Safely. Live Fully.',
+            'GFBRAND_ABOUTUS_WHOWEARE_BODY' =>
+                "At GF Experiences, we specialise in designing stress-free, gluten-free holidays for families and travellers who want to explore the world safely, comfortably, and with total confidence.\n\n"
+                . "With firsthand experience navigating life with Celiac Disease, gluten intolerance, and food allergies, we understand how challenging travel can be — from finding safe meals to choosing the right hotels and booking trusted experiences abroad.\n\n"
+                . 'Because everyone deserves to travel, eat, and live fully.',
+            'GFBRAND_ABOUTUS_MISSION_HEADING' =>
+                'Our mission is to make gluten-free travel simple, safe, and enjoyable by connecting gluten-free travellers with certified gluten-free hotels, restaurants, travel consultants, and food tours.',
+            'GFBRAND_ABOUTUS_OFFER_HEADING' => 'Curated Gluten-Free Experiences',
+            'GFBRAND_ABOUTUS_CTA_HEADING' => 'Relax. Explore. Experience the world with confidence — gluten-free and stress-free.',
+            'GFBRAND_ABOUTUS_CTA_SUBTEXT' => 'Let us handle the details so you can focus on making memories.',
+        ];
+
+        $languages = Language::getLanguages(false);
+
+        foreach ($defaults as $key => $value) {
+            $perLanguageValues = [];
+
+            foreach ($languages as $language) {
+                $idLang = (int) $language['id_lang'];
+                $existing = Configuration::get($key, $idLang);
+
+                // Not `if ($existing)`: a falsy-but-real value (e.g. an
+                // owner literally saving "0") must not be treated as
+                // "still empty" and silently overwritten.
+                if ($existing !== false && $existing !== '') {
+                    continue;
+                }
+
+                $perLanguageValues[$idLang] = $value;
+            }
+
+            if ($perLanguageValues) {
+                Configuration::updateValue($key, $perLanguageValues);
+            }
+        }
+    }
+
+    /**
+     * Deactivate any demo CMS page still published at the `about-us`
+     * rewrite — story 1.14's route-collision edge case.
+     *
+     * The `module-gfbrand-aboutus` route this install() run just registered
+     * (hookModuleRoutes()) claims the same `/about-us` URL the QloApps demo
+     * catalogue ships as an active CMS page (id_cms=4 on a fresh install —
+     * matched here by rewrite, not by hardcoded id, since a customer's own
+     * catalogue could have renumbered it). Left both active, the two pages
+     * would race for one URL; this makes the module's own page the only one
+     * anyone can reach at it. The CMS row itself is left in place (Active =
+     * 0), never deleted — an editor can always re-enable it by hand.
+     *
+     * Idempotent: a page that is already inactive, or that does not exist
+     * at all, is a silent no-op.
+     */
+    private function deactivateConflictingAboutUsCmsPage()
+    {
+        $idCms = (int) Db::getInstance()->getValue(
+            'SELECT cl.id_cms
+             FROM `' . _DB_PREFIX_ . 'cms_lang` cl
+             WHERE cl.link_rewrite = \'about-us\''
+        );
+
+        if (!$idCms) {
+            return;
+        }
+
+        $wasActive = (bool) Db::getInstance()->getValue(
+            'SELECT `active` FROM `' . _DB_PREFIX_ . 'cms` WHERE `id_cms` = ' . $idCms
+        );
+
+        Db::getInstance()->execute(
+            'UPDATE `' . _DB_PREFIX_ . 'cms` SET `active` = 0 WHERE `id_cms` = ' . $idCms
+        );
+
+        // The row may carry an editor's own content, not just demo text —
+        // log the deactivation so it isn't a silent surprise the first time
+        // someone notices the page is gone.
+        if ($wasActive) {
+            PrestaShopLogger::addLog(
+                '[gfbrand] Deactivated CMS page id_cms=' . $idCms . ' (rewrite "about-us") '
+                    . 'to resolve a URL collision with the new About Us route.',
+                1,
+                null,
+                'CMS',
+                $idCms
+            );
         }
     }
 
@@ -929,9 +1065,13 @@ class gfbrand extends Module
     /**
      * The Why Choose Us checklist (AC-1).
      *
+     * Public: story 1.14's About Us page reuses this exact list (and the
+     * $gf_why_photo image) verbatim for its own Why Choose Us band, rather
+     * than maintaining a second copy that could drift from the homepage's.
+     *
      * @return string[]
      */
-    private function whyChooseItems()
+    public function whyChooseItems()
     {
         return [
             $this->l('Certified gluten-free kitchens, verified by independent auditors.'),
@@ -1163,6 +1303,36 @@ class gfbrand extends Module
     }
 
     /**
+     * The Contact Us page's live character-count announcement — story 1.14,
+     * AC-6.
+     *
+     * The native `contact` controller and hotel-reservation-theme's
+     * contact-form.tpl already implement everything else the story needs
+     * (two-column layout, PS_SHOP_* contact details, persistent labels) —
+     * this hook is the one genuine gap, and the theme already fires it
+     * (READ ONLY: contact-form.tpl:174) right after the #message textarea,
+     * so no theme file is touched to add it.
+     *
+     * Gated by isBrandActive() like the other visual/accessibility hooks
+     * (hookDisplayFooterBefore, hookDisplayRoomTypeDetailRoomTypeNameAfter):
+     * with the brand switched off, the native form still submits fine, it
+     * just does not get this enhancement.
+     */
+    public function hookDisplayContactFormFieldsAfter($params)
+    {
+        if (!self::isBrandActive()) {
+            return '';
+        }
+
+        $tpl = $this->context->smarty->createTemplate(
+            $this->local_path . 'views/templates/hook/contact-char-count.tpl',
+            $this->context->smarty
+        );
+
+        return $tpl->fetch();
+    }
+
+    /**
      * The establishments listing service — story 1.9.
      *
      * Exposed so the front controller can ask the container for it rather than
@@ -1283,6 +1453,23 @@ class gfbrand extends Module
     public function hookModuleRoutes($params)
     {
         return [
+            // Story 1.14: the QloApps equivalent of the old WordPress About
+            // Us page. The QloApps demo catalogue ships an active CMS page
+            // at this same `about-us` rewrite — install() unconditionally
+            // deactivates that row (deactivateConflictingAboutUsCmsPage())
+            // every time this module installs, so the two never race for
+            // the URL. See that method's own docblock for why it is
+            // matched by rewrite and never deletes the row.
+            'module-gfbrand-aboutus' => [
+                'controller' => 'aboutus',
+                'rule' => 'about-us',
+                'keywords' => [],
+                'params' => [
+                    'fc' => 'module',
+                    'module' => 'gfbrand',
+                    'controller' => 'aboutus',
+                ],
+            ],
             'module-gfbrand-establishments' => [
                 'controller' => 'establishments',
                 'rule' => 'establishments',

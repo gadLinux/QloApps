@@ -295,9 +295,57 @@
             initInquiryEstablishmentFilter();
             initInquiryReferralOther();
             initInquiryDestCountryOther();
+            initContactCharacterCount();
         });
     }
 
+
+    /* ==========================================================================
+     * Contact Us character count — Story 1.14, AC-6
+     *
+     * Progressive enhancement over the theme's native #message field: the
+     * region ships empty (contact-char-count.tpl) and this is what fills it
+     * in. Debounced, not per keystroke — a fast typist otherwise fires an
+     * aria-live announcement on every character, which a screen reader
+     * would read as an unusable stream of interruptions. With JavaScript
+     * disabled this never runs, the region stays empty and silent, and the
+     * form still submits normally (edge-case matrix).
+     * ========================================================================== */
+
+    function initContactCharacterCount() {
+        var field = document.getElementById('message');
+        var region = document.getElementById('gf-contact-char-count');
+
+        if (!field || !region) {
+            return;
+        }
+
+        var DEBOUNCE_MS = 500;
+        var timer = null;
+
+        function announce() {
+            timer = null;
+            var count = field.value.length;
+            region.textContent = count === 1
+                ? '1 character'
+                : count + ' characters';
+        }
+
+        field.addEventListener('input', function () {
+            if (timer) {
+                window.clearTimeout(timer);
+            }
+            timer = window.setTimeout(announce, DEBOUNCE_MS);
+        });
+
+        // A rejected submission re-renders the form with the guest's own
+        // text already in #message (no 'input' event fires for that) —
+        // without this the region would stay empty while the field itself
+        // is not, understating what's actually in it.
+        if (field.value.length > 0) {
+            announce();
+        }
+    }
 
     /* ==========================================================================
      * Honeypot spam protection (forms) — Story 1.12

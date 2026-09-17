@@ -50,6 +50,27 @@ class AdminGfBrandController extends ModuleAdminController
      *   features    -> wkhotelfeaturesblock/AdminFeaturesModuleSettingController ('global')
      *   testimonial -> wktestimonialblock/AdminTestimonialsModuleSettingController ('modulesetting')
      */
+    /**
+     * The About Us page's copy — story 1.14.
+     *
+     * Deliberately a separate constant from VENDOR_FIELD_SPECS: those groups
+     * each mirror one vendor module's own fields_options definition
+     * field-for-field, so a story 1.18-style contract test can pin them to
+     * a real vendor screen. These GFBRAND_ABOUTUS_* keys have no vendor
+     * screen to mirror — the old WordPress About Us page has no QloApps
+     * equivalent — so gfbrand.php's own installAboutUsCopyDefaults() is
+     * both where they are declared AND where their defaults are seeded.
+     */
+    const ABOUTUS_FIELD_SPECS = [
+        'GFBRAND_ABOUTUS_WHOWEARE_EYEBROW' => ['type' => 'textLang', 'lang' => true, 'required' => true, 'validation' => 'isGenericName'],
+        'GFBRAND_ABOUTUS_WHOWEARE_HEADING' => ['type' => 'textLang', 'lang' => true, 'required' => true, 'validation' => 'isGenericName'],
+        'GFBRAND_ABOUTUS_WHOWEARE_BODY' => ['type' => 'textareaLang', 'lang' => true, 'required' => true, 'validation' => 'isCleanHtml', 'rows' => '8', 'cols' => '2'],
+        'GFBRAND_ABOUTUS_MISSION_HEADING' => ['type' => 'textareaLang', 'lang' => true, 'required' => true, 'validation' => 'isCleanHtml', 'rows' => '4', 'cols' => '2'],
+        'GFBRAND_ABOUTUS_OFFER_HEADING' => ['type' => 'textLang', 'lang' => true, 'required' => true, 'validation' => 'isGenericName'],
+        'GFBRAND_ABOUTUS_CTA_HEADING' => ['type' => 'textareaLang', 'lang' => true, 'required' => true, 'validation' => 'isCleanHtml', 'rows' => '3', 'cols' => '2'],
+        'GFBRAND_ABOUTUS_CTA_SUBTEXT' => ['type' => 'textLang', 'lang' => true, 'validation' => 'isGenericName'],
+    ];
+
     const VENDOR_FIELD_SPECS = [
         'contact' => [
             'PS_SHOP_NAME' => ['type' => 'text', 'validation' => 'isGenericName', 'required' => true, 'no_escape' => true],
@@ -108,6 +129,15 @@ class AdminGfBrandController extends ModuleAdminController
                 'HOTEL_TESIMONIAL_BLOCK_HEADING' => [$this->l('Testimonials block title'), $this->l('Testimonials block title, e.g. "Guest testimonials".')],
                 'HOTEL_TESIMONIAL_BLOCK_CONTENT' => [$this->l('Testimonials block description'), $this->l('Testimonials block description.')],
             ]),
+            /*
+             * Story 1.14: the About Us page's five bands. Only each band's
+             * main heading/body is editable here — the repeating items
+             * within a band (mission pillars, offer cards, the Why Choose
+             * Us checklist) are fixed strings in aboutus.php/gfbrand.php,
+             * the same choice already made for the homepage's own pillar
+             * row and checklist.
+             */
+            'aboutus' => $this->fieldsOptionsForAboutUs(),
         ];
 
         parent::__construct();
@@ -140,6 +170,49 @@ class AdminGfBrandController extends ModuleAdminController
         return [
             'title' => $title,
             'icon' => $icon,
+            'fields' => $fields,
+            'submit' => ['title' => $this->l('Save')],
+        ];
+    }
+
+    /**
+     * The "About Us Page" fields_options group — story 1.14.
+     *
+     * Mirrors fieldsOptionsFor()'s shape but reads ABOUTUS_FIELD_SPECS
+     * directly (a flat key => spec map, not VENDOR_FIELD_SPECS's
+     * group => key => spec nesting) since there is only one group here and
+     * no vendor screen's own grouping to follow.
+     *
+     * @return array
+     */
+    private function fieldsOptionsForAboutUs()
+    {
+        $labels = [
+            'GFBRAND_ABOUTUS_WHOWEARE_EYEBROW' => [$this->l('Who We Are: eyebrow'), $this->l('Small label above the headline, e.g. "Who We Are".')],
+            'GFBRAND_ABOUTUS_WHOWEARE_HEADING' => [$this->l('Who We Are: headline'), $this->l('The band\'s main headline.')],
+            'GFBRAND_ABOUTUS_WHOWEARE_BODY' => [$this->l('Who We Are: body copy'), $this->l('Separate paragraphs with a blank line. The last paragraph renders in bold as the closing line.')],
+            'GFBRAND_ABOUTUS_MISSION_HEADING' => [$this->l('Our Mission: statement'), $this->l('The centred mission statement.')],
+            'GFBRAND_ABOUTUS_OFFER_HEADING' => [$this->l('What We Offer: headline'), $this->l('Heading above the three offer cards.')],
+            'GFBRAND_ABOUTUS_CTA_HEADING' => [$this->l('Closing CTA: headline'), $this->l('The full-width closing band\'s headline.')],
+            // Deliberately optional, unlike every other field in this
+            // group: the closing band reads fine with just its headline.
+            'GFBRAND_ABOUTUS_CTA_SUBTEXT' => [$this->l('Closing CTA: supporting line'), $this->l('Optional. A short line under the headline.')],
+        ];
+
+        $fields = [];
+
+        foreach (self::ABOUTUS_FIELD_SPECS as $key => $spec) {
+            list($fieldTitle, $hint) = $labels[$key];
+            $fields[$key] = array_merge($spec, ['title' => $fieldTitle]);
+
+            if ($hint !== null) {
+                $fields[$key]['hint'] = $hint;
+            }
+        }
+
+        return [
+            'title' => $this->l('About Us Page'),
+            'icon' => 'icon-file-text',
             'fields' => $fields,
             'submit' => ['title' => $this->l('Save')],
         ];
