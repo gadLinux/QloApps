@@ -214,6 +214,10 @@ class gfbrand extends Module
             return false;
         }
 
+        if (!$this->installEstablishmentsTab()) {
+            return false;
+        }
+
         return true;
     }
 
@@ -310,6 +314,20 @@ class gfbrand extends Module
     private function installPartnersTab()
     {
         return $this->installTab('AdminGfPartners', 'AdminParentStats', 'GF Partners');
+    }
+
+    /**
+     * The homepage featured-strip picker — story 1.17, AC-3.
+     *
+     * Parented under Catalog > Products: establishments are products, and this
+     * screen edits a property of them, so it sits next to the catalogue it
+     * manages rather than under a parent tab chosen for emotional proximity.
+     *
+     * @return bool
+     */
+    private function installEstablishmentsTab()
+    {
+        return $this->installTab('AdminGfEstablishments', 'AdminProducts', 'GF Featured Establishments');
     }
 
     /**
@@ -488,7 +506,7 @@ class gfbrand extends Module
      */
     public function uninstall()
     {
-        foreach (['AdminGfInquiries', 'AdminGfAdvisors', 'AdminGfPartners'] as $tabClassName) {
+        foreach (['AdminGfInquiries', 'AdminGfAdvisors', 'AdminGfPartners', 'AdminGfEstablishments'] as $tabClassName) {
             $idTab = (int) Tab::getIdFromClassName($tabClassName);
             if ($idTab) {
                 $tab = new Tab($idTab);

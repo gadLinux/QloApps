@@ -95,6 +95,64 @@ class GFEstablishmentRepository
     }
 
     /**
+     * Set the homepage featured flag to exactly the given product ids —
+     * story 1.17, AC-3.
+     *
+     * The picker's "save" is one batch, not one write per checkbox: a flag is
+     * a set, and saving it row by row would leave the strip half-updated if
+     * the request dies mid-loop. Unflagging is part of the same operation —
+     * "featured" means "in this set", so everything else in the catalogue
+     * stops being featured. One transaction, because a half-set is exactly
+     * the state the strip must never render.
+     *
+     * Only rows the importer created (or a hand-made product with a source
+     * id) are touched: room types are excluded by definition, and the
+     * catalogue is the picker's universe, so nothing outside it can drift.
+     *
+     * @param  int[] $idProducts
+     * @return bool
+     */
+    public function setFeaturedHome(array $idProducts)
+    {
+        $idProducts = array_values(array_unique(array_map('intval', $idProducts)));
+
+        $db = $this->db;
+        $table = $this->table();
+
+        $db->execute('START TRANSACTION');
+
+        try {
+            if ($idProducts === []) {
+                $db->execute(
+                    'UPDATE `' . $table . '` SET `gf_featured_home` = 0
+                     WHERE ' . $this->importedCondition()
+                      . ' AND `booking_product` = 0'
+                );
+            } else {
+                $ids = implode(',', $idProducts);
+                $db->execute(
+                    'UPDATE `' . $table . '` SET `gf_featured_home` = 0
+                     WHERE ' . $this->importedCondition()
+                      . ' AND `booking_product` = 0
+                       AND `id_product` NOT IN (' . $ids . ')'
+                );
+                $db->execute(
+                    'UPDATE `' . $table . '` SET `gf_featured_home` = 1
+                     WHERE `id_product` IN (' . $ids . ')'
+                );
+            }
+
+            $db->execute('COMMIT');
+
+            return true;
+        } catch (Exception $e) {
+            $db->execute('ROLLBACK');
+
+            return false;
+        }
+    }
+
+    /**
      * Write the GF fields onto an existing product row.
      *
      * @param  int $idProduct
@@ -236,6 +294,37 @@ class GFEstablishmentRepository
                      ON pl.`id_product` = p.`id_product`
                     AND pl.`id_lang` = ' . (int) $idLang . '
              WHERE ' . $this->listableCondition('p') . '
+             ORDER BY pl.`name` ASC'
+        );
+
+        return is_array($rows) ? $rows : [];
+    }
+
+    /**
+     * Every establishment for the back-office featured strip picker —
+     * story 1.17, AC-3.
+     *
+     * Deliberately looser than findListing(): an editor toggling the homepage
+     * flag needs to see the whole catalogue, including deactivated rows, so a
+     * previously-flagged establishment cannot silently fall off the strip the
+     * moment it is deactivated and the admin can never unflag it. Room types
+     * are still excluded — they are not a destination.
+     *
+     * @param  int $idLang
+     * @return array[] Raw rows; each carries id_product, name, gf_country,
+     *                 gf_type and the current gf_featured_home value.
+     */
+    public function findAllForFeaturedPicker($idLang)
+    {
+        $rows = $this->readDb()->executeS(
+            'SELECT p.`id_product`, p.`gf_type`, p.`gf_country`, p.`gf_featured_home`,
+                    pl.`name`
+             FROM `' . $this->table() . '` p
+             INNER JOIN `' . _DB_PREFIX_ . 'product_lang` pl
+                     ON pl.`id_product` = p.`id_product`
+                    AND pl.`id_lang` = ' . (int) $idLang . '
+             WHERE ' . $this->importedCondition('p')
+               . ' AND p.`booking_product` = 0
              ORDER BY pl.`name` ASC'
         );
 

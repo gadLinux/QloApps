@@ -3,12 +3,13 @@
  *
  * Injected via the displayHome hook, so the brand layer owns this page
  * without touching the theme template. The hero lives in the theme header
- * (restyled by CSS, copy via config); the advisor and partner drawers are the
- * trust hooks from story 1.11, rendered right below the pillar row so the
- * triggers sit directly above the panels they open.
+ * (restyled by CSS, copy via config).
  *
  * Section order (AC-1): hero (theme) → pillars → featured strip → Why Choose
- * Us → advisor drawer → partner drawer → footer (theme).
+ * Us → advisor drawer → partner drawer → footer (theme). The drawers'
+ * triggers are the last two pillars; the drawer panels render at the bottom
+ * of the page, resolved by aria-controls (story 1.11), so trigger and panel
+ * are not adjacent in the DOM.
  *
  * Parameters (assigned by the displayHome hook):
  *   $gf_pillars, $gf_pillar_icon_file
@@ -65,11 +66,6 @@
         {/foreach}
     </div>
 
-    {* The drawers expand in place beneath the pillar row (AC-3). Each hook
-       renders its trigger + panel as one component (story 1.11). *}
-    {hook h="displayGfAdvisors"}
-    {hook h="displayGfPartners"}
-
     {* --- Featured strip (AC-4) ---------------------------------------------
      * Establishments flagged gf_featured_home — an admin decision, never a
      * hardcoded id list. Omitted entirely when nothing is flagged. *}
@@ -124,5 +120,13 @@
             </div>
         </div>
     </section>
+
+    {* The drawers sit at the bottom of the branded page (AC-1): after Why
+       Choose Us, before the theme footer. Their triggers are the last two
+       pillars above; story 1.11's drawer JS resolves the external trigger by
+       aria-controls, so the trigger button and its panel do not need to be
+       adjacent in the DOM. *}
+    {hook h="displayGfAdvisors"}
+    {hook h="displayGfPartners"}
 
 </section>
