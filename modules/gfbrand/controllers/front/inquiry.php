@@ -64,11 +64,15 @@ class GfbrandInquiryModuleFrontController extends ModuleFrontController
         'id_gf_partner' => 'Select Partner',
         'promo_code' => 'Promo Code',
         'dest_country' => 'Country',
+        'dest_country_other' => 'Destination',
         'id_product' => 'Establishment',
         'travel_date' => 'Travel date',
+        'duration' => 'Length of stay',
         'adults' => 'Adults',
         'children' => 'Children',
+        'referral_source' => 'Where did you find out about us?',
         'referral_source_other' => 'Where did you find out about us?',
+        'message' => 'Message',
         'terms' => 'Terms agreement',
     ];
 
@@ -104,20 +108,47 @@ class GfbrandInquiryModuleFrontController extends ModuleFrontController
      */
     private function isPost()
     {
-        return Tools::getIsset('submitGfInquiry');
+        // Tools::getIsset() is true for a GET parameter too — checking the
+        // actual request method is what keeps a crafted link (or an <img>
+        // tag) with ?submitGfInquiry=1 from reaching the "POST" path at all.
+        return $_SERVER['REQUEST_METHOD'] === 'POST' && Tools::getIsset('submitGfInquiry');
     }
 
     private function handleSubmission()
     {
+        // The form is public, but that is exactly why it needs a token: with
+        // none, any page that can make a visitor's browser POST here (a
+        // hostile form on another site) submits an enquiry as them.
+        if (!Tools::getToken(false) || Tools::getValue('token') !== Tools::getToken(false)) {
+            Tools::redirect('index.php?controller=404');
+
+            return;
+        }
+
         // Honeypot (AC-7): a bot fills every field, including the one no
-        // human ever sees. Pretend success rather than reveal the trap.
+        // human ever sees. Pretend success rather than reveal the trap —
+        // but still keep a record: a false positive (autofill on an
+        // off-screen field is a real occurrence) is otherwise
+        // indistinguishable from a lost enquiry, exactly the failure this
+        // table exists to fix. Flagged, not treated as a real submission —
+        // it does not count toward the rate limit and is not what a
+        // "New" enquiry in the inbox means.
         if (trim((string) Tools::getValue(self::HONEYPOT_FIELD)) !== '') {
+            $this->persistSuspectedSpam();
             $this->redirectToThankYou();
 
             return;
         }
 
-        $input = $_POST;
+        $input = array_map(function ($value) {
+            // Tools::getValue() would silently drop these to '', hiding a
+            // spoofed array field instead of rejecting it: coerce here so
+            // GFInquiryValidator's trim()/strlen() calls never receive
+            // anything but a string (an array posted as first_name[]=a
+            // would otherwise become the literal string "Array" once
+            // PHP 8 coerces it, past every length and content check).
+            return is_scalar($value) ? (string) $value : '';
+        }, $_POST);
         $context = $this->validationContext();
 
         $result = (new GFInquiryValidator())->validate($input, $context);
@@ -134,9 +165,67 @@ class GfbrandInquiryModuleFrontController extends ModuleFrontController
             return;
         }
 
-        $this->persist($result);
+        if (!$this->persist($result)) {
+            // Everything the guest typed passed validation; the failure is
+            // ours (a DB error, or a value that cleared GFInquiryValidator
+            // but still failed one of GfInquiry's own ObjectModel rules).
+            // Either way, nothing was stored — a "Thank you" here would be
+            // exactly the silent loss this story exists to fix.
+            $result->addError('_form', 'save_failed');
+            $this->renderForm($result, $input);
+
+            return;
+        }
+
         $this->notifyTeam($result);
         $this->redirectToThankYou();
+    }
+
+    /**
+     * Best-effort record of a honeypot trip: the whole point is to keep
+     * *something* rather than nothing, so this never runs the guest-facing
+     * validator (a bot's junk failing it would defeat the purpose) and
+     * never lets a persistence failure interrupt the response — a false
+     * positive here is disappointing, but it must never be worse than the
+     * silent discard it replaces.
+     */
+    private function persistSuspectedSpam()
+    {
+        try {
+            $inquiry = new GfInquiry();
+            $inquiry->first_name = $this->safeGenericName(Tools::getValue('first_name'), 128) ?: 'Unknown';
+            $inquiry->last_name = $this->safeGenericName(Tools::getValue('last_name'), 128) ?: 'Unknown';
+            $email = trim((string) Tools::getValue('email'));
+            $inquiry->email = Validate::isEmail($email) ? Tools::substr($email, 0, 255) : 'unknown@invalid.example';
+            $inquiry->consent_text = $this->consentText();
+            $inquiry->consent_at = date('Y-m-d H:i:s');
+            $inquiry->status = GfInquiry::STATUS_NEW;
+            $inquiry->ip_address = Tools::getRemoteAddr();
+            $inquiry->is_suspected_spam = true;
+
+            $inquiry->add();
+        } catch (PrestaShopException $e) {
+            PrestaShopLogger::addLog(
+                '[gfbrand] suspected-spam booking inquiry not saved: ' . $e->getMessage(),
+                2,
+                null,
+                'Module',
+                (int) $this->module->id
+            );
+        }
+    }
+
+    /**
+     * @param  mixed $value
+     * @param  int   $maxLength
+     * @return string '' when the value cannot be made to satisfy
+     *                 isGenericName even after trimming to length.
+     */
+    private function safeGenericName($value, $maxLength)
+    {
+        $value = Tools::substr(trim((string) $value), 0, $maxLength);
+
+        return Validate::isGenericName($value) ? $value : '';
     }
 
     /**
@@ -154,6 +243,9 @@ class GfbrandInquiryModuleFrontController extends ModuleFrontController
         return GfInquiry::countRecentByEmail($email, self::RATE_LIMIT_WINDOW_MINUTES) >= self::RATE_LIMIT_MAX_PER_EMAIL;
     }
 
+    /**
+     * @return bool True if the row was actually written.
+     */
     private function persist(GFInquiryValidationResult $result)
     {
         $inquiry = new GfInquiry();
@@ -166,6 +258,7 @@ class GfbrandInquiryModuleFrontController extends ModuleFrontController
         $inquiry->id_gf_partner = $result->get('id_gf_partner');
         $inquiry->promo_code = $result->get('promo_code');
         $inquiry->dest_country = $result->get('dest_country');
+        $inquiry->dest_country_other = $result->get('dest_country_other');
         $inquiry->id_product = $result->get('id_product');
         $inquiry->travel_date = $result->get('travel_date');
         $inquiry->duration = $result->get('duration');
@@ -182,7 +275,19 @@ class GfbrandInquiryModuleFrontController extends ModuleFrontController
         $inquiry->status = GfInquiry::STATUS_NEW;
         $inquiry->ip_address = Tools::getRemoteAddr();
 
-        $inquiry->add();
+        try {
+            return (bool) $inquiry->add();
+        } catch (PrestaShopException $e) {
+            PrestaShopLogger::addLog(
+                '[gfbrand] booking inquiry not saved: ' . $e->getMessage(),
+                3,
+                null,
+                'Module',
+                (int) $this->module->id
+            );
+
+            return false;
+        }
     }
 
     /**
@@ -211,7 +316,9 @@ class GfbrandInquiryModuleFrontController extends ModuleFrontController
             'Phone' => $result->get('phone'),
             'Destination' => $result->get('dest_country'),
             'Travel date' => $result->get('travel_date') ?: 'Not specified',
-            'Party' => trim($result->get('adults') . ' adults, ' . $result->get('children') . ' children'),
+            'Party' => ($result->get('adults') !== null || $result->get('children') !== null)
+                ? ((int) $result->get('adults')) . ' adults, ' . ((int) $result->get('children')) . ' children'
+                : 'Not specified',
             'Message' => $result->get('message') ?: '(none)',
         ];
 
@@ -220,10 +327,10 @@ class GfbrandInquiryModuleFrontController extends ModuleFrontController
             $body .= $label . ': ' . $value . "\n";
         }
 
-        Mail::Send(
+        $sent = Mail::Send(
             (int) $this->context->language->id,
             'contact',
-            'New booking enquiry',
+            $this->module->l('New booking enquiry', 'inquiry'),
             [
                 '{contact_content_txt}' => $body,
                 '{contact_content_html}' => nl2br(Tools::htmlentitiesUTF8($body)),
@@ -240,6 +347,19 @@ class GfbrandInquiryModuleFrontController extends ModuleFrontController
             null,
             $result->get('email')
         );
+
+        if (!$sent) {
+            // The row is already saved by this point (persist() runs
+            // first) — a failed notification must not look like a lost
+            // enquiry in the logs the way a failed persist() would.
+            PrestaShopLogger::addLog(
+                '[gfbrand] booking inquiry notification email not sent to ' . $to,
+                2,
+                null,
+                'Module',
+                (int) $this->module->id
+            );
+        }
     }
 
     private function redirectToThankYou()
@@ -295,6 +415,7 @@ class GfbrandInquiryModuleFrontController extends ModuleFrontController
             'gf_partners' => $this->partnerOptions(),
             'gf_referral_sources' => self::REFERRAL_SOURCES,
             'gf_honeypot_field' => self::HONEYPOT_FIELD,
+            'gf_token' => Tools::getToken(false),
             'gf_form_action' => $this->context->link->getModuleLink('gfbrand', 'inquiry'),
             'gf_consent_text' => $this->consentText(),
             'gf_days' => range(1, 31),
@@ -328,7 +449,7 @@ class GfbrandInquiryModuleFrontController extends ModuleFrontController
     {
         return array_fill_keys([
             'first_name', 'last_name', 'email', 'phone', 'home_country', 'home_city',
-            'id_gf_partner', 'promo_code', 'dest_country', 'id_product',
+            'id_gf_partner', 'promo_code', 'dest_country', 'dest_country_other', 'id_product',
             'travel_day', 'travel_month', 'travel_year', 'duration', 'adults', 'children',
             'best_time_call', 'referral_source', 'referral_source_other', 'message', 'terms',
         ], '');
@@ -433,12 +554,22 @@ class GfbrandInquiryModuleFrontController extends ModuleFrontController
      * after a failed submission go through it, and "blank" is unambiguous:
      * an empty string, never a missing key.
      *
+     * Only defaults the year when day or month is already set. Filling the
+     * year alone on an otherwise-untouched form would turn "all three
+     * blank" (GFInquiryValidator's one valid "I have no travel date yet"
+     * state) into "year set, day and month blank" — which the validator
+     * correctly rejects as incomplete — making the optional travel date
+     * effectively mandatory for anyone who does not notice the pre-selected
+     * year and deliberately clear it.
+     *
      * @param  array $input
      * @return array
      */
     private function defaultTravelYear(array $input)
     {
-        if ((string) $input['travel_year'] === '') {
+        $dayOrMonthSet = (string) $input['travel_day'] !== '' || (string) $input['travel_month'] !== '';
+
+        if ($dayOrMonthSet && (string) $input['travel_year'] === '') {
             $input['travel_year'] = (int) date('Y');
         }
 
@@ -547,9 +678,20 @@ class GfbrandInquiryModuleFrontController extends ModuleFrontController
      */
     private function consentText()
     {
-        return $this->module->l(
-            'I agree with the Terms of use & with passing on my details to local partners',
-            'inquiry'
+        // Module translation strings come back HTML-entity-escaped
+        // (Translate::getModuleTranslation() always runs the result through
+        // htmlspecialchars() once a translation file is loaded, regardless
+        // of where the string is used) — decoded here so the plain text is
+        // what gets stored and what the template's own escape:'htmlall'
+        // applies to, exactly once. Without this, "&" was stored and shown
+        // as the literal string "&amp;".
+        return html_entity_decode(
+            $this->module->l(
+                'I agree with the Terms of use & with passing on my details to local partners',
+                'inquiry'
+            ),
+            ENT_COMPAT,
+            'UTF-8'
         );
     }
 

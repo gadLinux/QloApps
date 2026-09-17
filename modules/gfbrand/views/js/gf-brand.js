@@ -214,23 +214,36 @@
             return;
         }
 
+        // The full master list, kept in original order — filtering removes
+        // and re-appends real <option> elements rather than setting
+        // `hidden` on them: Safari does not honour `hidden` (or `disabled`,
+        // visually) on <option>, so a hidden-but-still-selectable option
+        // would defeat the whole point of narrowing by country there.
         var options = Array.prototype.slice.call(establishmentSelect.options);
 
         function applyFilter() {
             var country = countrySelect.value;
+            var selectedValue = establishmentSelect.value;
+            var selectedStillMatches = false;
+
+            while (establishmentSelect.firstChild) {
+                establishmentSelect.removeChild(establishmentSelect.firstChild);
+            }
 
             options.forEach(function (option) {
-                if (!option.value) {
-                    return; // "Not sure yet" always stays.
-                }
+                // "Not sure yet" always stays.
+                var matches = !option.value || !country || option.getAttribute('data-gf-country') === country;
 
-                var matches = !country || option.getAttribute('data-gf-country') === country;
-                option.hidden = !matches;
+                if (matches) {
+                    establishmentSelect.appendChild(option);
 
-                if (!matches && option.selected) {
-                    establishmentSelect.value = '';
+                    if (option.value === selectedValue) {
+                        selectedStillMatches = true;
+                    }
                 }
             });
+
+            establishmentSelect.value = selectedStillMatches ? selectedValue : '';
         }
 
         countrySelect.addEventListener('change', applyFilter);
@@ -254,11 +267,34 @@
         toggle();
     }
 
+    /**
+     * Same "Other" escape-hatch pattern as the referral source select, for
+     * the destination country: the free text is a regular input, so
+     * .hidden here (unlike on an <option>) works the same in every browser.
+     */
+    function initInquiryDestCountryOther() {
+        var select = document.querySelector('[data-gf-country-select]');
+        var otherField = document.querySelector('.gf-dest-country-other');
+
+        if (!select || !otherField) {
+            return;
+        }
+
+        function toggle() {
+            var isOther = select.value === 'OTHER';
+            otherField.hidden = !isOther;
+        }
+
+        select.addEventListener('change', toggle);
+        toggle();
+    }
+
     if (typeof window.addEventListener === 'function') {
         window.addEventListener('DOMContentLoaded', function () {
             initTrustDrawers();
             initInquiryEstablishmentFilter();
             initInquiryReferralOther();
+            initInquiryDestCountryOther();
         });
     }
 

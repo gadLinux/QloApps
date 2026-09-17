@@ -783,7 +783,7 @@ body:not(.index) #header .shopping_cart > a:hover {
    ========================================================================== */
 
 .gf-inquiry {
-    max-width: 720px;
+    max-width: 1100px;
     margin: 0 auto;
     padding: 40px 20px 80px;
 }
@@ -791,12 +791,68 @@ body:not(.index) #header .shopping_cart > a:hover {
 .gf-inquiry-title {
     font-family: var(--gf-font-display, 'DM Serif Display', serif);
     color: var(--gf-ink);
-    margin-bottom: 8px;
+    margin-bottom: 24px;
 }
 
-.gf-inquiry-reassurance {
+/* AC-1: reassurance card (left) beside the three field groups (right).
+ * Stacks — card above form — under the field-groups' own single-column
+ * breakpoint (§9), so the narrow layout never puts a wide card beside a
+ * cramped form. */
+.gf-inquiry-layout {
+    display: grid;
+    grid-template-columns: minmax(240px, 300px) 1fr;
+    gap: 40px;
+    align-items: start;
+}
+
+@media (max-width: 640px) {
+    .gf-inquiry-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+.gf-inquiry-card {
+    background-color: var(--gf-surface-tint, #f4f6f1);
+    border: 1px solid var(--gf-rule);
+    border-radius: 8px;
+    padding: 24px;
     color: var(--gf-text);
-    margin-bottom: 32px;
+    /* Sticks alongside the form on a tall page instead of scrolling out of
+     * view — a reassurance card is meant to stay in sight while filling in. */
+    position: sticky;
+    top: 24px;
+}
+
+.gf-inquiry-card p {
+    margin: 0 0 16px;
+}
+
+.gf-inquiry-card-points {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.gf-inquiry-card-points li {
+    padding-left: 24px;
+    position: relative;
+}
+
+.gf-inquiry-card-points li::before {
+    content: '\2713';
+    position: absolute;
+    left: 0;
+    color: var(--gf-olive-dark, #556B2F);
+    font-weight: 600;
+}
+
+@media (max-width: 640px) {
+    .gf-inquiry-card {
+        position: static;
+    }
 }
 
 .gf-inquiry-sent {

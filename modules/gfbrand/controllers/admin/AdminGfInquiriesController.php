@@ -29,6 +29,7 @@
 // time PrestaShop instantiates this controller for the tab. Required
 // directly rather than relying on load order.
 require_once _PS_MODULE_DIR_ . 'gfbrand/classes/GfInquiry.php';
+require_once _PS_MODULE_DIR_ . 'gfbrand/lib/Service/GFInquiryValidator.php';
 
 class AdminGfInquiriesController extends AdminController
 {
@@ -68,12 +69,20 @@ class AdminGfInquiriesController extends AdminController
             ],
             'email' => [
                 'title' => $this->l('Email'),
+                // The joined ps_employee also has an `email` column: without
+                // this, filtering raises "Column 'email' in where clause is
+                // ambiguous".
+                'filter_key' => 'a!email',
             ],
             'dest_country' => [
                 'title' => $this->l('Destination'),
             ],
             'establishment_name' => [
                 'title' => $this->l('Establishment'),
+                // A SELECT alias, not a real column — same shape as
+                // full_name above; without this, filtering raises "Unknown
+                // column 'establishment_name' in 'where clause'".
+                'havingFilter' => true,
             ],
             'status' => [
                 'title' => $this->l('Status'),
@@ -84,6 +93,13 @@ class AdminGfInquiriesController extends AdminController
             ],
             'employee_name' => [
                 'title' => $this->l('Assigned to'),
+                'havingFilter' => true,
+            ],
+            'is_suspected_spam' => [
+                'title' => $this->l('Suspected spam'),
+                'type' => 'bool',
+                'align' => 'text-center',
+                'orderby' => false,
             ],
             'date_add' => [
                 'title' => $this->l('Received'),
@@ -99,6 +115,63 @@ class AdminGfInquiriesController extends AdminController
     {
         parent::initToolbar();
         unset($this->toolbar_btn['new']);
+    }
+
+    /**
+     * "New" and "Delete" are hidden from the toolbar (initToolbar()) and the
+     * row actions (no addRowAction('delete')), but AdminController still
+     * dispatches &addgf_booking_inquiry / &deletegf_booking_inquiry from a
+     * hand-built URL regardless of what the UI offers — hiding a button
+     * only controls what is displayed, not what the controller will do if
+     * asked. This is the actual enforcement of "an enquiry is created by a
+     * guest, never staff, and a spam entry is data worth keeping".
+     */
+    public function initProcess()
+    {
+        if (in_array(Tools::getValue('action'), ['Add', 'Delete'], true)
+            || Tools::isSubmit('add' . $this->table)
+            || Tools::isSubmit('delete' . $this->table)
+        ) {
+            $this->errors[] = Tools::displayError('This action is not available for booking enquiries.');
+            $this->action = '';
+
+            return;
+        }
+
+        parent::initProcess();
+    }
+
+    /**
+     * Only status and id_employee are ever meant to change here — the rest
+     * of the row is the guest's own submission (summaryHtml() renders it
+     * read-only for exactly that reason). AdminController::copyFromPost()
+     * assigns any posted key matching a public property, so without this a
+     * crafted POST to this same edit screen could rewrite any of them.
+     */
+    protected function copyFromPost(&$object, $table)
+    {
+        $object->status = Tools::getValue('status');
+        $object->id_employee = (int) Tools::getValue('id_employee');
+    }
+
+    /**
+     * status is a strict ENUM column; id_employee must be 0 (unassigned) or
+     * an employee that actually exists. AdminController's own field
+     * validation only knows `status`'s `validate => isGenericName`, which
+     * accepts any generic string — this is what actually enforces the fixed
+     * set of values the admin form itself offers.
+     */
+    public function validateRules($class_name = false)
+    {
+        if (!in_array(Tools::getValue('status'), GfInquiry::getStatuses(), true)) {
+            $this->errors[] = Tools::displayError('Invalid status.');
+        }
+
+        $idEmployee = (int) Tools::getValue('id_employee');
+
+        if ($idEmployee !== 0 && !Validate::isLoadedObject(new Employee($idEmployee))) {
+            $this->errors[] = Tools::displayError('Invalid assignee.');
+        }
     }
 
     /**
@@ -206,10 +279,38 @@ class AdminGfInquiriesController extends AdminController
      */
     private function summaryHtml(GfInquiry $inquiry)
     {
+        $establishmentName = $inquiry->id_product
+            ? Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue(
+                'SELECT `name` FROM `' . _DB_PREFIX_ . 'product_lang`
+                 WHERE `id_product` = ' . (int) $inquiry->id_product
+                 . ' AND `id_lang` = ' . (int) $this->context->language->id
+            )
+            : null;
+
+        $partnerName = $inquiry->id_gf_partner
+            ? Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue(
+                'SELECT `name` FROM `' . _DB_PREFIX_ . 'gf_partner_lang`
+                 WHERE `id_gf_partner` = ' . (int) $inquiry->id_gf_partner
+                 . ' AND `id_lang` = ' . (int) $this->context->language->id
+            )
+            : null;
+
+        // The name, email and what was agreed to first: this is what the
+        // rest of the recap is about, and consent_text is the field the
+        // migration exists to make provable — leaving it off left staff
+        // with no way to see, from the record itself, what the submitter
+        // actually agreed to.
         $rows = [
+            $this->l('Name') => trim($inquiry->first_name . ' ' . $inquiry->last_name),
+            $this->l('Email') => $inquiry->email,
             $this->l('Phone') => $inquiry->phone,
             $this->l('Home country') => $inquiry->home_country,
             $this->l('Home city') => $inquiry->home_city,
+            $this->l('Destination') => $inquiry->dest_country === GFInquiryValidator::OTHER_DEST_COUNTRY && $inquiry->dest_country_other
+                ? $inquiry->dest_country_other . ' (' . $this->l('Other') . ')'
+                : $inquiry->dest_country,
+            $this->l('Establishment') => $establishmentName,
+            $this->l('Partner') => $partnerName,
             $this->l('Promo code') => $inquiry->promo_code,
             $this->l('Travel date') => $inquiry->travel_date,
             $this->l('Duration') => $inquiry->duration,
@@ -219,7 +320,9 @@ class AdminGfInquiriesController extends AdminController
             $this->l('Found us via') => $inquiry->referral_source,
             $this->l('Message') => $inquiry->message,
             $this->l('Consent given') => $inquiry->consent_at,
+            $this->l('Consent wording shown') => $inquiry->consent_text,
             $this->l('IP address') => $inquiry->ip_address,
+            $this->l('Suspected spam') => $inquiry->is_suspected_spam ? $this->l('Yes — the honeypot field was filled') : null,
         ];
 
         $html = '<table class="table">';

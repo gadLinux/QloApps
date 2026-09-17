@@ -142,12 +142,40 @@ class GFInquiryValidatorTest extends TestCase
     public function dest_country_accepts_the_other_sentinel_even_though_it_is_not_in_the_catalogue(): void
     {
         $result = $this->validator->validate(
-            $this->validSubmission(['dest_country' => 'OTHER', 'id_product' => '']),
+            $this->validSubmission([
+                'dest_country' => 'OTHER',
+                'dest_country_other' => 'A country not in the catalogue yet',
+                'id_product' => '',
+            ]),
             $this->context()
         );
 
         $this->assertTrue($result->isValid());
         $this->assertSame('OTHER', $result->get('dest_country'));
+        $this->assertSame('A country not in the catalogue yet', $result->get('dest_country_other'));
+    }
+
+    #[Test]
+    public function dest_country_other_is_required_when_the_sentinel_is_chosen(): void
+    {
+        $result = $this->validator->validate(
+            $this->validSubmission(['dest_country' => 'OTHER', 'dest_country_other' => '', 'id_product' => '']),
+            $this->context()
+        );
+
+        $this->assertSame('required', $result->errorCodeFor('dest_country_other'));
+    }
+
+    #[Test]
+    public function dest_country_other_is_dropped_when_a_catalogue_country_is_chosen(): void
+    {
+        $result = $this->validator->validate(
+            $this->validSubmission(['dest_country' => 'Costa Rica', 'dest_country_other' => 'Should be ignored']),
+            $this->context()
+        );
+
+        $this->assertTrue($result->isValid());
+        $this->assertNull($result->get('dest_country_other'));
     }
 
     #[Test]

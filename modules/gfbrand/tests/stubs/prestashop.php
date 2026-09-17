@@ -100,11 +100,13 @@ if (!class_exists('Tools')) {
 
 if (!class_exists('Validate')) {
     /**
-     * Simplified equivalents of the two rules GFInquiryValidator relies on.
-     * The real regexes (classes/Validate.php) are exercised by the
-     * integration suite, which loads PrestaShop's actual classes; this stub
-     * only has to agree with them on the well-formed and obviously-malformed
-     * cases the unit tests assert.
+     * Equivalents of the rules GFInquiryValidator relies on — isEmail is a
+     * simplified approximation (the real regex in classes/Validate.php is
+     * exercised by the integration suite, which loads PrestaShop's actual
+     * classes); isDate, isGenericName, isPhoneNumber and isCleanHtml are
+     * verbatim copies of the real implementation, since these are exactly
+     * what stands between a validator-accepted value and an
+     * ObjectModel::add() that throws on the very same rule.
      */
     class Validate
     {
@@ -120,6 +122,39 @@ if (!class_exists('Validate')) {
             }
 
             return checkdate((int) $matches[2], (int) $matches[3], (int) $matches[1]);
+        }
+
+        /** Verbatim copy of classes/Validate.php's own regex. */
+        public static function isGenericName($name)
+        {
+            return empty($name) || preg_match('/^[^<>={}]*$/u', (string) $name);
+        }
+
+        /** Verbatim copy of classes/Validate.php's own regex. */
+        public static function isPhoneNumber($number)
+        {
+            return (bool) preg_match('/^\+?[\s\d.()-]*\d+$/', (string) $number);
+        }
+
+        /**
+         * Same checks as classes/Validate.php's own isCleanHtml(), minus the
+         * $allow_iframe branch (GFInquiryValidator never passes it).
+         */
+        public static function isCleanHtml($html)
+        {
+            $html = (string) $html;
+            $events = 'onload|onunload|onfocus|onblur|onchange|onsubmit|onclick|onkeydown|onkeyup'
+                . '|onkeypress|onmouseover|onmouseout|onerror|onselect|onreset';
+
+            if (preg_match('/<[\s]*script/ims', $html)
+                || preg_match('/(' . $events . ')[\s]*=/ims', $html)
+                || preg_match('/.*script\:/ims', $html)
+                || preg_match('/<[\s]*(i?frame|form|input|embed|object)/ims', $html)
+            ) {
+                return false;
+            }
+
+            return true;
         }
     }
 }

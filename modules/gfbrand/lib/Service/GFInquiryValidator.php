@@ -95,8 +95,8 @@ class GFInquiryValidator
 
     private function validateGeneral(array $input, array $context, GFInquiryValidationResult $result)
     {
-        $this->requiredText($input, 'first_name', 128, $result);
-        $this->requiredText($input, 'last_name', 128, $result);
+        $this->requiredText($input, 'first_name', 128, 'isGenericName', $result);
+        $this->requiredText($input, 'last_name', 128, 'isGenericName', $result);
 
         $email = trim((string) $this->value($input, 'email'));
         if ($email === '') {
@@ -107,7 +107,7 @@ class GFInquiryValidator
             $result->set('email', $email);
         }
 
-        $result->set('phone', trim((string) $this->value($input, 'phone')));
+        $this->optionalText($input, 'phone', 32, 'isPhoneNumber', $result);
 
         $homeCountry = trim((string) $this->value($input, 'home_country'));
         if ($homeCountry === '') {
@@ -118,7 +118,7 @@ class GFInquiryValidator
             $result->set('home_country', $homeCountry);
         }
 
-        $result->set('home_city', trim((string) $this->value($input, 'home_city')));
+        $this->optionalText($input, 'home_city', 128, 'isGenericName', $result);
 
         $partnerId = (int) $this->value($input, 'id_gf_partner');
         if ($partnerId > 0 && !in_array($partnerId, $context['partner_ids'], true)) {
@@ -130,6 +130,8 @@ class GFInquiryValidator
         $promoCode = trim((string) $this->value($input, 'promo_code'));
         if (Tools::strlen($promoCode) > 7) {
             $result->addError('promo_code', 'too_long');
+        } elseif ($promoCode !== '' && !Validate::isGenericName($promoCode)) {
+            $result->addError('promo_code', 'invalid');
         } else {
             $result->set('promo_code', $promoCode);
         }
@@ -148,6 +150,26 @@ class GFInquiryValidator
             $result->set('dest_country', $destCountry);
         }
 
+        if ($destCountry === self::OTHER_DEST_COUNTRY) {
+            // Unlike referral_source, the sentinel is kept: dest_country
+            // still reads "OTHER" for reporting, with the guest's own words
+            // in a companion field — otherwise the actual destination they
+            // typed was simply discarded.
+            $destOther = trim((string) $this->value($input, 'dest_country_other'));
+
+            if ($destOther === '') {
+                $result->addError('dest_country_other', 'required');
+            } elseif (Tools::strlen($destOther) > 100) {
+                $result->addError('dest_country_other', 'too_long');
+            } elseif (!Validate::isGenericName($destOther)) {
+                $result->addError('dest_country_other', 'invalid');
+            } else {
+                $result->set('dest_country_other', $destOther);
+            }
+        } else {
+            $result->set('dest_country_other', null);
+        }
+
         $establishmentId = (int) $this->value($input, 'id_product');
         if ($establishmentId > 0 && !in_array($establishmentId, $context['establishment_ids'], true)) {
             $result->addError('id_product', 'invalid');
@@ -157,12 +179,7 @@ class GFInquiryValidator
 
         $result->set('travel_date', $this->validateTravelDate($input, $result));
 
-        $duration = trim((string) $this->value($input, 'duration'));
-        if (Tools::strlen($duration) > 64) {
-            $result->addError('duration', 'too_long');
-        } else {
-            $result->set('duration', $duration);
-        }
+        $this->optionalText($input, 'duration', 64, 'isGenericName', $result);
 
         $result->set('adults', $this->validateCount($input, 'adults', self::MAX_ADULTS, $result));
         $result->set('children', $this->validateCount($input, 'children', self::MAX_CHILDREN, $result));
@@ -170,7 +187,7 @@ class GFInquiryValidator
 
     private function validateExtra(array $input, array $context, GFInquiryValidationResult $result)
     {
-        $result->set('best_time_call', trim((string) $this->value($input, 'best_time_call')));
+        $this->optionalText($input, 'best_time_call', 128, 'isGenericName', $result);
 
         $referral = trim((string) $this->value($input, 'referral_source'));
 
@@ -181,6 +198,8 @@ class GFInquiryValidator
                 $result->addError('referral_source_other', 'required');
             } elseif (Tools::strlen($other) > 128) {
                 $result->addError('referral_source_other', 'too_long');
+            } elseif (!Validate::isGenericName($other)) {
+                $result->addError('referral_source_other', 'invalid');
             } else {
                 $result->set('referral_source', $other);
             }
@@ -193,6 +212,10 @@ class GFInquiryValidator
         $message = trim((string) $this->value($input, 'message'));
         if (Tools::strlen($message) > 2000) {
             $result->addError('message', 'too_long');
+        } elseif ($message !== '' && !Validate::isCleanHtml($message)) {
+            // GfInquiry persists this field as isCleanHtml — reject the same
+            // markup here instead of letting ObjectModel::add() throw.
+            $result->addError('message', 'invalid');
         } else {
             $result->set('message', $message);
         }
@@ -200,6 +223,38 @@ class GFInquiryValidator
         if ((string) $this->value($input, 'terms') !== '1') {
             $result->addError('terms', 'required');
         }
+    }
+
+    /**
+     * A field GfInquiry persists as optional (may be stored as null/empty)
+     * but still runs through a `validate` rule and `size` limit the moment
+     * it is non-empty — mirroring both here is what turns an
+     * ObjectModel::add() exception into an ordinary field error the guest
+     * can actually see and fix.
+     */
+    private function optionalText(array $input, $field, $maxLength, $validateMethod, GFInquiryValidationResult $result)
+    {
+        $value = trim((string) $this->value($input, $field));
+
+        if ($value === '') {
+            $result->set($field, $value);
+
+            return;
+        }
+
+        if (Tools::strlen($value) > $maxLength) {
+            $result->addError($field, 'too_long');
+
+            return;
+        }
+
+        if (!call_user_func(['Validate', $validateMethod], $value)) {
+            $result->addError($field, 'invalid');
+
+            return;
+        }
+
+        $result->set($field, $value);
     }
 
     /**
@@ -262,7 +317,7 @@ class GFInquiryValidator
         return (int) $raw;
     }
 
-    private function requiredText(array $input, $field, $maxLength, GFInquiryValidationResult $result)
+    private function requiredText(array $input, $field, $maxLength, $validateMethod, GFInquiryValidationResult $result)
     {
         $value = trim((string) $this->value($input, $field));
 
@@ -274,6 +329,14 @@ class GFInquiryValidator
 
         if (Tools::strlen($value) > $maxLength) {
             $result->addError($field, 'too_long');
+
+            return;
+        }
+
+        // GfInquiry persists this field with the same rule — reject the same
+        // content here instead of letting ObjectModel::add() throw.
+        if (!call_user_func(['Validate', $validateMethod], $value)) {
+            $result->addError($field, 'invalid');
 
             return;
         }

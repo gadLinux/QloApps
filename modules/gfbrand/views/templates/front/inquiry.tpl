@@ -29,10 +29,23 @@
 
     <header class="gf-inquiry-hero">
         <h1 class="gf-inquiry-title">{l s='Booking Questionnaire' mod='gfbrand'}</h1>
-        <div class="gf-inquiry-reassurance">
-            <p>{l s='Tell us where you would like to go and we will get back to you with options that fit your gluten-free needs.' mod='gfbrand'}</p>
-        </div>
     </header>
+
+    <div class="gf-inquiry-layout">
+
+    {* AC-1: reassurance card (left) and the three field groups (right) —
+       a two-column layout on wide viewports, stacked card-above-form on
+       narrow ones (gf-brand.css §6). *}
+    <aside class="gf-inquiry-card">
+        <p>{l s='Tell us where you would like to go and we will get back to you with options that fit your gluten-free needs.' mod='gfbrand'}</p>
+        <ul class="gf-inquiry-card-points">
+            <li>{l s='Certified gluten-free options only' mod='gfbrand'}</li>
+            <li>{l s='A real person reviews every enquiry' mod='gfbrand'}</li>
+            <li>{l s='No obligation to book' mod='gfbrand'}</li>
+        </ul>
+    </aside>
+
+    <div class="gf-inquiry-main">
 
     {if $gf_errors|@count > 0}
         <div class="gf-inquiry-errors" role="alert" tabindex="-1">
@@ -41,6 +54,10 @@
                 {foreach from=$gf_errors key=gf_field item=gf_code}
                     {if $gf_field == '_form'}
                         <li>{l s='We could not accept your enquiry right now. Please try again shortly.' mod='gfbrand'}</li>
+                    {elseif $gf_field == 'travel_date'}
+                        {* No element carries this id: the group is three
+                           separate selects (day/month/year). *}
+                        <li><a href="#gf-field-travel_day">{$gf_field_labels.$gf_field|default:$gf_field|escape:'htmlall':'UTF-8'}</a></li>
                     {else}
                         <li><a href="#gf-field-{$gf_field|escape:'html':'UTF-8'}">{$gf_field_labels.$gf_field|default:$gf_field|escape:'htmlall':'UTF-8'}</a></li>
                     {/if}
@@ -51,6 +68,7 @@
 
     <form class="gf-inquiry-form" method="post" action="{$gf_form_action|escape:'html':'UTF-8'}" novalidate>
         <input type="hidden" name="submitGfInquiry" value="1">
+        <input type="hidden" name="token" value="{$gf_token|escape:'html':'UTF-8'}">
 
         {* Honeypot (AC-7): off-screen and unreachable by tab, so it is never
            seen or filled by a person, only by a script that fills every
@@ -125,9 +143,11 @@
                the field is optional, and offering nothing beats inventing
                placeholder partners. *}
             {if $gf_partners|@count > 0}
-                <div class="gf-field">
+                <div class="gf-field{if isset($gf_errors.id_gf_partner)} gf-field--error{/if}">
                     <label for="gf-field-id_gf_partner">{l s='Select Partner' mod='gfbrand'}</label>
-                    <select id="gf-field-id_gf_partner" name="id_gf_partner">
+                    <select id="gf-field-id_gf_partner" name="id_gf_partner"
+                        {if isset($gf_errors.id_gf_partner)}aria-invalid="true" aria-describedby="gf-error-id_gf_partner"{/if}
+                        {if $gf_first_invalid_field == 'id_gf_partner'}autofocus{/if}>
                         <option value="">{l s='None' mod='gfbrand'}</option>
                         {foreach from=$gf_partners item=gf_partner}
                             <option value="{$gf_partner.id_gf_partner|intval}"
@@ -136,13 +156,17 @@
                             </option>
                         {/foreach}
                     </select>
+                    {if isset($gf_errors.id_gf_partner)}<p class="gf-field-error" id="gf-error-id_gf_partner">{l s='Please choose a valid partner.' mod='gfbrand'}</p>{/if}
                 </div>
             {/if}
 
-            <div class="gf-field">
+            <div class="gf-field{if isset($gf_errors.promo_code)} gf-field--error{/if}">
                 <label for="gf-field-promo_code">{l s='Promo Code' mod='gfbrand'}</label>
                 <input type="text" id="gf-field-promo_code" name="promo_code" maxlength="7"
+                    {if isset($gf_errors.promo_code)}aria-invalid="true" aria-describedby="gf-error-promo_code"{/if}
+                    {if $gf_first_invalid_field == 'promo_code'}autofocus{/if}
                     value="{$gf_input.promo_code|default:''|escape:'htmlall':'UTF-8'}">
+                {if isset($gf_errors.promo_code)}<p class="gf-field-error" id="gf-error-promo_code">{l s='Please check the promo code — 7 characters or fewer, letters and numbers only.' mod='gfbrand'}</p>{/if}
             </div>
         </fieldset>
 
@@ -171,6 +195,13 @@
                     <option value="OTHER" {if $gf_input.dest_country == 'OTHER'}selected{/if}>{l s='Other' mod='gfbrand'}</option>
                 </select>
                 {if isset($gf_errors.dest_country)}<p class="gf-field-error" id="gf-error-dest_country">{l s='Please select a destination country.' mod='gfbrand'}</p>{/if}
+                <input type="text" class="gf-dest-country-other" id="gf-field-dest_country_other" name="dest_country_other"
+                    placeholder="{l s='Please specify' mod='gfbrand'}"
+                    value="{$gf_input.dest_country_other|default:''|escape:'htmlall':'UTF-8'}"
+                    {if $gf_input.dest_country != 'OTHER'}hidden{/if}
+                    {if isset($gf_errors.dest_country_other)}aria-invalid="true" aria-describedby="gf-error-dest_country_other"{/if}
+                    {if $gf_first_invalid_field == 'dest_country_other'}autofocus{/if}>
+                {if isset($gf_errors.dest_country_other)}<p class="gf-field-error" id="gf-error-dest_country_other">{l s='Please tell us the destination you have in mind.' mod='gfbrand'}</p>{/if}
             </div>
 
             <div class="gf-field{if isset($gf_errors.id_product)} gf-field--error{/if}">
@@ -221,10 +252,13 @@
                 {if isset($gf_errors.travel_date)}<p class="gf-field-error" id="gf-error-travel_date">{l s='Please give a complete, valid travel date, or leave all three blank.' mod='gfbrand'}</p>{/if}
             </div>
 
-            <div class="gf-field">
+            <div class="gf-field{if isset($gf_errors.duration)} gf-field--error{/if}">
                 <label for="gf-field-duration">{l s='Duration' mod='gfbrand'}</label>
-                <input type="text" id="gf-field-duration" name="duration" placeholder="{l s='e.g. 10 days' mod='gfbrand'}"
+                <input type="text" id="gf-field-duration" name="duration" placeholder="{l s='e.g. 10 days' mod='gfbrand'}" maxlength="64"
+                    {if isset($gf_errors.duration)}aria-invalid="true" aria-describedby="gf-error-duration"{/if}
+                    {if $gf_first_invalid_field == 'duration'}autofocus{/if}
                     value="{$gf_input.duration|default:''|escape:'htmlall':'UTF-8'}">
+                {if isset($gf_errors.duration)}<p class="gf-field-error" id="gf-error-duration">{l s='Please shorten this or remove special characters — 64 characters or fewer.' mod='gfbrand'}</p>{/if}
             </div>
 
             <div class="gf-field{if isset($gf_errors.adults)} gf-field--error{/if}">
@@ -248,22 +282,28 @@
         <fieldset class="gf-inquiry-group">
             <legend>{l s='Extra information' mod='gfbrand'}</legend>
 
-            <div class="gf-field">
+            <div class="gf-field{if isset($gf_errors.best_time_call)} gf-field--error{/if}">
                 <label for="gf-field-best_time_call">{l s='Best time to call you?' mod='gfbrand'}</label>
-                <input type="text" id="gf-field-best_time_call" name="best_time_call"
+                <input type="text" id="gf-field-best_time_call" name="best_time_call" maxlength="128"
+                    {if isset($gf_errors.best_time_call)}aria-invalid="true" aria-describedby="gf-error-best_time_call"{/if}
+                    {if $gf_first_invalid_field == 'best_time_call'}autofocus{/if}
                     value="{$gf_input.best_time_call|default:''|escape:'htmlall':'UTF-8'}">
+                {if isset($gf_errors.best_time_call)}<p class="gf-field-error" id="gf-error-best_time_call">{l s='Please shorten this or remove special characters — 128 characters or fewer.' mod='gfbrand'}</p>{/if}
             </div>
 
             {* AC-9: a select with an Other escape hatch, not free text. *}
-            <div class="gf-field{if isset($gf_errors.referral_source_other)} gf-field--error{/if}">
+            <div class="gf-field{if isset($gf_errors.referral_source) || isset($gf_errors.referral_source_other)} gf-field--error{/if}">
                 <label for="gf-field-referral_source">{l s='Where did you find out about us?' mod='gfbrand'}</label>
-                <select id="gf-field-referral_source" name="referral_source" data-gf-referral-select>
+                <select id="gf-field-referral_source" name="referral_source" data-gf-referral-select
+                    {if isset($gf_errors.referral_source)}aria-invalid="true" aria-describedby="gf-error-referral_source"{/if}
+                    {if $gf_first_invalid_field == 'referral_source'}autofocus{/if}>
                     <option value="">{l s='Prefer not to say' mod='gfbrand'}</option>
                     {foreach from=$gf_referral_sources key=gf_value item=gf_label}
                         <option value="{$gf_value|escape:'html':'UTF-8'}" {if $gf_input.referral_source == $gf_value}selected{/if}>{$gf_label|escape:'htmlall':'UTF-8'}</option>
                     {/foreach}
                     <option value="other" {if $gf_input.referral_source == 'other'}selected{/if}>{l s='Other' mod='gfbrand'}</option>
                 </select>
+                {if isset($gf_errors.referral_source)}<p class="gf-field-error" id="gf-error-referral_source">{l s='Please choose one of the listed options.' mod='gfbrand'}</p>{/if}
                 <input type="text" class="gf-referral-other" id="gf-field-referral_source_other" name="referral_source_other"
                     placeholder="{l s='Please specify' mod='gfbrand'}"
                     value="{$gf_input.referral_source_other|default:''|escape:'htmlall':'UTF-8'}"
@@ -272,10 +312,14 @@
                 {if isset($gf_errors.referral_source_other)}<p class="gf-field-error" id="gf-error-referral_source_other">{l s='Please tell us where you heard about us.' mod='gfbrand'}</p>{/if}
             </div>
 
-            <div class="gf-field">
+            <div class="gf-field{if isset($gf_errors.message)} gf-field--error{/if}">
                 <label for="gf-field-message">{l s='Questions / special requests' mod='gfbrand'}</label>
                 <span class="gf-field-hint">{l s='Let us know about any food intolerances.' mod='gfbrand'}</span>
-                <textarea id="gf-field-message" name="message" rows="4">{$gf_input.message|default:''|escape:'htmlall':'UTF-8'}</textarea>
+                <textarea id="gf-field-message" name="message" rows="4" maxlength="2000"
+                    {if isset($gf_errors.message)}aria-invalid="true" aria-describedby="gf-error-message"{/if}
+                    {if $gf_first_invalid_field == 'message'}autofocus{/if}
+                    >{$gf_input.message|default:''|escape:'htmlall':'UTF-8'}</textarea>
+                {if isset($gf_errors.message)}<p class="gf-field-error" id="gf-error-message">{l s='Please shorten this or remove HTML markup — 2000 characters or fewer.' mod='gfbrand'}</p>{/if}
             </div>
 
             <div class="gf-field gf-field--checkbox{if isset($gf_errors.terms)} gf-field--error{/if}">
@@ -292,6 +336,9 @@
 
         <button type="submit" class="gf-btn gf-btn--primary gf-inquiry-submit">{l s='Send enquiry' mod='gfbrand'}</button>
     </form>
+
+    </div>{* .gf-inquiry-main *}
+    </div>{* .gf-inquiry-layout *}
 
 {/if}
 
