@@ -2200,3 +2200,345 @@ body.index .header-desc-container .header-desc-welcome {
         font-size: 15px;
     }
 }
+
+
+/* ==========================================================================
+   11. About Us page — Story 1.14
+   FR-n/a: the QloApps equivalent of the old WordPress About Us page. A
+   dedicated gfbrand front controller, so this section is self-contained —
+   it cannot reach any other page — the same section-per-story convention
+   as §4's .gf-establishments.
+   ========================================================================== */
+
+.gf-aboutus-band {
+    padding: var(--gf-space-20) 0;
+}
+
+.gf-aboutus-eyebrow {
+    margin: 0 0 var(--gf-space-3);
+    font-family: var(--gf-font-body);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gf-sage, #657a5a);
+}
+
+.gf-aboutus-eyebrow--center {
+    text-align: center;
+}
+
+/* --- Inner-page hero ------------------------------------------------------
+   Same look as the establishments listing's header (§4); a separate class
+   so each page's CSS stays self-contained per file convention. */
+
+.gf-aboutus-hero {
+    max-width: var(--gf-container-max);
+    margin: 0 auto;
+    padding: var(--gf-space-15) var(--gf-grid-gutter, 20px) var(--gf-space-10);
+    text-align: center;
+}
+
+.gf-aboutus-hero-title {
+    margin: 0;
+    font-family: var(--gf-font-display);
+    font-size: var(--gf-hero-size);
+    line-height: var(--gf-hero-lh);
+    letter-spacing: var(--gf-hero-tracking);
+    color: var(--gf-heading);
+}
+
+.gf-aboutus-hero-tagline {
+    margin: var(--gf-space-4) 0 0;
+    font-family: var(--gf-font-body);
+    font-size: var(--gf-body-size);
+    line-height: var(--gf-body-lh);
+    color: var(--gf-charcoal);
+}
+
+.gf-aboutus-rule {
+    display: block;
+    width: 56px;
+    height: 2px;
+    margin: var(--gf-space-6) auto 0;
+    background: var(--gf-olive);
+}
+
+.gf-aboutus-rule--left {
+    margin-left: 0;
+}
+
+/* --- Band 1: Who We Are ---------------------------------------------------- */
+
+.gf-aboutus-whoweare-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 56px;
+    align-items: center;
+}
+
+.gf-aboutus-whoweare-heading {
+    margin: 0 0 var(--gf-space-4);
+    font-family: var(--gf-font-display);
+    font-size: var(--gf-h2-size);
+    line-height: var(--gf-h2-lh);
+    color: var(--gf-heading);
+}
+
+.gf-aboutus-whoweare-para {
+    margin: 0 0 var(--gf-space-4);
+    font-family: var(--gf-font-body);
+    font-size: var(--gf-body-size);
+    line-height: var(--gf-body-lh);
+    color: var(--gf-charcoal);
+}
+
+.gf-aboutus-whoweare-para:last-child {
+    margin-bottom: 0;
+}
+
+/* AC-1: "closing line in bold" — the last paragraph in the textarea. */
+.gf-aboutus-emphasis {
+    font-weight: 700;
+    color: var(--gf-heading);
+}
+
+.gf-aboutus-whoweare-photo img {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    height: auto;
+    object-fit: cover;
+    object-position: center;
+    display: block;
+    border-radius: 4px;
+}
+
+/* --- Band 2: Our Mission ----------------------------------------------------
+   Warm sand band, centred statement, three icon-left/text-right pillars. */
+
+.gf-aboutus-mission {
+    background: var(--gf-beige-deep, #f5f5dc);
+}
+
+.gf-aboutus-mission-statement {
+    max-width: 46em;
+    margin: 0 auto var(--gf-space-15);
+    font-family: var(--gf-font-display);
+    font-size: var(--gf-h2-size-mobile, 26px);
+    line-height: var(--gf-h2-lh, 1.4);
+    text-align: center;
+    color: var(--gf-heading);
+}
+
+.gf-aboutus-mission-pillars {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--gf-space-10);
+}
+
+.gf-aboutus-mission-pillar {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--gf-space-4);
+}
+
+.gf-aboutus-mission-icon {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--gf-olive-dark, #556B2F);
+    color: #FFFFFF;
+}
+
+.gf-aboutus-mission-text {
+    display: block;
+}
+
+.gf-aboutus-mission-title {
+    display: block;
+    margin: 0 0 var(--gf-space-1);
+    font-family: var(--gf-font-body);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--gf-heading);
+}
+
+.gf-aboutus-mission-copy {
+    display: block;
+    font-family: var(--gf-font-body);
+    font-size: 14px;
+    line-height: var(--gf-card-body-lh, 1.55);
+    color: var(--gf-charcoal);
+}
+
+/* --- Band 3: What We Offer -------------------------------------------------- */
+
+.gf-aboutus-band-header {
+    margin: 0 0 var(--gf-space-15);
+    text-align: center;
+}
+
+.gf-aboutus-offer-heading {
+    margin: 0;
+    font-family: var(--gf-font-display);
+    font-size: var(--gf-h2-size);
+    line-height: var(--gf-h2-lh);
+    color: var(--gf-heading);
+}
+
+.gf-offer-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--gf-space-6);
+}
+
+.gf-offer-card {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--gf-rule);
+    border-radius: var(--gf-radius-card);
+    background: #FFF;
+    overflow: hidden;
+    box-shadow: var(--gf-shadow-card-rest);
+}
+
+.gf-offer-card-media {
+    position: relative;
+    /* Room for the icon circle to straddle the image/body boundary without
+       clipping — the media box's overflow stays visible for exactly this. */
+    margin-bottom: 28px;
+}
+
+.gf-offer-card-media img {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 3 / 2;
+    object-fit: cover;
+}
+
+.gf-offer-card-icon {
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    transform: translate(-50%, 50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--gf-olive-dark, #556B2F);
+    color: #FFFFFF;
+    border: 3px solid #FFF;
+}
+
+.gf-offer-card-body {
+    padding: 0 var(--gf-space-6) var(--gf-space-6);
+    text-align: center;
+}
+
+.gf-offer-card-title {
+    margin: 0 0 var(--gf-space-3);
+    font-family: var(--gf-font-display);
+    font-size: var(--gf-h3-size);
+    color: var(--gf-heading);
+}
+
+.gf-offer-card-copy {
+    margin: 0;
+    font-family: var(--gf-font-body);
+    font-size: var(--gf-card-body-size);
+    line-height: var(--gf-card-body-lh);
+    color: var(--gf-charcoal);
+}
+
+/* --- Band 5: Closing CTA ----------------------------------------------------
+   Full-width olive band, centred white serif headline. */
+
+.gf-aboutus-cta {
+    background: var(--gf-olive-dark, #556B2F);
+    text-align: center;
+}
+
+.gf-aboutus-cta-heading {
+    max-width: 42em;
+    margin: 0 auto var(--gf-space-3);
+    font-family: var(--gf-font-display);
+    font-size: var(--gf-h2-size);
+    line-height: var(--gf-h2-lh);
+    color: #FFFFFF;
+}
+
+.gf-aboutus-cta-subtext {
+    margin: 0;
+    font-family: var(--gf-font-body);
+    font-size: var(--gf-body-size);
+    color: #FFFFFF;
+}
+
+/* --- Responsive: stack at tablet/mobile, matching §4 and §10 -------------- */
+
+@media (max-width: 991px) {
+    .gf-aboutus-mission-pillars {
+        grid-template-columns: 1fr;
+        gap: var(--gf-space-8);
+    }
+
+    .gf-offer-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 767px) {
+    .gf-aboutus-band {
+        padding: var(--gf-space-10) 0;
+    }
+
+    .gf-aboutus-hero {
+        padding: var(--gf-space-10) var(--gf-grid-gutter, 20px) var(--gf-space-6);
+    }
+
+    .gf-aboutus-hero-title {
+        font-size: var(--gf-hero-size-mobile);
+    }
+
+    .gf-aboutus-whoweare-row {
+        grid-template-columns: 1fr;
+        gap: 32px;
+    }
+
+    .gf-offer-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .gf-aboutus-mission-statement {
+        font-size: 20px;
+    }
+
+    .gf-aboutus-cta-heading {
+        font-size: var(--gf-h2-size-mobile);
+    }
+}
+
+
+/* ==========================================================================
+   12. Contact Us character count — Story 1.14, AC-6
+   The theme's own contact-form.tpl (READ ONLY) already renders the
+   two-column form/info layout; this only styles the live region this
+   story's hook adds directly under the #message field.
+   ========================================================================== */
+
+.gf-contact-char-count {
+    margin: 6px 0 0;
+    font-family: var(--gf-font-body, sans-serif);
+    font-size: 13px;
+    color: var(--gf-muted, var(--gf-sage, #657a5a));
+    /* Reserves the line before JS fills it in, so the region appearing does
+       not shift the submit button down a beat after first input. */
+    min-height: 1.2em;
+}
