@@ -212,6 +212,16 @@ class GFEstablishmentRepository
     /**
      * Write the GF fields onto an existing product row.
      *
+     * Deliberately never touches `gf_featured_home`. Confirmed live: this
+     * method runs on every import() upsert, including a plain re-run
+     * against an already-imported catalogue — and `GFEstablishment::$featuredHome`
+     * is never populated from the CSV (there is no such column), so it is
+     * always `false`. Writing it here silently reset every admin's
+     * featured-strip pick back to unfeatured on the next import. That flag
+     * is edited exclusively via setFeaturedHome()/setFeaturedHomeByName(),
+     * both of which are, correctly, never called from anywhere in the
+     * import path.
+     *
      * @param  int $idProduct
      * @return bool
      */
@@ -226,7 +236,6 @@ class GFEstablishmentRepository
             '`gf_city` = ' . $this->quote($establishment->city),
             '`gf_has_channel_manager` = ' . (int) $establishment->hasChannelManager,
             '`gf_channel_manager_status` = ' . $this->quote($establishment->channelManagerStatus),
-            '`gf_featured_home` = ' . (int) $establishment->featuredHome,
         ];
 
         return (bool) $this->db->execute(
