@@ -59,7 +59,9 @@
             <div class="gf-footer-col col-sm-6 col-md-3">
                 <h4>{$gf_footer_links_title|default:'Quick Links'}</h4>
                 <ul class="gf-quick-links">
-                    <li><a href="{$base_dir}index.php?controller=about">{$gf_link_about|default:'About Us'}</a></li>
+                    {if isset($gf_aboutus_url) && $gf_aboutus_url}
+                    <li><a href="{$gf_aboutus_url}">{$gf_link_about|default:'About Us'}</a></li>
+                    {/if}
                     <li><a href="{$base_dir}index.php?controller=contact">{$gf_link_contact|default:'Contact Us'}</a></li>
                     {if isset($gf_establishments_url) && $gf_establishments_url}
                     <li><a href="{$gf_establishments_url}">{$gf_link_establishments|default:'GF Establishments'}</a></li>

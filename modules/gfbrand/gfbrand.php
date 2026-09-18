@@ -1238,6 +1238,15 @@ class gfbrand extends Module
                 'gfbrand',
                 'establishments'
             ),
+            /* Story 1.14: the "About Us" quick link has been in this footer
+             * since story 1.4, hardcoded to the nonexistent controller
+             * `about` (a 404 the whole time — there was no About Us page to
+             * link to yet). The route exists now; same fix as
+             * gf_establishments_url above. */
+            'gf_aboutus_url' => $this->context->link->getModuleLink(
+                'gfbrand',
+                'aboutus'
+            ),
         ]);
 
         return $tpl->fetch();
