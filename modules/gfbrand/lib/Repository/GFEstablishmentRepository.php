@@ -153,6 +153,63 @@ class GFEstablishmentRepository
     }
 
     /**
+     * How many establishments are currently flagged for the homepage strip
+     * — story 1.13. Used to decide whether a first-install default seed is
+     * still needed, without caring which ones (an owner's own picks always
+     * win over the seed).
+     *
+     * @return int
+     */
+    public function countFeaturedHome()
+    {
+        return (int) $this->readDb()->getValue(
+            'SELECT COUNT(*) FROM `' . $this->table() . '`
+             WHERE ' . $this->importedCondition()
+              . ' AND `gf_featured_home` = 1'
+        );
+    }
+
+    /**
+     * Flag the establishments matching the given names for the homepage
+     * strip — story 1.13's install-time default seed.
+     *
+     * Matches by name rather than id: unlike setFeaturedHome() (the admin
+     * picker's save path, which always has real, current ids from the
+     * screen the owner is looking at), this is called at install time,
+     * when the only stable identifier across a catalogue re-import is the
+     * establishment's own name, not whatever id it happens to have been
+     * assigned this time. A name with no current match is silently
+     * skipped, not an error — the seed is a best-effort default, not a
+     * contract each name must exist.
+     *
+     * @param  string[] $names
+     * @return void
+     */
+    public function setFeaturedHomeByName(array $names)
+    {
+        if ($names === []) {
+            return;
+        }
+
+        $quotedNames = implode(',', array_map([$this, 'quote'], $names));
+
+        $ids = $this->readDb()->executeS(
+            'SELECT p.`id_product`
+             FROM `' . $this->table() . '` p
+             INNER JOIN `' . _DB_PREFIX_ . 'product_lang` pl
+                     ON pl.`id_product` = p.`id_product`
+             WHERE ' . $this->importedCondition('p') . '
+               AND pl.`name` IN (' . $quotedNames . ')'
+        );
+
+        if (!is_array($ids) || $ids === []) {
+            return;
+        }
+
+        $this->setFeaturedHome(array_column($ids, 'id_product'));
+    }
+
+    /**
      * Write the GF fields onto an existing product row.
      *
      * @param  int $idProduct

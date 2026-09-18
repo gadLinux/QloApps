@@ -225,11 +225,22 @@ class gfbrand extends Module
          * ambiguity rather than leaving two pages racing for one URL. */
         $this->deactivateConflictingAboutUsCmsPage();
 
+        /* Story 1.13, AC-5: three stock QloApps home page blocks render with
+         * generic demo copy and have no equivalent on the real GF Experiences
+         * site at all (doc/branding/AGENCY-BRIEF.md#32-homepage's own
+         * section-by-section screenshot confirms this — no amenities or
+         * testimonials section exists there). The owner's call was to
+         * disable them rather than fabricate testimonial quotes or source
+         * new photography for sections the real site never had. */
+        $this->disableUnusedStockBlocks();
+        $this->disableStaleNavigationLinks();
+
         if (!$this->runMigrations()) {
             return false;
         }
 
         $this->importEstablishmentsOnFirstInstall();
+        $this->featureDefaultEstablishmentsOnFirstInstall();
         $this->importAdvisorsPartnersOnFirstInstall();
 
         if (!$this->installInquiriesTab()) {
@@ -394,6 +405,114 @@ class gfbrand extends Module
                 'CMS',
                 $idCms
             );
+        }
+    }
+
+    /**
+     * Disable the three stock QloApps home page blocks that carry generic
+     * demo copy and have no equivalent on the real GF Experiences site —
+     * story 1.13, AC-5.
+     *
+     * `wkabouthotelblock`, `wkhotelfeaturesblock` and `wktestimonialblock`
+     * render "About the hotel", an amenities grid and testimonial quotes.
+     * The real site's homepage (doc/branding/AGENCY-BRIEF.md#32-homepage,
+     * screenshotted from production) has no such sections at all, and
+     * fabricating testimonial quotes from guests who don't exist — or
+     * sourcing new interior/amenity photography just to fill these blocks —
+     * is exactly what the owner ruled out. Disabling is a module-level
+     * operation, so their demo tables and image files on disk are left
+     * alone; only their home page presence stops.
+     *
+     * Each module is only ever disabled, never uninstalled — an operator can
+     * always re-enable one by hand if a future story wants it back. Runs on
+     * every install() (a redeploy is expected to re-assert this state), and
+     * is a silent no-op for a module that is not present or already
+     * disabled, so a redeploy never trips over its own prior work.
+     *
+     * Module::disable() is deliberately called unconditionally rather than
+     * guarded by Module::isEnabled() — that check is process-cached
+     * (Module::$_log_modules_perfs aside, see Cache::isStored() in its
+     * implementation) and never invalidated by enable()/disable() in the
+     * same request, so it can report stale state right after a disable()
+     * this same call just performed. disable() itself is already an
+     * idempotent DELETE scoped to (id_module, id_shop): running it against
+     * an already-disabled module deletes zero rows, which is exactly the
+     * silent no-op this needs.
+     */
+    private function disableUnusedStockBlocks()
+    {
+        foreach (['wkabouthotelblock', 'wkhotelfeaturesblock', 'wktestimonialblock'] as $name) {
+            $module = Module::getInstanceByName($name);
+
+            if (!Validate::isLoadedObject($module)) {
+                continue;
+            }
+
+            if (!$module->disable()) {
+                PrestaShopLogger::addLog(
+                    '[gfbrand] Could not disable stock block "' . $name . '" — it may still render on the homepage.',
+                    2,
+                    null,
+                    'Module',
+                    (int) $this->id
+                );
+            }
+        }
+    }
+
+    /**
+     * Deactivate the header/mobile-menu links to the three sections
+     * disableUnusedStockBlocks() just turned off — story 1.13.
+     *
+     * `blocknavigationmenu` (a separate module, not one of the three
+     * disabled above) seeds one nav-link row per stock content block,
+     * pointing at that block's in-page anchor (`/#hotelAmenitiesBlock`,
+     * etc.) — found live: disabling the blocks left those anchors on the
+     * page pointing at nothing, since the nav links are their own
+     * independent DB rows, not generated at render time from which blocks
+     * are active. `wkhotelroom`'s own "Rooms" link is untouched: that
+     * module is still active and its section still renders, confirmed live
+     * (`hotelRoomsBlock` present in the page).
+     *
+     * Matched by `link` value, not a hardcoded id (same reasoning as
+     * deactivateConflictingAboutUsCmsPage()); deactivated, never deleted,
+     * so an operator can re-enable one by hand. The row is removed from
+     * the rendered nav entirely (not shown disabled/greyed-out) — the same
+     * `active` flag every other nav-link row uses to appear or not.
+     *
+     * Anchor -> disabled module, for whoever next has to map one to the
+     * other:
+     *   /#hotelInteriorBlock    -> wkabouthotelblock
+     *   /#hotelAmenitiesBlock   -> wkhotelfeaturesblock
+     *   /#hotelTestimonialBlock -> wktestimonialblock
+     * (`/#hotelRoomsBlock` -> wkhotelroom is deliberately absent: that
+     * module is still active and its section still renders.)
+     */
+    private function disableStaleNavigationLinks()
+    {
+        if (!Db::getInstance()->getValue(
+            'SELECT 1 FROM INFORMATION_SCHEMA.TABLES
+             WHERE TABLE_SCHEMA = \'' . pSQL(_DB_NAME_) . '\'
+               AND TABLE_NAME = \'' . pSQL(_DB_PREFIX_ . 'htl_custom_navigation_link') . '\''
+        )) {
+            return;
+        }
+
+        $staleLinks = ['/#hotelInteriorBlock', '/#hotelAmenitiesBlock', '/#hotelTestimonialBlock'];
+
+        foreach ($staleLinks as $link) {
+            if (!Db::getInstance()->execute(
+                'UPDATE `' . _DB_PREFIX_ . 'htl_custom_navigation_link` SET `active` = 0
+                 WHERE `link` = \'' . pSQL($link) . '\''
+            )) {
+                PrestaShopLogger::addLog(
+                    '[gfbrand] Could not deactivate the stale nav link "' . $link . '".',
+                    2,
+                    null,
+                    'Module',
+                    (int) $this->id
+                );
+            }
         }
     }
 
@@ -654,6 +773,42 @@ class gfbrand extends Module
                 (int) $this->id
             );
         }
+    }
+
+    /**
+     * Seed the homepage featured strip (AC-4) so it is never empty by
+     * default — story 1.13.
+     *
+     * Only runs when NO establishment is currently flagged, so it never
+     * fights an owner's own editorial choice (the exact "seed once,
+     * respect existing state" guard `importAdvisorsPartnersOnFirstInstall()`
+     * and `seedHeroCopy()` already use elsewhere in this file). Matches by
+     * `pl.name`, not a hardcoded `id_product` — ids are not stable across a
+     * catalogue re-import (see the known, confirmed-live re-import
+     * incident this story's Dev Notes documents), but the CSV's establishment
+     * names are, so this reseeds correctly even if a reinstall regenerated
+     * every product id.
+     */
+    private function featureDefaultEstablishmentsOnFirstInstall()
+    {
+        $repository = $this->services->getEstablishmentRepository();
+
+        if (!$repository->isSchemaReady()) {
+            return;
+        }
+
+        if ($repository->countFeaturedHome() > 0) {
+            return;
+        }
+
+        $defaultNames = [
+            'Hotel Chateau Louis',
+            'Hotel Hacienda Guachupelin',
+            'Hotel Monroe Louisiana',
+            'Hotel UMusic Madrid',
+        ];
+
+        $repository->setFeaturedHomeByName($defaultNames);
     }
 
     /**
