@@ -296,6 +296,7 @@
             initInquiryReferralOther();
             initInquiryDestCountryOther();
             initContactCharacterCount();
+            initFormAccessibility();
         });
     }
 
@@ -345,6 +346,225 @@
         if (field.value.length > 0) {
             announce();
         }
+    }
+
+    /* ==========================================================================
+     * Form accessibility — Story 1.6, AC-6 / AC-7
+     *
+     * PrestaShop's native forms across the transaction flow already render
+     * an inline error summary — errors.tpl's `.alert.alert-danger`, either
+     * server-rendered on a plain postback (cart, order-address,
+     * authentication, identity) or re-injected via AJAX on the one-page
+     * checkout (order-opc.js building the same markup into
+     * #opc_account_errors / #opc_login_errors / #customer_guest_detail_errors)
+     * — but it is not wired to any field: no aria-describedby, no
+     * aria-invalid, and focus stays wherever it was before submit. Editing
+     * errors.tpl or any address/auth template to add this would violate
+     * hooking_guard (never edit a hotel-reservation-theme .tpl); this finds
+     * the DOM PrestaShop already renders and wires the ARIA relationship
+     * onto it after the fact — the same pattern as initContactCharacterCount
+     * above. With JavaScript disabled this never runs: PrestaShop's own
+     * error text is still there, still visible, just not ARIA-wired (see
+     * the edge-case matrix in spec-1-6-transaction-rebrand.md).
+     * ========================================================================== */
+
+    var gfA11yIdCounter = 0;
+
+    function gfA11yNextId(prefix) {
+        gfA11yIdCounter += 1;
+        return prefix + '-' + gfA11yIdCounter;
+    }
+
+    /* Walks up from the error block to the narrowest sensible search scope:
+     * the form it belongs to if there is one (most of the transaction
+     * flow), else the main content column, so a page-level error (e.g.
+     * authentication.tpl's errors.tpl, which sits above both of its forms)
+     * never reaches into the header search widget or footer newsletter
+     * field looking for "the" invalid field. */
+    function gfA11yScopeFor(errorBlock) {
+        var node = errorBlock;
+        while (node && node.nodeType === 1) {
+            if (node.tagName === 'FORM') {
+                return node;
+            }
+            if (node.id === 'center_column' || node.id === 'content') {
+                return node;
+            }
+            node = node.parentElement;
+        }
+        return errorBlock.parentElement || document;
+    }
+
+    /* authentication.tpl's page-level error sits above two independent
+     * forms (create-account, sign-in): once the scope walk falls back to
+     * center_column/content, it can no longer tell which form the error
+     * actually belongs to. Guessing "the first empty required field in
+     * DOM order" would as often as not wire up the wrong form entirely —
+     * worse than the no-field-found fallback below, which at least
+     * announces the message without misdirecting anyone. Only trust the
+     * scope when it resolved to the form itself, or to a container with
+     * exactly one form in it. */
+    function gfA11yScopeIsAmbiguous(scope) {
+        return scope.tagName !== 'FORM' && scope.querySelectorAll('form').length > 1;
+    }
+
+    /* A field counts as invalid if the theme's own client-side validator
+     * (js/validate.js) already flagged its .form-group with .form-error
+     * (blur already happened), or — on a fresh server-rendered reload,
+     * where that never ran — it is a required field left empty. */
+    function gfA11yIsUnanswered(field) {
+        if (field.tagName === 'SELECT') {
+            var selected = field.options[field.selectedIndex];
+            // A placeholder option ("Choose a country...") with no `value`
+            // attribute reads back as non-empty (its text becomes .value
+            // per the HTML spec), so native validity never flags it —
+            // treat "still on the valueless placeholder" as unanswered.
+            if (selected && !selected.hasAttribute('value')) {
+                return true;
+            }
+        }
+        return !field.value || (field.willValidate && !field.checkValidity());
+    }
+
+    function gfA11yFindInvalidField(scope) {
+        var markedGroup = scope.querySelector('.form-group.form-error, .form-error');
+        if (markedGroup) {
+            var markedField = markedGroup.querySelector('input, select, textarea');
+            if (markedField && markedField.type !== 'hidden' && !markedField.disabled) {
+                return markedField;
+            }
+        }
+
+        var candidates = scope.querySelectorAll(
+            'input.is_required, select.is_required, textarea.is_required, ' +
+            '[data-validate], .required input, .required select, ' +
+            '.required textarea, [required]'
+        );
+        for (var i = 0; i < candidates.length; i++) {
+            var field = candidates[i];
+            if (field.type === 'hidden' || field.disabled) {
+                continue;
+            }
+            // Required-but-empty, still on a valueless placeholder option,
+            // or a value present that already fails the browser's own
+            // constraint validation (e.g. type="email" with
+            // data-validate="isEmail" holding "not-an-email") — a fresh
+            // server-rendered reload never ran validate.js's blur handler,
+            // so .form-error above is the only other source of this signal.
+            if (gfA11yIsUnanswered(field)) {
+                return field;
+            }
+        }
+        return null;
+    }
+
+    function gfA11yWireErrorBlock(errorBlock) {
+        if (!errorBlock) {
+            return;
+        }
+
+        // Re-wire whenever the message actually changes (first render, or
+        // a fresh AJAX response reusing the same container) but skip
+        // redundant work — and redundant focus-stealing — otherwise.
+        var text = errorBlock.textContent || '';
+
+        // order-opc's guest/login/account error containers, and
+        // authentication.tpl's own #create_account_error, ship as an
+        // empty, display:none placeholder that PrestaShop's own JS fills
+        // in later. An empty block is not an active error: wiring one up
+        // would steal focus into a form field on an ordinary page load
+        // where nothing has actually gone wrong yet.
+        if (!text.trim()) {
+            return;
+        }
+
+        if (errorBlock.getAttribute('data-gf-a11y-text') === text) {
+            return;
+        }
+        errorBlock.setAttribute('data-gf-a11y-text', text);
+
+        if (!errorBlock.id) {
+            errorBlock.id = gfA11yNextId('gf-form-errors');
+        }
+        if (!errorBlock.hasAttribute('role')) {
+            errorBlock.setAttribute('role', 'alert');
+        }
+
+        var scope = gfA11yScopeFor(errorBlock);
+        var field = gfA11yScopeIsAmbiguous(scope) ? null : gfA11yFindInvalidField(scope);
+
+        if (field) {
+            if (!field.id) {
+                field.id = gfA11yNextId('gf-field');
+            }
+            var described = field.getAttribute('aria-describedby');
+            if (!described) {
+                field.setAttribute('aria-describedby', errorBlock.id);
+            } else if (described.indexOf(errorBlock.id) === -1) {
+                field.setAttribute('aria-describedby', described + ' ' + errorBlock.id);
+            }
+            field.setAttribute('aria-invalid', 'true');
+            field.focus();
+        } else {
+            // No single field could be identified (e.g. a page-level or
+            // carrier/TOS error) — move focus to the message itself so a
+            // screen reader still announces it rather than leaving focus
+            // stranded on whatever was last clicked.
+            if (!errorBlock.hasAttribute('tabindex')) {
+                errorBlock.setAttribute('tabindex', '-1');
+            }
+            errorBlock.focus();
+        }
+    }
+
+    function gfA11yScanForErrorBlocks(root) {
+        var blocks = root.querySelectorAll('.alert.alert-danger');
+        for (var i = 0; i < blocks.length; i++) {
+            gfA11yWireErrorBlock(blocks[i]);
+        }
+    }
+
+    function initFormAccessibility() {
+        gfA11yScanForErrorBlocks(document);
+
+        if (typeof MutationObserver !== 'function') {
+            return;
+        }
+
+        // One observer covers both concerns: (1) an error summary rendered
+        // or replaced later by AJAX (order-opc.js, authentication.js), and
+        // (2) validate.js's per-field .form-error/.form-ok toggle on blur,
+        // mirrored onto aria-invalid so a screen reader gets the same
+        // signal a sighted guest gets from the border/icon colour change.
+        var observer = new MutationObserver(function (mutations) {
+            gfA11yScanForErrorBlocks(document);
+
+            for (var i = 0; i < mutations.length; i++) {
+                var target = mutations[i].target;
+                if (!target || target.nodeType !== 1 || !target.classList) {
+                    continue;
+                }
+                if (!target.classList.contains('form-group')) {
+                    continue;
+                }
+                var input = target.querySelector('input, select, textarea');
+                if (!input) {
+                    continue;
+                }
+                if (target.classList.contains('form-error')) {
+                    input.setAttribute('aria-invalid', 'true');
+                } else if (target.classList.contains('form-ok')) {
+                    input.setAttribute('aria-invalid', 'false');
+                }
+            }
+        });
+
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            attributeFilter: ['class']
+        });
     }
 
     /* ==========================================================================
