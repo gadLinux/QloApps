@@ -1032,9 +1032,528 @@ body:not(.index) #header .shopping_cart > a:hover {
 
 /* ==========================================================================
    7. Transaction rebrand (cart, checkout, account) — Story 1.6
+   AC-1 cart, AC-2 checkout+payment, AC-3 confirmation, AC-4 account/auth,
+   AC-5 system pages. CSS-only throughout: every selector below targets a
+   class/id the stock hotel-reservation-theme templates already render
+   (Bootstrap-3-era `.form-group`/`.card`/`.alert-*`, or QloApps' own
+   `.cart_*`/`.opc-*`/`ul.step`/`.payment_module`); no .tpl file is edited.
+   AC-6/AC-7 (aria-describedby + focus-on-error) are JS-only, in gf-brand.js
+   `initFormAccessibility()` — nothing here.
+
+   Two accepted exceptions, documented in spec-1-6-transaction-rebrand.md:
+   - error500.html stays stock (static file outside the module/theme system).
+   - maintenance.tpl stays stock. It is rendered by
+     FrontController::displayMaintenancePage(), which runs from init() and
+     exit()s before setMedia() ever fires — the same call that dispatches
+     actionFrontControllerSetMedia and loads gf-tokens.css/gf-brand.css on
+     every other page. The template also never echoes $HOOK_MAINTENANCE
+     (assigned in FrontController.php but not read anywhere in
+     maintenance.tpl), so there is no hook-rendered surface to inject a
+     <style> into either. Reaching it would mean editing maintenance.tpl
+     directly (layer 4) or overriding FrontController (layer 5) — both
+     outside this story's CSS-only, no-.tpl-edit boundary. 404.tpl has no
+     such problem: PageNotFoundController is an ordinary FrontController
+     subclass and renders through the normal header/footer/setMedia path.
    ========================================================================== */
 
-/* TO BE ADDED BY STORY 1.6 */
+/* --- 7.1 Alerts (site-wide component; every page in this story uses one) -
+ *
+ * Stock colours are pure PrestaShop primary red/orange/blue/green
+ * (global.css .alert-success/-info/-warning/-danger) — exactly the "stock
+ * red/orange alert banners" the story's problem statement calls out on the
+ * cart page. Success uses --gf-olive-dark rather than the --gf-success
+ * alias (which resolves to plain --gf-olive): olive-dark is the AA-safe
+ * value already used for the SAME failure mode elsewhere in this codebase
+ * (button fills, the GF Dedicated pill — see brand-layer-manifest.md
+ * Story 1.10) — plain olive under white text measures ~3.8:1 and fails AA
+ * for anything longer than large/bold text, which an alert's body copy is
+ * not. Warning uses the --gf-warning token as declared, with dark ink text
+ * rather than white: #FF6900 under white is ~2.9:1 (fails), under ink is
+ * ~5.9:1 (passes). Danger uses the just-finalized --gf-danger, 5.44:1
+ * under white (passes). */
+.alert-success {
+    background-color: var(--gf-olive-dark, #556B2F);
+    border-color: var(--gf-olive-hover, #55721c);
+    color: #FFFFFF;
+}
+
+.alert-success .alert-link {
+    color: #FFFFFF;
+}
+
+/* A light, calm treatment, not the near-black one this rule used to have:
+ * .alert-info carries routine, non-urgent notices (e.g. "already have an
+ * account? sign in instead") — a near-black banner read as far more
+ * alarming than the message it was announcing. */
+.alert-info {
+    background-color: var(--gf-beige-deep, #f5f5dc);
+    border-color: var(--gf-sage, #657a5a);
+    color: var(--gf-charcoal, #2C302E);
+}
+
+.alert-info .alert-link {
+    color: var(--gf-olive-hover, #55721c);
+    font-weight: 700;
+}
+
+.alert-warning {
+    background-color: var(--gf-warning, #FF6900);
+    border-color: #cc5400;
+    color: var(--gf-ink, #1A1C1B);
+}
+
+.alert-warning .alert-link {
+    color: var(--gf-ink, #1A1C1B);
+    font-weight: 700;
+}
+
+.alert-danger {
+    background-color: var(--gf-danger, #C0392B);
+    border-color: #942a25;
+    color: #FFFFFF;
+}
+
+.alert-danger .alert-link,
+.alert-danger a {
+    color: #FFFFFF;
+    text-decoration: underline;
+}
+
+/* --- 7.2 Forms — shared across cart, checkout, account, auth -------------
+ *
+ * `.form-control` and the checkbox/radio accent are untouched by every
+ * earlier story (checked before adding this — the booking-questionnaire
+ * form at §6 uses its own scoped `.gf-field` classes, not this generic
+ * Bootstrap one). Keyboard focus is already handled site-wide by the
+ * `*:focus-visible` rule at §10; nothing new is needed here for that. */
+.form-control {
+    border: 1px solid var(--gf-rule, #E5E9E6);
+    border-radius: 4px;
+    color: var(--gf-charcoal, #2C302E);
+}
+
+.form-group label,
+.form_content label,
+.account_creation label {
+    color: var(--gf-charcoal, #2C302E);
+    font-weight: 600;
+}
+
+.form-group .required sup,
+.form-group.required sup,
+p.required sup,
+.dni sup,
+.postcode sup {
+    color: var(--gf-danger, #C0392B);
+}
+
+.checkbox input[type="checkbox"],
+.radio-inline input[type="radio"] {
+    accent-color: var(--gf-olive-dark, #556B2F);
+}
+
+/* Client-side per-field validation (js/validate.js toggles this on blur —
+ * stock behaviour, not new markup). Swap the stock bright red/green for
+ * brand tokens; icon backgrounds are theme-owned image assets, left as-is. */
+.form-group.form-error .form-control,
+.form-group.form-error input,
+.form-group.form-error textarea {
+    border-color: var(--gf-danger, #C0392B);
+    color: var(--gf-danger, #C0392B);
+}
+
+.form-group.form-ok .form-control,
+.form-group.form-ok input,
+.form-group.form-ok textarea {
+    border-color: var(--gf-olive-dark, #556B2F);
+    color: var(--gf-olive-dark, #556B2F);
+}
+
+/* --- 7.3 Cart (shopping-cart.tpl, shopping-cart-detail.tpl) — AC-1 -------- */
+
+.cart_section_title {
+    font-family: var(--gf-font-display, 'DM Serif Display', serif);
+    color: var(--gf-ink, #1A1C1B);
+    font-size: 1.2rem;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--gf-rule, #E5E9E6);
+}
+
+.cart_product_line .product-name a,
+.cart_product_line .hotel-location {
+    color: var(--gf-charcoal, #2C302E);
+}
+
+.cart_product_line .hotel-location i,
+.room-type-feature img {
+    color: var(--gf-olive-dark, #556B2F);
+}
+
+.cart_product_line .total_price span,
+.demand_price_block .total_price span {
+    color: var(--gf-olive-dark, #556B2F);
+    font-weight: 700;
+}
+
+.cart_room_delete,
+.cart_quantity_delete,
+.product_remove_block a,
+.product-xs-remove {
+    color: var(--gf-muted, #707571);
+}
+
+.cart_room_delete:hover,
+.cart_quantity_delete:hover,
+.product_remove_block a:hover,
+.product-xs-remove:hover {
+    color: var(--gf-danger, #C0392B);
+}
+
+.cart_quantity_button a.cart_quantity_up,
+.cart_quantity_button a.cart_quantity_down {
+    background-color: #FFFFFF;
+    border: 1px solid var(--gf-rule, #E5E9E6);
+    color: var(--gf-charcoal, #2C302E);
+}
+
+.cart_quantity_button a.cart_quantity_up:hover,
+.cart_quantity_button a.cart_quantity_down:hover {
+    background-color: var(--gf-beige-deep, #f5f5dc);
+    color: var(--gf-olive-dark, #556B2F);
+}
+
+.cart_voucher_detail_block,
+.cart_voucher_head {
+    background-color: transparent;
+}
+
+.cart_voucher_head {
+    font-family: var(--gf-font-display, 'DM Serif Display', serif);
+    color: var(--gf-ink, #1A1C1B);
+}
+
+.cart_discount {
+    border-top: 1px solid var(--gf-rule, #E5E9E6);
+}
+
+.cart_discount_name,
+.voucher_name {
+    color: var(--gf-olive-dark, #556B2F);
+}
+
+/* --- 7.4 Checkout steps and OPC accordion — AC-2 -------------------------
+ *
+ * ul.step's stock rule paints each <li> with a linear-gradient background
+ * and a right-edge arrow sprite from the theme's own /img/ (relative to
+ * global.css, unreachable from a module stylesheet by relative path). The
+ * gradients are cleared the same way the §8 button fix already documents
+ * (clear background-image, not just background-color, or the stock image
+ * keeps painting through); the arrow sprites are decorative separators
+ * only, so they are hidden rather than replaced with a brittle path. */
+ul.step li.step_current {
+    background: var(--gf-olive-dark, #556B2F);
+    background-image: none;
+    border-color: var(--gf-olive-hover, #55721c);
+}
+
+ul.step li.step_current span {
+    color: #FFFFFF;
+    text-shadow: none;
+}
+
+ul.step li.step_done {
+    background: var(--gf-sage, #657a5a);
+    background-image: none;
+    border-color: var(--gf-charcoal, #2C302E);
+}
+
+ul.step li.step_done a {
+    color: #FFFFFF;
+    text-shadow: none;
+}
+
+ul.step li.step_todo {
+    background: var(--gf-beige-deep, #f5f5dc);
+    background-image: none;
+    border-color: var(--gf-rule, #E5E9E6);
+}
+
+ul.step li.step_todo span {
+    color: var(--gf-charcoal, #2C302E);
+}
+
+ul.step li a:after,
+ul.step li span:after {
+    display: none;
+}
+
+/* One-page checkout accordion (.card / .card-header / .opc-collapse) */
+#order-opc .card,
+#order .card,
+#order-confirmation .card {
+    border: 1px solid var(--gf-rule, #E5E9E6);
+    box-shadow: none;
+}
+
+#order-opc .card-header,
+#order .card-header,
+#order-confirmation .card-header {
+    background-color: var(--gf-beige-deep, #f5f5dc);
+    border-bottom: 1px solid var(--gf-rule, #E5E9E6);
+    color: var(--gf-ink, #1A1C1B);
+    font-weight: 600;
+}
+
+#order-opc .accordion-header {
+    color: var(--gf-ink, #1A1C1B);
+}
+
+#order-opc .accordion-left-arrow {
+    color: var(--gf-olive-dark, #556B2F);
+}
+
+#order-opc .info-head {
+    color: var(--gf-muted, #707571);
+    font-weight: 600;
+}
+
+#order-opc .info-value {
+    color: var(--gf-charcoal, #2C302E);
+}
+
+/* --- 7.5 Addresses selector (order-address.tpl, shared by both flows) --- */
+
+.addresses .address_delivery label,
+.addresses label.strong {
+    color: var(--gf-charcoal, #2C302E);
+    font-weight: 600;
+}
+
+.addresses ul.address.box {
+    border: 1px solid var(--gf-rule, #E5E9E6);
+    background-color: #FFFFFF;
+}
+
+/* --- 7.6 Payment (order-payment*.tpl + bankwire/cheque hook templates) —
+   AC-2 ---------------------------------------------------------------------
+ *
+ * Only bankwire and cheque are active in this shop (both instruction-only,
+ * no card form) — see Design Notes in the spec. Their own hook templates
+ * (modules/bankwire, modules/cheque) keep the theme's own icon sprites
+ * (bankwire.png/cheque.png, drawn via the stock `background` shorthand on
+ * a.bankwire/a.cheque); only the border/hover/text colours are rebranded. */
+
+.block-small-header {
+    font-family: var(--gf-font-display, 'DM Serif Display', serif);
+    color: var(--gf-ink, #1A1C1B);
+}
+
+#tc_cont label,
+.payment_module a span {
+    color: var(--gf-charcoal, #2C302E);
+}
+
+p.payment_module a {
+    border-color: var(--gf-rule, #E5E9E6);
+}
+
+p.payment_module a:hover,
+p.payment_module a:focus {
+    background-color: var(--gf-beige-deep, #f5f5dc) !important;
+    border-color: var(--gf-olive-dark, #556B2F);
+}
+
+#cart_summary thead th {
+    background-color: var(--gf-beige-deep, #f5f5dc);
+    color: var(--gf-ink, #1A1C1B);
+}
+
+#cart_summary tr.cart_total_price td,
+.prices-breakdown-table tr.totalprice td {
+    color: var(--gf-olive-dark, #556B2F);
+    font-weight: 700;
+}
+
+.price-discount {
+    color: var(--gf-olive-dark, #556B2F);
+}
+
+/* Secondary "Continue shopping" / "Follow my order" action — distinct from
+ * the filled primary button (.button.button-medium, §8) so a guest can
+ * tell "go back" from "go forward" at a glance. */
+.button-exclusive.btn {
+    background-color: transparent !important;
+    background-image: none !important;
+    border: 1px solid var(--gf-olive-dark, #556B2F) !important;
+    color: var(--gf-olive-dark, #556B2F) !important;
+}
+
+.button-exclusive.btn:hover,
+.button-exclusive.btn:focus {
+    background-color: var(--gf-beige-deep, #f5f5dc) !important;
+    color: var(--gf-olive-hover, #55721c) !important;
+}
+
+/* --- 7.7 Confirmation (order-confirmation.tpl) — AC-3 -------------------- */
+
+.order-confirmation-column .card-header {
+    background-color: var(--gf-beige-deep, #f5f5dc);
+    color: var(--gf-ink, #1A1C1B);
+    font-weight: 600;
+}
+
+.order-confirmation-column dt {
+    color: var(--gf-muted, #707571);
+}
+
+.order-confirmation-column .label.processing,
+span.processing {
+    background-color: var(--gf-sage, #657a5a);
+    color: #FFFFFF;
+    padding: 3px 8px;
+    border-radius: 3px;
+}
+
+.cust_serv_lnk {
+    color: var(--gf-olive-dark, #556B2F);
+    font-weight: 600;
+}
+
+/* --- 7.8 Account and authentication — AC-4 -------------------------------
+ * authentication.tpl, my-account.tpl, history.tpl, identity.tpl,
+ * addresses.tpl */
+
+.box {
+    background-color: #FFFFFF;
+    border: 1px solid var(--gf-rule, #E5E9E6);
+    border-radius: 8px;
+    padding: 24px;
+}
+
+.page-subheading {
+    font-family: var(--gf-font-display, 'DM Serif Display', serif);
+    color: var(--gf-ink, #1A1C1B);
+    border-bottom: 2px solid var(--gf-olive, #6b8e23);
+    padding-bottom: 8px;
+    margin-bottom: 16px;
+}
+
+.info-account,
+.info-title {
+    color: var(--gf-muted, #707571);
+}
+
+/* The stock tile look (icon block + label, my-account.css) is kept —
+ * `#my-account ul.myaccount-link-list li a` is an id-qualified stock rule
+ * that out-specifies a plain `.myaccount-link-list li a`, so every override
+ * here is written at matching specificity rather than with !important.
+ * The icon block's grey linear-gradient is cleared the same way §8 already
+ * documents for the generic buttons: background-color alone leaves a
+ * gradient background-image painting straight over it. */
+#my-account ul.myaccount-link-list li a {
+    border-color: var(--gf-rule, #E5E9E6);
+    background-image: none;
+    background-color: #FFFFFF;
+    color: var(--gf-charcoal, #2C302E);
+    text-shadow: none;
+}
+
+#my-account ul.myaccount-link-list li a i {
+    color: #FFFFFF;
+    background-color: var(--gf-olive-dark, #556B2F);
+    border-color: var(--gf-olive-dark, #556B2F);
+}
+
+#my-account ul.myaccount-link-list li a:hover {
+    background-color: var(--gf-beige-deep, #f5f5dc);
+    border-color: var(--gf-olive-dark, #556B2F);
+}
+
+/* Stock `blockmyaccount` left-column sidebar (My orders / My credit slips /
+ * My personal info / Sign out) — present on every account/history/identity/
+ * addresses page via the `displayLeftColumn` hook, not just my-account.tpl
+ * itself, so it needs the same rebrand or those pages read half-stock.
+ * `.myaccount-column` is the module's own wrapper class; matching that
+ * (rather than the bare `.block`) keeps this from touching any other
+ * left-column block on other pages. */
+.myaccount-column .title_block,
+.myaccount-column h4 {
+    background: var(--gf-beige-deep, #f5f5dc);
+    border-top: 3px solid var(--gf-olive, #6b8e23);
+    color: var(--gf-ink, #1A1C1B);
+}
+
+.myaccount-column .title_block a,
+.myaccount-column h4 a {
+    color: var(--gf-ink, #1A1C1B);
+}
+
+.myaccount-column .list-block li a:before {
+    color: var(--gf-olive-dark, #556B2F);
+}
+
+.myaccount-column .list-block li a:hover {
+    color: var(--gf-olive-dark, #556B2F);
+}
+
+/* Bookings history table */
+#order-list.table-bordered thead th {
+    background-color: var(--gf-beige-deep, #f5f5dc);
+    color: var(--gf-ink, #1A1C1B);
+    border-color: var(--gf-rule, #E5E9E6);
+}
+
+#order-list.table-bordered td {
+    border-color: var(--gf-rule, #E5E9E6);
+}
+
+#order-list .history_link a,
+#order-list .link-button {
+    color: var(--gf-olive-dark, #556B2F);
+}
+
+/* Addresses list (addresses.tpl) */
+.bloc_adresses .address ul.box {
+    border: 1px solid var(--gf-rule, #E5E9E6);
+    background-color: #FFFFFF;
+}
+
+.bloc_adresses .page-subheading {
+    border-bottom: none;
+    padding-bottom: 0;
+    margin-bottom: 8px;
+}
+
+/* --- 7.9 System pages — AC-5 ---------------------------------------------
+ * 404.tpl renders through the normal theme chrome (setMedia/hooks fire
+ * normally), so h1 already picks up the §0 rule. Its "Home Page" button
+ * does NOT pick up the generic `a.btn-primary` override at §8: global.css
+ * carries an id-qualified `#pagenotfound .pagenotfound .buttons a.btn-primary`
+ * rule that out-specifies it, so this page keeps its own stock-blue button
+ * (confirmed live: #1292FF) even with §8 loaded after global.css. Matching
+ * selectors here is cheaper than !important. maintenance.tpl is the
+ * documented exception above and has no rule here. */
+
+.pagenotfound {
+    text-align: center;
+    padding: 60px 20px;
+}
+
+.pagenotfound img {
+    max-width: 280px;
+    margin: 0 auto 24px;
+}
+
+#pagenotfound .pagenotfound .buttons a.btn-primary {
+    background-color: var(--gf-olive-dark, #556B2F);
+    color: #FFFFFF;
+}
+
+#pagenotfound .pagenotfound .buttons a.btn-primary:hover {
+    background-color: var(--gf-olive-hover, #55721c);
+    opacity: 1;
+}
 
 
 /* ==========================================================================
