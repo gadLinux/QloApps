@@ -1,0 +1,424 @@
+<?php
+/**
+ * 2026 GF Experiences
+ *
+ * Loads the module's classes and wires them together.
+ *
+ * PS 1.6 has no namespaces and no Composer autoloader, so requires are listed
+ * explicitly and in dependency order. Keeping construction here rather than in
+ * the module class is what lets the module class stay a facade: it asks this
+ * for a collaborator instead of knowing how one is built.
+ *
+ * @copyright 2026 GF Experiences
+ * @license   https://opensource.org/licenses/osl-3.0.php Open Software License (OSL 3.0)
+ */
+
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
+class GFModuleServices
+{
+    /** Source of truth for the establishment catalogue. */
+    const ESTABLISHMENTS_CSV = 'data/establishments.csv';
+
+    /** Bookable room types, keyed to the establishments by hotel id. */
+    const ROOM_TYPES_CSV = 'data/room-types.csv';
+
+    /** The trust section's people — story 1.11. */
+    const ADVISORS_CSV = 'data/advisors.csv';
+
+    /** The trust section's organisations — story 1.11. */
+    const PARTNERS_CSV = 'data/partners.csv';
+
+    /** @var string Absolute path to the module directory, with trailing slash. */
+    private $moduleDir;
+
+    /** @var array<string, object> Built collaborators, by key. */
+    private $instances = [];
+
+    public function __construct($moduleDir)
+    {
+        $this->moduleDir = rtrim($moduleDir, '/') . '/';
+
+        self::loadClasses($this->moduleDir);
+    }
+
+    /**
+     * Require every module class, in dependency order.
+     *
+     * Static so tests and CLI scripts can load the library without building
+     * the container.
+     */
+    public static function loadClasses($moduleDir)
+    {
+        $moduleDir = rtrim($moduleDir, '/') . '/';
+
+        $classes = [
+            // Infrastructure
+            'lib/Migration/GFMigrationInterface.php',
+            'lib/Migration/GFSchemaHelper.php',
+            'lib/Migration/GFMigrationResult.php',
+            'lib/Migration/GFMigrationRepository.php',
+            'lib/Migration/GFMigrationRunner.php',
+            // Domain
+            'lib/Repository/GFEstablishment.php',
+            'lib/Repository/GFEstablishmentRepository.php',
+            'lib/Repository/GFRoomType.php',
+            'lib/Repository/GFHotelRepository.php',
+            'lib/Repository/GFImagePlaceholder.php',
+            'lib/Repository/GFCountryFilter.php',
+            'lib/Repository/GFPagination.php',
+            'lib/Repository/GFEstablishmentCta.php',
+            'lib/Repository/GFSearchPreference.php',
+            'lib/Repository/GFSearchPreferenceRepository.php',
+            'lib/Repository/GFAdvisorSeed.php',
+            'lib/Repository/GFPartnerSeed.php',
+            // Application
+            'lib/Service/GFImportException.php',
+            'lib/Service/GFErrorCollectingController.php',
+            'lib/Service/GFImportResult.php',
+            'lib/Service/GFAdvisorPartnerCsvReader.php',
+            'lib/Service/GFAdvisorPartnerImporter.php',
+            'lib/Service/GFAdvisorPartnerListing.php',
+            'lib/Service/GFAssetUploader.php',
+            'lib/Service/GFHomepage.php',
+            'lib/Service/GFEstablishmentCsvReader.php',
+            'lib/Service/GFRoomTypeCsvReader.php',
+            'lib/Service/GFImageLocator.php',
+            'lib/Service/GFReadableImage.php',
+            'lib/Service/GFPlaceholderImageGenerator.php',
+            'lib/Service/GFProductImageFactory.php',
+            'lib/Service/GFHotelImageFactory.php',
+            'lib/Service/GFEstablishmentProductFactory.php',
+            'lib/Service/GFCategoryTreeBuilder.php',
+            'lib/Service/GFHotelFactory.php',
+            'lib/Service/GFRoomTypeFactory.php',
+            'lib/Service/GFHotelProvisioner.php',
+            'lib/Service/GFEstablishmentImporter.php',
+            'lib/Service/GFSearchMemory.php',
+            'lib/Service/GFEstablishmentListingResult.php',
+            'lib/Service/GFEstablishmentListing.php',
+            'lib/Service/GFRoomTypeBookability.php',
+            'lib/Service/GFInquiryValidationResult.php',
+            'lib/Service/GFInquiryValidator.php',
+            // Presentation
+            'lib/Admin/GFImportPanel.php',
+            'lib/Front/GFSearchPanel.php',
+            'lib/Front/GFInquiryLink.php',
+            // ObjectModel — extends a PrestaShop core class, so it must load
+            // after the framework itself, which is guaranteed here: nothing
+            // constructs GFModuleServices before PrestaShop's own classes are
+            // available.
+            'classes/GfInquiry.php',
+            'classes/GfAdvisor.php',
+            'classes/GfPartner.php',
+        ];
+
+        foreach ($classes as $relativePath) {
+            require_once $moduleDir . $relativePath;
+        }
+
+        foreach (self::discoverMigrationFiles($moduleDir) as $file) {
+            require_once $file;
+        }
+    }
+
+    /**
+     * @return GFMigrationRunner
+     */
+    public function getMigrationRunner()
+    {
+        return $this->share('migrationRunner', function () {
+            return new GFMigrationRunner(
+                $this->buildMigrations(),
+                new GFMigrationRepository(),
+                new GFSchemaHelper()
+            );
+        });
+    }
+
+    /**
+     * @return GFEstablishmentRepository
+     */
+    public function getEstablishmentRepository()
+    {
+        return $this->share('establishmentRepository', function () {
+            return new GFEstablishmentRepository();
+        });
+    }
+
+    /**
+     * @return GFEstablishmentImporter
+     */
+    public function getEstablishmentImporter()
+    {
+        return $this->share('establishmentImporter', function () {
+            return new GFEstablishmentImporter(
+                new GFEstablishmentCsvReader(),
+                new GFEstablishmentProductFactory(),
+                $this->getEstablishmentRepository(),
+                $this->getHotelProvisioner(),
+                $this->getProductImageFactory()
+            );
+        });
+    }
+
+    /**
+     * @return GFProductImageFactory
+     */
+    public function getProductImageFactory()
+    {
+        return $this->share('productImageFactory', function () {
+            return new GFProductImageFactory(
+                new GFImageLocator(),
+                new GFPlaceholderImageGenerator()
+            );
+        });
+    }
+
+    /**
+     * @return GFHotelImageFactory
+     */
+    public function getHotelImageFactory()
+    {
+        return $this->share('hotelImageFactory', function () {
+            return new GFHotelImageFactory(new GFImageLocator());
+        });
+    }
+
+    /**
+     * The visitor's last search — story 1.12 reads it too, to pre-fill the
+     * questionnaire's travel date and party size, not only the booking
+     * panel.
+     *
+     * @return GFSearchPreferenceRepository
+     */
+    public function getSearchPreferenceRepository()
+    {
+        return $this->share('searchPreferenceRepository', function () {
+            return new GFSearchPreferenceRepository(Context::getContext()->cookie);
+        });
+    }
+
+    /**
+     * Decorates the booking search panel with the visitor's last search.
+     *
+     * @return GFSearchPanel
+     */
+    public function getSearchPanel()
+    {
+        return $this->share('searchPanel', function () {
+            $repository = new GFSearchPreferenceRepository(Context::getContext()->cookie);
+
+            return new GFSearchPanel(new GFSearchMemory($repository));
+        });
+    }
+
+    /**
+     * The establishments listing service — story 1.9.
+     *
+     * @return GFEstablishmentListing
+     */
+    public function getEstablishmentListing()
+    {
+        return $this->share('establishmentListing', function () {
+            return new GFEstablishmentListing($this->getEstablishmentRepository());
+        });
+    }
+
+    /**
+     * The homepage assembly service — story 1.13.
+     *
+     * @return GFHomepage
+     */
+    public function getHomepage()
+    {
+        return $this->share('homepage', function () {
+            return new GFHomepage($this->getEstablishmentRepository());
+        });
+    }
+
+    /**
+     * Which room types QloApps may take a booking for — story 1.10.
+     *
+     * Not shared across requests: the answer depends on data an admin can
+     * change at any moment, and AC-4 promises a flag flip takes effect with
+     * no deploy.
+     *
+     * @return GFRoomTypeBookability
+     */
+    public function getRoomTypeBookability()
+    {
+        return new GFRoomTypeBookability(
+            $this->getHotelRepository()->findRoomTypeBookability()
+        );
+    }
+
+    /**
+     * @return GFInquiryLink
+     */
+    public function getInquiryLink()
+    {
+        return $this->share('inquiryLink', function () {
+            return new GFInquiryLink();
+        });
+    }
+
+    /**
+     * @return GFHotelRepository
+     */
+    public function getHotelRepository()
+    {
+        return $this->share('hotelRepository', function () {
+            return new GFHotelRepository();
+        });
+    }
+
+    /**
+     * Provisions bookable hotels, or null when the platform cannot host them.
+     *
+     * A shop without hotelreservationsystem still imports establishments as
+     * informational products; it just has nothing to book.
+     *
+     * @return GFHotelProvisioner|null
+     */
+    public function getHotelProvisioner()
+    {
+        return $this->share('hotelProvisioner', function () {
+            $hotelRepository = $this->getHotelRepository();
+
+            return new GFHotelProvisioner(
+                new GFHotelFactory(
+                    new GFCategoryTreeBuilder(),
+                    $hotelRepository,
+                    $this->getHotelImageFactory()
+                ),
+                new GFRoomTypeFactory(
+                    $this->getEstablishmentRepository(),
+                    $this->getProductImageFactory()
+                ),
+                $hotelRepository,
+                $this->readRoomTypes()
+            );
+        });
+    }
+
+    /**
+     * @return GFAdvisorPartnerImporter
+     */
+    public function getAdvisorPartnerImporter()
+    {
+        return $this->share('advisorPartnerImporter', function () {
+            return new GFAdvisorPartnerImporter(new GFAdvisorPartnerCsvReader());
+        });
+    }
+
+    /**
+     * Absolute path to the establishments source file.
+     *
+     * @return string
+     */
+    public function getEstablishmentsCsvPath()
+    {
+        return $this->moduleDir . self::ESTABLISHMENTS_CSV;
+    }
+
+    /**
+     * @return string
+     */
+    public function getRoomTypesCsvPath()
+    {
+        return $this->moduleDir . self::ROOM_TYPES_CSV;
+    }
+
+    /**
+     * @return string
+     */
+    public function getAdvisorsCsvPath()
+    {
+        return $this->moduleDir . self::ADVISORS_CSV;
+    }
+
+    /**
+     * @return string
+     */
+    public function getPartnersCsvPath()
+    {
+        return $this->moduleDir . self::PARTNERS_CSV;
+    }
+
+    /**
+     * Room types grouped by hotel. A missing or unreadable file yields no room
+     * types rather than failing the import — the hotels still get created.
+     *
+     * @return array<string, GFRoomType[]>
+     */
+    private function readRoomTypes()
+    {
+        $path = $this->getRoomTypesCsvPath();
+
+        if (!file_exists($path)) {
+            return [];
+        }
+
+        try {
+            return (new GFRoomTypeCsvReader())->readGroupedByHotel($path);
+        } catch (GFImportException $exception) {
+            return [];
+        }
+    }
+
+    /**
+     * One instance of every migration class in migrations/.
+     *
+     * @return GFMigrationInterface[]
+     */
+    private function buildMigrations()
+    {
+        $migrations = [];
+
+        foreach (self::discoverMigrationFiles($this->moduleDir) as $file) {
+            $class = basename($file, '.php');
+
+            if (class_exists($class) && is_subclass_of($class, 'GFMigrationInterface')) {
+                $migrations[] = new $class();
+            }
+        }
+
+        return $migrations;
+    }
+
+    /**
+     * Migration files, sorted by name — which is also version order, because
+     * the class name carries the timestamp.
+     *
+     * @return string[]
+     */
+    private static function discoverMigrationFiles($moduleDir)
+    {
+        $files = glob(rtrim($moduleDir, '/') . '/migrations/GFMigration*.php');
+
+        if (!is_array($files)) {
+            return [];
+        }
+
+        sort($files);
+
+        return $files;
+    }
+
+    /**
+     * @param  string   $key
+     * @param  callable $factory
+     * @return object
+     */
+    private function share($key, $factory)
+    {
+        if (!isset($this->instances[$key])) {
+            $this->instances[$key] = $factory();
+        }
+
+        return $this->instances[$key];
+    }
+}

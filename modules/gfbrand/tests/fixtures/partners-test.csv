@@ -1,0 +1,3 @@
+id,name,logo_url,website_url,description,category,display_order,active
+test-1,Test Partner One,../../uploads/establishments/partners/test-logo-1.png,https://example.com/one,First test partner,certification,1,1
+test-2,Test Partner Two,../../uploads/establishments/partners/test-logo-2.png,https://example.com/two,Second test partner,organization,2,1

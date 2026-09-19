@@ -1,0 +1,148 @@
+/**
+ * GF Experiences Design Tokens — Brand Foundation
+ *
+ * CSS custom properties for the GF Experiences brand.
+ * This file declares :root variables; it has NO visual effect on its own.
+ * The override sheet (gf-brand.css) consumes these tokens to restyle elements.
+ *
+ * Token values are from PRD §5.1 — the planning artifact of record.
+ * AGENCY-BRIEF.md §4.1 restates some values; PRD wins in case of conflict.
+ *
+ * LAYER 1 (module CSS injection via actionFrontControllerSetMedia)
+ */
+
+:root {
+    /* ==========================================================================
+     * Brand Palette — PRD §5.1
+     * ========================================================================== */
+
+    /* Primary brand colours */
+    --gf-olive: #6b8e23;          /* Signature colour ⚠️ RESTRICTED (see below) */
+    --gf-olive-dark: #556B2F;     /* AA-passing body text, links, button fills */
+    --gf-olive-hover: #55721c;    /* Interactive hover / active states */
+
+    /* Neutrals and surfaces */
+    --gf-sage: #657a5a;           /* Secondary accent */
+    --gf-beige: #FDFBF7;          /* Page ground */
+    --gf-beige-deep: #f5f5dc;     /* Alternating sections, zebra stripes */
+
+    /* Text */
+    --gf-charcoal: #2C302E;       /* Primary body text */
+    --gf-ink: #1A1C1B;            /* Headings */
+    --gf-muted: #707571;          /* Meta, captions, secondary labels */
+
+    /* Structural */
+    --gf-rule: #E5E9E6;           /* Borders, dividers */
+    --gf-sand-light: #E8E3D9;     /* Quiet ground: footer text, in-range dates,
+                                     empty-state notices. 9.9:1 under charcoal. */
+    --gf-gold: #DAA520;           /* Accent, footer link hover. Decorative and
+                                     large text only — 2.4:1 on white. */
+
+    /* ==========================================================================
+     * Semantic Aliases — AA-Safe Defaults
+     * ==========================================================================
+     * These resolve to the contrast-passing values so later stories cannot
+     * accidentally use restricted olive for body text. A developer reaching
+     * for var(--gf-text) gets the safe value automatically.
+     *
+     * Contrast ratios (computed on --gf-beige / white):
+     *   --gf-olive        (#6b8e23)  → 3.81:1 — FAILS AA for normal text
+     *   --gf-olive-dark   (#556B2F)  → 5.76:1 — PASSES AA
+     *   --gf-olive-hover  (#55721c)  → 5.51:1 — PASSES AA
+     *
+     * #6b8e23 is permitted for: large text (≥18pt / 14pt bold), icons,
+     * borders, decorative fills, backgrounds with white text.
+     */
+
+    --gf-text: var(--gf-olive-dark);       /* Body copy — AA safe */
+    --gf-link: var(--gf-olive-hover);      /* Links — AA safe */
+    --gf-link-hover: var(--gf-olive);      /* Link hover — large text OK */
+    --gf-btn-bg: var(--gf-olive-dark);     /* Button fill — AA safe for white text (4.4:1 min for large UI) */
+    --gf-btn-text: #FFFFFF;                /* Button text */
+    --gf-heading: var(--gf-ink);           /* Headings */
+
+    /* ==========================================================================
+     * Typography — PRD §5.2
+     * ==========================================================================
+     * Two families loaded from Google Fonts (self-host in production):
+     *   DM Serif Display 400  → All headings, card titles, hero headline
+     *   Source Sans 3 400/600 → Body copy, labels, buttons, navigation
+     */
+
+    --gf-font-display: 'DM Serif Display', Georgia, 'Times New Roman', serif;
+    --gf-font-body: 'Source Sans 3', -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+
+    /* Font sizes — measured from the live site */
+    --gf-hero-size: 56px;          /* Desktop hero headline */
+    --gf-hero-size-mobile: 34px;   /* Mobile hero headline */
+    --gf-h2-size: 34px;            /* Section title */
+    --gf-h2-size-mobile: 26px;
+    --gf-h3-size: 18px;            /* Card title */
+    --gf-h5: 20px;                 /* Footer column heading */
+    --gf-body-size: 16px;          /* Body copy */
+    --gf-body-size-mobile: 15px;
+    --gf-card-body-size: 14px;     /* Card body text */
+    --gf-footer-size: 13px;        /* Footer */
+    --gf-pill-size: 11px;          /* Pill / tag */
+
+    /* Line heights */
+    --gf-hero-lh: 1.1;
+    --gf-h2-lh: 1.25;
+    --gf-body-lh: 1.65;
+    --gf-card-body-lh: 1.55;
+
+    /* Letter spacing */
+    --gf-hero-tracking: -0.5px;
+    --gf-pill-tracking: 0.5px;
+    --gf-eyebrow-tracking: 1.5px;
+
+    /* ==========================================================================
+     * Spacing — 4px base unit (PRD §4.3)
+     * ========================================================================== */
+
+    --gf-space-1: 4px;    /* icon gaps */
+    --gf-space-2: 8px;    /* pill padding, tight stacks */
+    --gf-space-3: 12px;   /* inline gaps */
+    --gf-space-4: 16px;   /* default gap */
+    --gf-space-5: 20px;   /* card gutters */
+    --gf-space-6: 24px;   /* card inner padding (mobile) */
+    --gf-space-8: 32px;   /* card inner padding (desktop) */
+    --gf-space-10: 40px;  /* drawer padding */
+    --gf-space-15: 60px;  /* section padding (mobile) */
+    --gf-space-20: 80px;  /* section padding (desktop) */
+
+    /* ==========================================================================
+     * Layout
+     * ========================================================================== */
+
+    --gf-container-max: 1180px;
+    --gf-grid-gutter: 15px;
+
+    /* ==========================================================================
+     * Elevation, radius, motion — PRD §4.4
+     * ========================================================================== */
+
+    --gf-radius-card: 12px;
+    --gf-radius-drawer: 16px;
+    --gf-radius-btn: 4px;
+    --gf-radius-pill: 999px;
+
+    --gf-shadow-card-rest: 0 4px 15px rgba(0, 0, 0, 0.03);
+    --gf-shadow-card-hover: 0 8px 25px rgba(0, 0, 0, 0.07);
+    --gf-lift-card-hover: translateY(-4px);
+    --gf-transition-card: transform .3s, box-shadow .3s;
+
+    /* ==========================================================================
+     * Semantic State Colours (TBD — propose values)
+     * ========================================================================== */
+
+    --gf-success: var(--gf-olive);
+    --gf-warning: #FF6900;   /* Used once on an alert affordance */
+
+    /* Finalized — Story 1.6. Not present on the live site (nothing there
+     * needed a danger colour); #C0392B on white measures 5.44:1, which
+     * passes AA (4.5:1) for normal-size validation-error text. Used as the
+     * background of .alert-danger (gf-brand.css §7) with white text, and
+     * as the text colour for inline field-level error messages. */
+    --gf-danger: #C0392B;
+}

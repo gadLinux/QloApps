@@ -1,0 +1,3063 @@
+/**
+ * GF Experiences Brand Override Stylesheet
+ *
+ * This file consumes the design tokens declared in gf-tokens.css to restyle
+ * QloApps theme elements. It is loaded AFTER gf-tokens.css and AFTER the
+ * theme's global.css (load order enforced by hookActionFrontControllerSetMedia).
+ *
+ * Initially minimal — section headings are scaffold for the stories that fill them.
+ * Every selector in this file uses a token variable, never a hardcoded hex value.
+ *
+ * LAYER 1 (module CSS injection via actionFrontControllerSetMedia)
+ */
+
+/* ==========================================================================
+   0. Base resets — Story 1.1
+   Apply brand ground colour and typography to the page root.
+   These are low-risk: they change nothing on stock pages yet visible only
+   when later stories target specific elements.
+   ========================================================================== */
+
+body {
+    background-color: var(--gf-beige, #FDFBF7);
+    color: var(--gf-charcoal, #2C302E);
+    font-family: var(--gf-font-body, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif);
+    font-size: var(--gf-body-size, 16px);
+    line-height: var(--gf-body-lh, 1.65);
+}
+
+/* Headings use the display font */
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--gf-font-display, Georgia, 'Times New Roman', serif);
+    color: var(--gf-heading, #1A1C1B);
+}
+
+/* Links use the AA-safe olive */
+a {
+    color: var(--gf-link, #55721c);
+}
+
+a:hover {
+    color: var(--gf-olive, #6b8e23);
+}
+
+/* ==========================================================================
+   1. Global chrome (header, nav, footer) — Story 1.4
+   FR-13: Header, navigation, footer and mobile menu carry brand structure
+   FR-27: Language switcher styled and reachable on mobile
+   ========================================================================== */
+
+/* --- Header bar — override the inline style the hotel theme writes ---
+ *
+ * Scoped away from the landing page on purpose. There the header IS the
+ * hero: the theme gives it a full-viewport height and a photograph inline,
+ * centres the welcome text inside it, and pins the room search panel to its
+ * foot. Flattening it to a beige bar collapsed the hero to ~125px, which
+ * dropped the search panel straight on top of the welcome text and left the
+ * text stranded behind the header at z-index -10.
+ *
+ * Inner pages have no hero, so there the brand bar is what we want. */
+body:not(.index) #header {
+    background-color: var(--gf-beige, #FDFBF7) !important;
+    background-image: none !important;
+    border-bottom: 3px solid var(--gf-olive, #6b8e23);
+}
+
+body:not(.index) #page .header-container,
+body:not(.index) #page .header-container header {
+    background-image: none !important;
+    height: auto !important;
+}
+
+/* On the landing page the hero keeps its photograph; it gets the brand rule
+ * along its foot and a scrim so the white welcome text stays legible over
+ * whatever image the client uploads (WCAG 1.4.3). */
+body.index #header {
+    border-bottom: 3px solid var(--gf-olive, #6b8e23);
+    background-color: var(--gf-charcoal, #2C302E);
+}
+
+/* The hero headline sits on a photograph, so it keeps the theme's white
+ * rather than the charcoal every other heading takes. */
+body.index .header-desc-container .header-hotel-name {
+    color: #FFFFFF;
+    text-shadow: 0 1px 3px rgba(44, 48, 46, 0.45);
+}
+
+body.index .header-desc-container::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background: linear-gradient(
+        180deg,
+        rgba(44, 48, 46, 0.55) 0%,
+        rgba(44, 48, 46, 0.25) 45%,
+        rgba(44, 48, 46, 0.60) 100%
+    );
+    pointer-events: none;
+}
+
+/* The theme colours the header's own links white, because on the landing page
+ * they sit on the hero photograph. On inner pages our beige bar is behind
+ * them instead, where white on #FDFBF7 is about 1.05:1 — "Sign in" and the
+ * cart were effectively invisible (WCAG 1.4.3). */
+body:not(.index) #header .header-top a,
+body:not(.index) #header .header_user_info a,
+body:not(.index) #header .shopping_cart > a,
+body:not(.index) #header .shopping_cart > a b,
+body:not(.index) #header .shopping_cart .ajax_cart_quantity {
+    color: var(--gf-charcoal, #2C302E);
+}
+
+body:not(.index) #header .header-top a:hover,
+body:not(.index) #header .header_user_info a:hover,
+body:not(.index) #header .shopping_cart > a:hover {
+    color: var(--gf-olive-dark, #556B2F);
+}
+
+/* Header nav bar — dark olive strip */
+#nav-main {
+    background-color: var(--gf-olive-dark, #556B2F) !important;
+}
+
+#nav-main .container > .row {
+    border-bottom: none;
+}
+
+/* --- Navigation links --- */
+#nav_main .navigation-header ul li a,
+#g_menu .sf-menu ul.sf-dropdown-submenu li a,
+#g_menu .sf-menu > li > a {
+    color: var(--gf-beige, #FDFBF7);
+    font-family: var(--gf-font-display, Georgia, serif);
+}
+
+#nav_main .navigation-header ul li a:hover,
+#g_menu .sf-menu ul li a:hover,
+#g_menu .sf-menu > li.sfHover > a {
+    color: var(--gf-gold, #DAA520);
+    background-color: transparent;
+}
+
+/* Dropdown submenu */
+#g_menu .sf-menu ul.sf-dropdown-submenu {
+    background-color: var(--gf-charcoal, #2C302E) !important;
+}
+
+#g_menu .sf-menu ul.sf-dropdown-submenu li a {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--gf-beige, #FDFBF7) !important;
+}
+
+/* --- Mobile menu toggle --- */
+#mobile_menu .btn {
+    background-color: var(--gf-olive-dark, #556B2F) !important;
+    border-color: var(--gf-olive-dark, #556B2F) !important;
+    color: var(--gf-beige, #FDFBF7);
+}
+
+/* --- Logo --- */
+#header_logo .logo {
+    max-height: 80px;
+    width: auto;
+}
+
+/* Override the stock logo link hover */
+#header_logo a:hover .logo {
+    opacity: 0.9;
+}
+
+/* --- Language switcher (FR-27) --- */
+#blocklanguages .btn-group .btn,
+#blocklanguages .language-selector .cur-sign {
+    color: var(--gf-olive-dark, #556B2F);
+}
+
+#blocklanguages .dropdown-menu > li > a {
+    border-color: var(--gf-sand-light, #E8E3D9);
+    color: var(--gf-charcoal, #2C302E);
+}
+
+#blocklanguages .dropdown-menu > li > a:hover {
+    background-color: var(--gf-sand-light, #E8E3D9);
+}
+
+/* Ensure language switcher is accessible on mobile */
+@media (max-width: 767px) {
+    #blocklanguages {
+        display: block !important;
+        margin-top: 10px;
+    }
+}
+
+/* --- Branded footer (#gf-footer) --- */
+#gf-footer.gf-footer {
+    background-color: var(--gf-charcoal, #2C302E);
+    color: var(--gf-sand-light, #E8E3D9);
+    padding: 60px 0 0;
+    font-size: var(--gf-body-size, 16px);
+    line-height: 1.7;
+}
+
+#gf-footer.gf-footer h4 {
+    color: var(--gf-beige, #FDFBF7);
+    font-family: var(--gf-font-display, Georgia, serif);
+    font-size: var(--gf-h5, 20px);
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--gf-olive, #6b8e23);
+}
+
+#gf-footer.gf-footer a {
+    color: var(--gf-sand-light, #E8E3D9);
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+#gf-footer.gf-footer a:hover {
+    color: var(--gf-gold, #DAA520);
+}
+
+/* Footer columns */
+.gf-footer-grid .gf-footer-col {
+    margin-bottom: 30px;
+}
+
+/* Contact list */
+.gf-contact-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.gf-contact-list li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    color: var(--gf-sand-light, #E8E3D9);
+}
+
+.gf-contact-list svg {
+    flex-shrink: 0;
+    color: var(--gf-olive, #6b8e23);
+}
+
+/* Social links */
+.gf-social-links {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.gf-social-links a {
+    color: var(--gf-sand-light, #E8E3D9);
+    transition: color 0.2s ease;
+}
+
+.gf-social-links a:hover {
+    color: var(--gf-olive, #6b8e23);
+}
+
+/* Quick links */
+.gf-quick-links {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.gf-quick-links li {
+    margin-bottom: 8px;
+}
+
+/* Copyright bar */
+.gf-footer-bottom {
+    background-color: var(--gf-beige, #FDFBF7);
+    color: var(--gf-charcoal, #2C302E);
+    padding: 16px 0;
+    text-align: center;
+    font-size: 14px;
+}
+
+.gf-footer-bottom a {
+    color: var(--gf-olive-dark, #556B2F);
+    margin-left: 8px;
+}
+
+/* --- Breadcrumb rebrand --- */
+#breadcrumbsblocks ul li a {
+    color: var(--gf-link, #55721c);
+}
+
+/* ==========================================================================
+
+/* ==========================================================================
+   2. Homepage sections — Story 1.13
+   Hero, pillars, hotel collection strip, why choose us
+   ========================================================================== */
+
+/* TO BE ADDED BY STORY 1.13 */
+
+
+/* ==========================================================================
+   3. Establishment card and conditional CTA — Story 1.10
+   FR-20. One component, consumed by the listing (1.9) and the homepage (1.13).
+
+   Deliberately NOT scoped to the listing page: this is a shared component,
+   and scoping it under .gf-establishments would have made story 1.13 either
+   duplicate it or wrap the homepage in a class that means nothing there.
+   ========================================================================== */
+
+.gf-establishment-card {
+    display: flex;
+    flex-direction: column;
+    /* Fills its grid cell, which is what lets the foot pin to the bottom of
+       the TALLEST card in the row rather than to its own content. */
+    width: 100%;
+    padding: var(--gf-space-5);
+    border: 1px solid var(--gf-rule);
+    border-radius: var(--gf-radius-card);
+    background: #FFF;
+    box-shadow: var(--gf-shadow-card-rest);
+    transition: var(--gf-transition-card);
+}
+
+.gf-establishment-card:hover {
+    transform: var(--gf-lift-card-hover);
+    box-shadow: var(--gf-shadow-card-hover);
+}
+
+/* AC-8. The global reduced-motion block in section 10 already collapses every
+   transition-duration, so the shadow stops animating there. What it cannot do
+   is remove the movement itself — a transform still jumps 4px, it just jumps
+   instantly — so the lift is cancelled here. */
+@media (prefers-reduced-motion: reduce) {
+    .gf-establishment-card:hover {
+        transform: none;
+    }
+}
+
+/* --- Photo: 3:2 (AC-5) ---------------------------------------------------- */
+
+.gf-card-media {
+    overflow: hidden;
+    border-radius: 8px;
+    /* Shows through while a lazy image is still arriving, so the card does not
+       flash white-on-white. */
+    background: var(--gf-sand-light);
+}
+
+.gf-card-media img,
+.gf-card-media-blank {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 3 / 2;
+    object-fit: cover;
+}
+
+/* --- Body ----------------------------------------------------------------- */
+
+.gf-card-body {
+    /* Takes the slack. This single line is what pins the foot and aligns CTAs
+       across a row of unequal descriptions. */
+    flex: 1 1 auto;
+    padding-top: var(--gf-space-4);
+}
+
+.gf-card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--gf-space-2);
+    margin: 0 0 var(--gf-space-3);
+}
+
+.gf-tag {
+    display: inline-block;
+    padding: 3px var(--gf-space-2);
+    border-radius: 3px;
+    font-family: var(--gf-font-body);
+    font-size: var(--gf-pill-size);
+    font-weight: 600;
+    letter-spacing: var(--gf-pill-tracking);
+    text-transform: uppercase;
+}
+
+/* Type and location pills. Each carries its meaning in the word; the tint is
+   secondary, never the only signal. */
+.gf-tag-type {
+    background: #F1EADB;
+    color: #6B4E16;
+}
+
+.gf-tag-hotel {
+    background: #E7EDD9;
+    color: var(--gf-olive-dark);
+}
+
+.gf-tag-place {
+    background: #ECECEC;
+    color: var(--gf-charcoal);
+}
+
+.gf-card-name {
+    margin: 0 0 var(--gf-space-3);
+    font-family: var(--gf-font-display);
+    font-size: var(--gf-h3-size);
+    line-height: 1.3;
+    color: var(--gf-heading);
+}
+
+/* Five lines, then ellipsis (AC-5). -webkit-line-clamp is the only widely
+   supported mechanism and works in every current engine including Firefox;
+   where it does not apply the text simply runs on, which is a longer card,
+   not a broken one. */
+.gf-card-text {
+    display: -webkit-box;
+    -webkit-line-clamp: 5;
+    line-clamp: 5;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    font-family: var(--gf-font-body);
+    font-size: var(--gf-card-body-size);
+    line-height: var(--gf-card-body-lh);
+    color: var(--gf-charcoal);
+}
+
+/* Homepage variant: no pills, a shorter blurb (story 1.13). */
+.gf-establishment-card--compact .gf-card-text {
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+}
+
+/* --- Foot: CTA and certification pill ------------------------------------- */
+
+.gf-card-foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--gf-space-3);
+    margin-top: var(--gf-space-5);
+}
+
+.gf-establishment-card .gf-cta {
+    font-family: var(--gf-font-body);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: var(--gf-pill-tracking);
+    text-transform: uppercase;
+    text-decoration: underline;
+    color: var(--gf-olive-dark);
+}
+
+.gf-establishment-card .gf-cta:hover,
+.gf-establishment-card .gf-cta:focus {
+    color: var(--gf-olive-hover);
+}
+
+.gf-cta-mark {
+    margin-left: var(--gf-space-1);
+}
+
+/* --- Certification pills (AC-7, OQ-e / D11) -------------------------------
+
+   "GF Dedicated" (a dedicated gluten-free kitchen) and "GF Options" (a kitchen
+   that can accommodate) mean materially different things to a coeliac
+   traveller, and on the live site they render identically. They are separated
+   on three axes at once — fill, text colour and a tick glyph — so the
+   distinction survives greyscale and colour blindness (WCAG 1.4.1).
+
+   The fill is --gf-olive-dark, NOT --gf-olive. The story proposed olive; at
+   11px this is not large text, and #6b8e23 behind white is 3.81:1, below AA.
+   #556B2F behind white measures 5.76:1 (D4).                                */
+
+.gf-cert-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--gf-space-1);
+    padding: 3px var(--gf-space-2);
+    border-radius: var(--gf-radius-pill);
+    font-family: var(--gf-font-body);
+    font-size: var(--gf-pill-size);
+    font-weight: 600;
+    letter-spacing: var(--gf-pill-tracking);
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.gf-cert-pill--dedicated {
+    background: var(--gf-olive-dark);
+    color: #FFF;
+}
+
+.gf-cert-pill--options {
+    background: rgba(107, 142, 35, 0.10);
+    color: var(--gf-olive-dark);
+}
+
+.gf-cert-tick {
+    font-size: 12px;
+    line-height: 1;
+}
+
+@media (max-width: 767px) {
+    .gf-card-foot {
+        /* Stacked rather than squeezed: side by side, the CTA and a long
+           certification pill wrap mid-word on a 360px card. */
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+
+/* ==========================================================================
+   4. Establishments listing with country filter — Story 1.9
+   FR-18 listing, FR-19 country filter.
+
+   Layer 1: the page is a gfbrand front controller with its own template, so
+   nothing here overrides a stock module or a theme file. Class names are all
+   gf-prefixed and scoped under .gf-establishments, so this section cannot
+   reach any page but its own.
+   ========================================================================== */
+
+.gf-establishments {
+    max-width: var(--gf-container-max);
+    margin: 0 auto;
+    padding: 0 var(--gf-grid-gutter) var(--gf-space-20);
+}
+
+/* --- Inner-page hero ------------------------------------------------------ */
+
+.gf-establishments-hero {
+    padding: var(--gf-space-15) 0 var(--gf-space-10);
+    text-align: center;
+}
+
+.gf-establishments-title {
+    margin: 0;
+    font-family: var(--gf-font-display);
+    font-size: var(--gf-hero-size);
+    line-height: var(--gf-hero-lh);
+    letter-spacing: var(--gf-hero-tracking);
+    color: var(--gf-heading);
+}
+
+.gf-establishments-tagline {
+    margin: var(--gf-space-4) 0 0;
+    font-family: var(--gf-font-body);
+    font-size: var(--gf-body-size);
+    line-height: var(--gf-body-lh);
+    color: var(--gf-charcoal);
+}
+
+/* Decorative rule under the hero, as on the live site. */
+.gf-establishments-rule {
+    display: block;
+    width: 56px;
+    height: 2px;
+    margin: var(--gf-space-6) auto 0;
+    background: var(--gf-olive);
+}
+
+/* --- Country filter pills ------------------------------------------------- */
+
+.gf-filter-bar {
+    margin: 0 0 var(--gf-space-6);
+}
+
+.gf-filter-pills {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--gf-space-3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+/* The pills are anchors, so the theme's link colour and underline have to be
+   reset here rather than assumed away. */
+.gf-establishments .gf-pill {
+    display: inline-block;
+    padding: 9px var(--gf-space-5);
+    border: 1px solid var(--gf-rule);
+    border-radius: var(--gf-radius-pill);
+    background: #FFF;
+    font-family: var(--gf-font-body);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: var(--gf-pill-tracking);
+    text-transform: uppercase;
+    /* Underlined at rest, not only on hover: the pills sit in a row of their
+       own, where colour alone would be the only thing marking them as
+       controls (WCAG 1.4.1, "colour is not the only visual means"). */
+    text-decoration: underline;
+    color: var(--gf-charcoal);
+    transition: background-color .2s, border-color .2s, color .2s;
+}
+
+.gf-establishments .gf-pill:hover,
+.gf-establishments .gf-pill:focus {
+    border-color: var(--gf-olive);
+    background: var(--gf-beige-deep);
+    color: var(--gf-olive-dark);
+}
+
+/* Active pill: olive fill with white text. Large-enough UI text, and the fill
+   is a background rather than text colour, so restricted olive is in bounds
+   here (D4) — measured 4.6:1 against white. */
+.gf-establishments .gf-pill-active,
+.gf-establishments .gf-pill-active:hover,
+.gf-establishments .gf-pill-active:focus {
+    border-color: var(--gf-olive-dark);
+    background: var(--gf-olive-dark);
+    color: #FFF;
+}
+
+/* --- Result count --------------------------------------------------------- */
+
+.gf-filter-count {
+    margin: 0 0 var(--gf-space-8);
+    font-family: var(--gf-font-body);
+    font-size: 14px;
+    text-align: center;
+    color: var(--gf-muted);
+}
+
+/* --- Card grid ------------------------------------------------------------ */
+
+.gf-establishment-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--gf-space-6);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+/* The grid item is a bare <li>; the card component inside it (section 3) is
+   what stretches, so a row of unequal descriptions still lines its CTAs up. */
+.gf-establishment-grid > li {
+    display: flex;
+}
+
+
+/* --- Empty state (AC-6) --------------------------------------------------- */
+
+.gf-establishments-empty {
+    padding: var(--gf-space-20) var(--gf-space-6);
+    border: 1px solid var(--gf-rule);
+    border-radius: var(--gf-radius-card);
+    background: var(--gf-beige);
+    text-align: center;
+}
+
+.gf-empty-message {
+    margin: 0 0 var(--gf-space-3);
+    font-family: var(--gf-font-display);
+    font-size: var(--gf-h2-size-mobile);
+    color: var(--gf-heading);
+}
+
+.gf-empty-help {
+    margin: 0;
+    font-family: var(--gf-font-body);
+    font-size: var(--gf-body-size);
+    color: var(--gf-charcoal);
+}
+
+.gf-establishments .gf-empty-help a {
+    font-weight: 600;
+    text-decoration: underline;
+    color: var(--gf-olive-dark);
+}
+
+/* --- Pager (AC-7) --------------------------------------------------------- */
+
+.gf-pager {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: var(--gf-space-3);
+    margin-top: var(--gf-space-10);
+}
+
+.gf-pager-pages {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--gf-space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.gf-establishments .gf-pager-page,
+.gf-establishments .gf-pager-step {
+    display: inline-block;
+    /* 44px minimum touch target (WCAG 2.5.5). */
+    min-width: 44px;
+    padding: 11px var(--gf-space-3);
+    border: 1px solid var(--gf-rule);
+    border-radius: var(--gf-radius-btn);
+    background: #FFF;
+    font-family: var(--gf-font-body);
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+    text-decoration: none;
+    color: var(--gf-charcoal);
+}
+
+.gf-establishments .gf-pager-page:hover,
+.gf-establishments .gf-pager-step:hover {
+    border-color: var(--gf-olive);
+    color: var(--gf-olive-dark);
+}
+
+.gf-establishments .gf-pager-current {
+    border-color: var(--gf-olive-dark);
+    background: var(--gf-olive-dark);
+    color: #FFF;
+}
+
+/* --- Responsive: 3 / 2 / 1 columns --------------------------------------- */
+
+@media (max-width: 991px) {
+    .gf-establishment-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .gf-establishments-title {
+        font-size: var(--gf-h2-size);
+    }
+}
+
+@media (max-width: 767px) {
+    .gf-establishments {
+        padding-bottom: var(--gf-space-15);
+    }
+
+    .gf-establishment-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .gf-establishments-hero {
+        padding: var(--gf-space-10) 0 var(--gf-space-6);
+    }
+
+    .gf-establishments-title {
+        font-size: var(--gf-hero-size-mobile);
+    }
+
+    /* The pill row scrolls sideways INSIDE ITSELF rather than letting the page
+       scroll (AC-4). Wrapping instead would push the grid below the fold on a
+       360px screen once a handful of countries are in the data. */
+    .gf-filter-pills {
+        flex-wrap: nowrap;
+        justify-content: flex-start;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: var(--gf-space-2);
+    }
+
+    .gf-filter-pills > li {
+        flex: 0 0 auto;
+    }
+}
+
+
+/* ==========================================================================
+   5. Advisors and Partners drawers — Story 1.11
+   ========================================================================== */
+
+/* TO BE ADDED BY STORY 1.11 */
+
+
+/* ==========================================================================
+   6. Booking questionnaire form — Story 1.12
+   ========================================================================== */
+
+.gf-inquiry {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 40px 20px 80px;
+}
+
+.gf-inquiry-title {
+    font-family: var(--gf-font-display, 'DM Serif Display', serif);
+    color: var(--gf-ink);
+    margin-bottom: 24px;
+}
+
+/* AC-1: reassurance card (left) beside the three field groups (right).
+ * Stacks — card above form — under the field-groups' own single-column
+ * breakpoint (§9), so the narrow layout never puts a wide card beside a
+ * cramped form. */
+.gf-inquiry-layout {
+    display: grid;
+    grid-template-columns: minmax(240px, 300px) 1fr;
+    gap: 40px;
+    align-items: start;
+}
+
+@media (max-width: 640px) {
+    .gf-inquiry-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+.gf-inquiry-card {
+    background-color: var(--gf-surface-tint, #f4f6f1);
+    border: 1px solid var(--gf-rule);
+    border-radius: 8px;
+    padding: 24px;
+    color: var(--gf-text);
+    /* Sticks alongside the form on a tall page instead of scrolling out of
+     * view — a reassurance card is meant to stay in sight while filling in. */
+    position: sticky;
+    top: 24px;
+}
+
+.gf-inquiry-card p {
+    margin: 0 0 16px;
+}
+
+.gf-inquiry-card-points {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.gf-inquiry-card-points li {
+    padding-left: 24px;
+    position: relative;
+}
+
+.gf-inquiry-card-points li::before {
+    content: '\2713';
+    position: absolute;
+    left: 0;
+    color: var(--gf-olive-dark, #556B2F);
+    font-weight: 600;
+}
+
+@media (max-width: 640px) {
+    .gf-inquiry-card {
+        position: static;
+    }
+}
+
+.gf-inquiry-sent {
+    text-align: center;
+    padding: 60px 20px;
+}
+
+/* .gf-btn is not scoped to the card: this is the first CTA in the module
+   that needs one outside .gf-establishment-card. Story 1.6 (transaction
+   rebrand) is expected to consolidate this with whatever it builds for
+   cart/checkout buttons; until it lands, this is the one definition. */
+.gf-btn {
+    display: inline-block;
+    font: inherit;
+    font-weight: 600;
+    text-align: center;
+    text-decoration: none;
+    border: none;
+    border-radius: 4px;
+    padding: 12px 28px;
+    cursor: pointer;
+}
+
+.gf-btn--primary {
+    background-color: var(--gf-btn-bg);
+    color: #fff;
+}
+
+.gf-btn--primary:hover,
+.gf-btn--primary:focus {
+    background-color: var(--gf-olive-hover);
+}
+
+.gf-inquiry-errors {
+    background-color: #fdf2f2;
+    border: 1px solid #c0392b;
+    border-radius: 4px;
+    padding: 16px 20px;
+    margin-bottom: 24px;
+}
+
+.gf-inquiry-errors-title {
+    font-weight: 600;
+    margin: 0 0 8px;
+    color: #942a25;
+}
+
+.gf-inquiry-errors ul {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.gf-inquiry-errors a {
+    color: #942a25;
+    text-decoration: underline;
+}
+
+.gf-inquiry-group {
+    border: none;
+    border-top: 1px solid var(--gf-rule);
+    padding: 24px 0;
+    margin: 0;
+}
+
+.gf-inquiry-group legend {
+    font-family: var(--gf-font-display, 'DM Serif Display', serif);
+    font-size: 1.1rem;
+    color: var(--gf-ink);
+    padding: 0;
+    margin-bottom: 16px;
+    width: auto;
+    border: none;
+}
+
+.gf-field {
+    margin-bottom: 18px;
+}
+
+.gf-field label,
+.gf-field .gf-field-legend {
+    display: block;
+    font-weight: 600;
+    color: var(--gf-charcoal);
+    margin-bottom: 6px;
+}
+
+.gf-field input[type="text"],
+.gf-field input[type="email"],
+.gf-field input[type="tel"],
+.gf-field input[type="number"],
+.gf-field select,
+.gf-field textarea {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 12px;
+    border: 1px solid var(--gf-rule);
+    border-radius: 4px;
+    font: inherit;
+    color: var(--gf-charcoal);
+    background-color: #fff;
+}
+
+.gf-field input:focus,
+.gf-field select:focus,
+.gf-field textarea:focus {
+    outline: 2px solid var(--gf-olive-dark);
+    outline-offset: 1px;
+}
+
+.gf-field-hint {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--gf-muted);
+    margin-bottom: 6px;
+}
+
+.gf-field-inline {
+    display: flex;
+    gap: 12px;
+}
+
+.gf-field-inline select {
+    flex: 1;
+}
+
+.gf-field--checkbox label {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-weight: normal;
+}
+
+.gf-field--checkbox input[type="checkbox"] {
+    margin-top: 4px;
+    flex-shrink: 0;
+}
+
+.gf-field--error input,
+.gf-field--error select,
+.gf-field--error textarea {
+    border-color: #c0392b;
+}
+
+.gf-field-error {
+    color: #942a25;
+    font-size: 0.85rem;
+    margin: 6px 0 0;
+}
+
+.gf-referral-other {
+    margin-top: 8px;
+}
+
+/* Honeypot (AC-7): off-screen rather than display:none. A script that reads
+   computed style to skip hidden inputs is defeated by the same trick a
+   sighted, mouse-using bot operator would need to defeat visually — this
+   field is simply never where anything looks. */
+.gf-hp {
+    position: absolute;
+    left: -9999px;
+    top: -9999px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+}
+
+.gf-inquiry-submit {
+    margin-top: 8px;
+}
+
+@media (max-width: 767px) {
+    .gf-field-inline {
+        flex-wrap: wrap;
+    }
+}
+
+
+/* ==========================================================================
+   7. Transaction rebrand (cart, checkout, account) — Story 1.6
+   AC-1 cart, AC-2 checkout+payment, AC-3 confirmation, AC-4 account/auth,
+   AC-5 system pages. CSS-only throughout: every selector below targets a
+   class/id the stock hotel-reservation-theme templates already render
+   (Bootstrap-3-era `.form-group`/`.card`/`.alert-*`, or QloApps' own
+   `.cart_*`/`.opc-*`/`ul.step`/`.payment_module`); no .tpl file is edited.
+   AC-6/AC-7 (aria-describedby + focus-on-error) are JS-only, in gf-brand.js
+   `initFormAccessibility()` — nothing here.
+
+   Two accepted exceptions, documented in spec-1-6-transaction-rebrand.md:
+   - error500.html stays stock (static file outside the module/theme system).
+   - maintenance.tpl stays stock. It is rendered by
+     FrontController::displayMaintenancePage(), which runs from init() and
+     exit()s before setMedia() ever fires — the same call that dispatches
+     actionFrontControllerSetMedia and loads gf-tokens.css/gf-brand.css on
+     every other page. The template also never echoes $HOOK_MAINTENANCE
+     (assigned in FrontController.php but not read anywhere in
+     maintenance.tpl), so there is no hook-rendered surface to inject a
+     <style> into either. Reaching it would mean editing maintenance.tpl
+     directly (layer 4) or overriding FrontController (layer 5) — both
+     outside this story's CSS-only, no-.tpl-edit boundary. 404.tpl has no
+     such problem: PageNotFoundController is an ordinary FrontController
+     subclass and renders through the normal header/footer/setMedia path.
+   ========================================================================== */
+
+/* --- 7.1 Alerts (site-wide component; every page in this story uses one) -
+ *
+ * Stock colours are pure PrestaShop primary red/orange/blue/green
+ * (global.css .alert-success/-info/-warning/-danger) — exactly the "stock
+ * red/orange alert banners" the story's problem statement calls out on the
+ * cart page. Success uses --gf-olive-dark rather than the --gf-success
+ * alias (which resolves to plain --gf-olive): olive-dark is the AA-safe
+ * value already used for the SAME failure mode elsewhere in this codebase
+ * (button fills, the GF Dedicated pill — see brand-layer-manifest.md
+ * Story 1.10) — plain olive under white text measures ~3.8:1 and fails AA
+ * for anything longer than large/bold text, which an alert's body copy is
+ * not. Warning uses the --gf-warning token as declared, with dark ink text
+ * rather than white: #FF6900 under white is ~2.9:1 (fails), under ink is
+ * ~5.9:1 (passes). Danger uses the just-finalized --gf-danger, 5.44:1
+ * under white (passes). */
+.alert-success {
+    background-color: var(--gf-olive-dark, #556B2F);
+    border-color: var(--gf-olive-hover, #55721c);
+    color: #FFFFFF;
+}
+
+.alert-success .alert-link {
+    color: #FFFFFF;
+}
+
+/* A light, calm treatment, not the near-black one this rule used to have:
+ * .alert-info carries routine, non-urgent notices (e.g. "already have an
+ * account? sign in instead") — a near-black banner read as far more
+ * alarming than the message it was announcing. */
+.alert-info {
+    background-color: var(--gf-beige-deep, #f5f5dc);
+    border-color: var(--gf-sage, #657a5a);
+    color: var(--gf-charcoal, #2C302E);
+}
+
+.alert-info .alert-link {
+    color: var(--gf-olive-hover, #55721c);
+    font-weight: 700;
+}
+
+.alert-warning {
+    background-color: var(--gf-warning, #FF6900);
+    border-color: #cc5400;
+    color: var(--gf-ink, #1A1C1B);
+}
+
+.alert-warning .alert-link {
+    color: var(--gf-ink, #1A1C1B);
+    font-weight: 700;
+}
+
+.alert-danger {
+    background-color: var(--gf-danger, #C0392B);
+    border-color: #942a25;
+    color: #FFFFFF;
+}
+
+.alert-danger .alert-link,
+.alert-danger a {
+    color: #FFFFFF;
+    text-decoration: underline;
+}
+
+/* --- 7.2 Forms — shared across cart, checkout, account, auth -------------
+ *
+ * `.form-control` and the checkbox/radio accent are untouched by every
+ * earlier story (checked before adding this — the booking-questionnaire
+ * form at §6 uses its own scoped `.gf-field` classes, not this generic
+ * Bootstrap one). Keyboard focus is already handled site-wide by the
+ * `*:focus-visible` rule at §10; nothing new is needed here for that. */
+.form-control {
+    border: 1px solid var(--gf-rule, #E5E9E6);
+    border-radius: 4px;
+    color: var(--gf-charcoal, #2C302E);
+}
+
+.form-group label,
+.form_content label,
+.account_creation label {
+    color: var(--gf-charcoal, #2C302E);
+    font-weight: 600;
+}
+
+.form-group .required sup,
+.form-group.required sup,
+p.required sup,
+.dni sup,
+.postcode sup {
+    color: var(--gf-danger, #C0392B);
+}
+
+.checkbox input[type="checkbox"],
+.radio-inline input[type="radio"] {
+    accent-color: var(--gf-olive-dark, #556B2F);
+}
+
+/* Client-side per-field validation (js/validate.js toggles this on blur —
+ * stock behaviour, not new markup). Swap the stock bright red/green for
+ * brand tokens; icon backgrounds are theme-owned image assets, left as-is. */
+.form-group.form-error .form-control,
+.form-group.form-error input,
+.form-group.form-error textarea {
+    border-color: var(--gf-danger, #C0392B);
+    color: var(--gf-danger, #C0392B);
+}
+
+.form-group.form-ok .form-control,
+.form-group.form-ok input,
+.form-group.form-ok textarea {
+    border-color: var(--gf-olive-dark, #556B2F);
+    color: var(--gf-olive-dark, #556B2F);
+}
+
+/* --- 7.3 Cart (shopping-cart.tpl, shopping-cart-detail.tpl) — AC-1 -------- */
+
+.cart_section_title {
+    font-family: var(--gf-font-display, 'DM Serif Display', serif);
+    color: var(--gf-ink, #1A1C1B);
+    font-size: 1.2rem;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--gf-rule, #E5E9E6);
+}
+
+.cart_product_line .product-name a,
+.cart_product_line .hotel-location {
+    color: var(--gf-charcoal, #2C302E);
+}
+
+.cart_product_line .hotel-location i,
+.room-type-feature img {
+    color: var(--gf-olive-dark, #556B2F);
+}
+
+.cart_product_line .total_price span,
+.demand_price_block .total_price span {
+    color: var(--gf-olive-dark, #556B2F);
+    font-weight: 700;
+}
+
+.cart_room_delete,
+.cart_quantity_delete,
+.product_remove_block a,
+.product-xs-remove {
+    color: var(--gf-muted, #707571);
+}
+
+.cart_room_delete:hover,
+.cart_quantity_delete:hover,
+.product_remove_block a:hover,
+.product-xs-remove:hover {
+    color: var(--gf-danger, #C0392B);
+}
+
+.cart_quantity_button a.cart_quantity_up,
+.cart_quantity_button a.cart_quantity_down {
+    background-color: #FFFFFF;
+    border: 1px solid var(--gf-rule, #E5E9E6);
+    color: var(--gf-charcoal, #2C302E);
+}
+
+.cart_quantity_button a.cart_quantity_up:hover,
+.cart_quantity_button a.cart_quantity_down:hover {
+    background-color: var(--gf-beige-deep, #f5f5dc);
+    color: var(--gf-olive-dark, #556B2F);
+}
+
+.cart_voucher_detail_block,
+.cart_voucher_head {
+    background-color: transparent;
+}
+
+.cart_voucher_head {
+    font-family: var(--gf-font-display, 'DM Serif Display', serif);
+    color: var(--gf-ink, #1A1C1B);
+}
+
+.cart_discount {
+    border-top: 1px solid var(--gf-rule, #E5E9E6);
+}
+
+.cart_discount_name,
+.voucher_name {
+    color: var(--gf-olive-dark, #556B2F);
+}
+
+/* --- 7.4 Checkout steps and OPC accordion — AC-2 -------------------------
+ *
+ * ul.step's stock rule paints each <li> with a linear-gradient background
+ * and a right-edge arrow sprite from the theme's own /img/ (relative to
+ * global.css, unreachable from a module stylesheet by relative path). The
+ * gradients are cleared the same way the §8 button fix already documents
+ * (clear background-image, not just background-color, or the stock image
+ * keeps painting through); the arrow sprites are decorative separators
+ * only, so they are hidden rather than replaced with a brittle path. */
+ul.step li.step_current {
+    background: var(--gf-olive-dark, #556B2F);
+    background-image: none;
+    border-color: var(--gf-olive-hover, #55721c);
+}
+
+ul.step li.step_current span {
+    color: #FFFFFF;
+    text-shadow: none;
+}
+
+ul.step li.step_done {
+    background: var(--gf-sage, #657a5a);
+    background-image: none;
+    border-color: var(--gf-charcoal, #2C302E);
+}
+
+ul.step li.step_done a {
+    color: #FFFFFF;
+    text-shadow: none;
+}
+
+ul.step li.step_todo {
+    background: var(--gf-beige-deep, #f5f5dc);
+    background-image: none;
+    border-color: var(--gf-rule, #E5E9E6);
+}
+
+ul.step li.step_todo span {
+    color: var(--gf-charcoal, #2C302E);
+}
+
+ul.step li a:after,
+ul.step li span:after {
+    display: none;
+}
+
+/* One-page checkout accordion (.card / .card-header / .opc-collapse) */
+#order-opc .card,
+#order .card,
+#order-confirmation .card {
+    border: 1px solid var(--gf-rule, #E5E9E6);
+    box-shadow: none;
+}
+
+#order-opc .card-header,
+#order .card-header,
+#order-confirmation .card-header {
+    background-color: var(--gf-beige-deep, #f5f5dc);
+    border-bottom: 1px solid var(--gf-rule, #E5E9E6);
+    color: var(--gf-ink, #1A1C1B);
+    font-weight: 600;
+}
+
+#order-opc .accordion-header {
+    color: var(--gf-ink, #1A1C1B);
+}
+
+#order-opc .accordion-left-arrow {
+    color: var(--gf-olive-dark, #556B2F);
+}
+
+#order-opc .info-head {
+    color: var(--gf-muted, #707571);
+    font-weight: 600;
+}
+
+#order-opc .info-value {
+    color: var(--gf-charcoal, #2C302E);
+}
+
+/* --- 7.5 Addresses selector (order-address.tpl, shared by both flows) --- */
+
+.addresses .address_delivery label,
+.addresses label.strong {
+    color: var(--gf-charcoal, #2C302E);
+    font-weight: 600;
+}
+
+.addresses ul.address.box {
+    border: 1px solid var(--gf-rule, #E5E9E6);
+    background-color: #FFFFFF;
+}
+
+/* --- 7.6 Payment (order-payment*.tpl + bankwire/cheque hook templates) —
+   AC-2 ---------------------------------------------------------------------
+ *
+ * Only bankwire and cheque are active in this shop (both instruction-only,
+ * no card form) — see Design Notes in the spec. Their own hook templates
+ * (modules/bankwire, modules/cheque) keep the theme's own icon sprites
+ * (bankwire.png/cheque.png, drawn via the stock `background` shorthand on
+ * a.bankwire/a.cheque); only the border/hover/text colours are rebranded. */
+
+.block-small-header {
+    font-family: var(--gf-font-display, 'DM Serif Display', serif);
+    color: var(--gf-ink, #1A1C1B);
+}
+
+#tc_cont label,
+.payment_module a span {
+    color: var(--gf-charcoal, #2C302E);
+}
+
+p.payment_module a {
+    border-color: var(--gf-rule, #E5E9E6);
+}
+
+p.payment_module a:hover,
+p.payment_module a:focus {
+    background-color: var(--gf-beige-deep, #f5f5dc) !important;
+    border-color: var(--gf-olive-dark, #556B2F);
+}
+
+#cart_summary thead th {
+    background-color: var(--gf-beige-deep, #f5f5dc);
+    color: var(--gf-ink, #1A1C1B);
+}
+
+#cart_summary tr.cart_total_price td,
+.prices-breakdown-table tr.totalprice td {
+    color: var(--gf-olive-dark, #556B2F);
+    font-weight: 700;
+}
+
+.price-discount {
+    color: var(--gf-olive-dark, #556B2F);
+}
+
+/* Secondary "Continue shopping" / "Follow my order" action — distinct from
+ * the filled primary button (.button.button-medium, §8) so a guest can
+ * tell "go back" from "go forward" at a glance. */
+.button-exclusive.btn {
+    background-color: transparent !important;
+    background-image: none !important;
+    border: 1px solid var(--gf-olive-dark, #556B2F) !important;
+    color: var(--gf-olive-dark, #556B2F) !important;
+}
+
+.button-exclusive.btn:hover,
+.button-exclusive.btn:focus {
+    background-color: var(--gf-beige-deep, #f5f5dc) !important;
+    color: var(--gf-olive-hover, #55721c) !important;
+}
+
+/* --- 7.7 Confirmation (order-confirmation.tpl) — AC-3 -------------------- */
+
+.order-confirmation-column .card-header {
+    background-color: var(--gf-beige-deep, #f5f5dc);
+    color: var(--gf-ink, #1A1C1B);
+    font-weight: 600;
+}
+
+.order-confirmation-column dt {
+    color: var(--gf-muted, #707571);
+}
+
+.order-confirmation-column .label.processing,
+span.processing {
+    background-color: var(--gf-sage, #657a5a);
+    color: #FFFFFF;
+    padding: 3px 8px;
+    border-radius: 3px;
+}
+
+.cust_serv_lnk {
+    color: var(--gf-olive-dark, #556B2F);
+    font-weight: 600;
+}
+
+/* --- 7.8 Account and authentication — AC-4 -------------------------------
+ * authentication.tpl, my-account.tpl, history.tpl, identity.tpl,
+ * addresses.tpl */
+
+.box {
+    background-color: #FFFFFF;
+    border: 1px solid var(--gf-rule, #E5E9E6);
+    border-radius: 8px;
+    padding: 24px;
+}
+
+.page-subheading {
+    font-family: var(--gf-font-display, 'DM Serif Display', serif);
+    color: var(--gf-ink, #1A1C1B);
+    border-bottom: 2px solid var(--gf-olive, #6b8e23);
+    padding-bottom: 8px;
+    margin-bottom: 16px;
+}
+
+.info-account,
+.info-title {
+    color: var(--gf-muted, #707571);
+}
+
+/* The stock tile look (icon block + label, my-account.css) is kept —
+ * `#my-account ul.myaccount-link-list li a` is an id-qualified stock rule
+ * that out-specifies a plain `.myaccount-link-list li a`, so every override
+ * here is written at matching specificity rather than with !important.
+ * The icon block's grey linear-gradient is cleared the same way §8 already
+ * documents for the generic buttons: background-color alone leaves a
+ * gradient background-image painting straight over it. */
+#my-account ul.myaccount-link-list li a {
+    border-color: var(--gf-rule, #E5E9E6);
+    background-image: none;
+    background-color: #FFFFFF;
+    color: var(--gf-charcoal, #2C302E);
+    text-shadow: none;
+}
+
+#my-account ul.myaccount-link-list li a i {
+    color: #FFFFFF;
+    background-color: var(--gf-olive-dark, #556B2F);
+    border-color: var(--gf-olive-dark, #556B2F);
+}
+
+#my-account ul.myaccount-link-list li a:hover {
+    background-color: var(--gf-beige-deep, #f5f5dc);
+    border-color: var(--gf-olive-dark, #556B2F);
+}
+
+/* Stock `blockmyaccount` left-column sidebar (My orders / My credit slips /
+ * My personal info / Sign out) — present on every account/history/identity/
+ * addresses page via the `displayLeftColumn` hook, not just my-account.tpl
+ * itself, so it needs the same rebrand or those pages read half-stock.
+ * `.myaccount-column` is the module's own wrapper class; matching that
+ * (rather than the bare `.block`) keeps this from touching any other
+ * left-column block on other pages. */
+.myaccount-column .title_block,
+.myaccount-column h4 {
+    background: var(--gf-beige-deep, #f5f5dc);
+    border-top: 3px solid var(--gf-olive, #6b8e23);
+    color: var(--gf-ink, #1A1C1B);
+}
+
+.myaccount-column .title_block a,
+.myaccount-column h4 a {
+    color: var(--gf-ink, #1A1C1B);
+}
+
+.myaccount-column .list-block li a:before {
+    color: var(--gf-olive-dark, #556B2F);
+}
+
+.myaccount-column .list-block li a:hover {
+    color: var(--gf-olive-dark, #556B2F);
+}
+
+/* Bookings history table */
+#order-list.table-bordered thead th {
+    background-color: var(--gf-beige-deep, #f5f5dc);
+    color: var(--gf-ink, #1A1C1B);
+    border-color: var(--gf-rule, #E5E9E6);
+}
+
+#order-list.table-bordered td {
+    border-color: var(--gf-rule, #E5E9E6);
+}
+
+#order-list .history_link a,
+#order-list .link-button {
+    color: var(--gf-olive-dark, #556B2F);
+}
+
+/* Addresses list (addresses.tpl) */
+.bloc_adresses .address ul.box {
+    border: 1px solid var(--gf-rule, #E5E9E6);
+    background-color: #FFFFFF;
+}
+
+.bloc_adresses .page-subheading {
+    border-bottom: none;
+    padding-bottom: 0;
+    margin-bottom: 8px;
+}
+
+/* --- 7.9 System pages — AC-5 ---------------------------------------------
+ * 404.tpl renders through the normal theme chrome (setMedia/hooks fire
+ * normally), so h1 already picks up the §0 rule. Its "Home Page" button
+ * does NOT pick up the generic `a.btn-primary` override at §8: global.css
+ * carries an id-qualified `#pagenotfound .pagenotfound .buttons a.btn-primary`
+ * rule that out-specifies it, so this page keeps its own stock-blue button
+ * (confirmed live: #1292FF) even with §8 loaded after global.css. Matching
+ * selectors here is cheaper than !important. maintenance.tpl is the
+ * documented exception above and has no rule here. */
+
+.pagenotfound {
+    text-align: center;
+    padding: 60px 20px;
+}
+
+.pagenotfound img {
+    max-width: 280px;
+    margin: 0 auto 24px;
+}
+
+#pagenotfound .pagenotfound .buttons a.btn-primary {
+    background-color: var(--gf-olive-dark, #556B2F);
+    color: #FFFFFF;
+}
+
+#pagenotfound .pagenotfound .buttons a.btn-primary:hover {
+    background-color: var(--gf-olive-hover, #55721c);
+    opacity: 1;
+}
+
+
+/* ==========================================================================
+   8. Booking discovery rebrand (search, room list, room detail) — Story 1.5
+   FR-8 search, FR-9 room list and filters, FR-10 certification slot,
+   FR-16 mobile. Reached at layer 1 throughout: no stock module CSS is
+   replaced and no theme template is overridden (AC-6).
+   ========================================================================== */
+
+/* --- Certification slot (FR-10) — reserved by story 1.5, filled by Epic 2 ---
+ *
+ * Rendered under the room title on every room-type page. It collapses to
+ * nothing while empty, so the page reads correctly today; when Epic 2 puts
+ * badges inside it, the spacing below is already decided and nothing above
+ * or below moves. See views/templates/hook/certification_slot.tpl. */
+.gf-certification:empty {
+    display: none;
+}
+
+.gf-certification {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin: 14px 0 4px;
+}
+
+/* --- Room-type list ------------------------------------------------------ */
+
+/* Card title: display face, and olive only at heading size (D4). */
+.room_type_name a,
+.rm_detail_head a {
+    color: var(--gf-heading, #1A1C1B);
+    font-family: var(--gf-font-display, Georgia, serif);
+}
+
+.room_type_name a:hover,
+.rm_detail_head a:hover {
+    color: var(--gf-olive-dark, #556B2F);
+}
+
+/* Price is small text, so it takes the dark olive, never --gf-olive (D4). */
+.room_price .price,
+.price_display .price,
+.room-type-price {
+    color: var(--gf-olive-dark, #556B2F);
+    font-family: var(--gf-font-display, Georgia, serif);
+}
+
+.room-type-image {
+    border-radius: 4px;
+}
+
+/* --- Filters: facets, checkboxes, chips, clear-all ----------------------- */
+
+.lf_headingmain_wrapper span,
+#filter_results .lf_headingmain_wrapper span {
+    font-family: var(--gf-font-display, Georgia, serif);
+    color: var(--gf-heading, #1A1C1B);
+}
+
+/* "Clear Filter" is an action, not decoration. wkhotelfilterblock renders it
+ * at #A9A9A9 on white — 2.3:1, below AA for any text — behind a selector
+ * specific enough that it has to be matched rather than out-weighted. */
+.layered_filter_cont div.layered_filter_heading span.clear_filter,
+.clear_filter,
+.clear-filter,
+a.clear_filter {
+    color: var(--gf-olive-dark, #556B2F);
+    cursor: pointer;
+}
+
+.layered_filter_cont div.layered_filter_heading span.clear_filter:hover {
+    color: var(--gf-olive-hover, #55721c);
+}
+
+/* Empty-result notice. The stock pink is not in the palette and carries dark
+ * red text at a ratio that depends on the browser's rendering; the sand
+ * ground with charcoal is 9.9:1 and reads as information, not as an error —
+ * which is what "no rooms match your filters" actually is. */
+.noRoomsAvailAlert {
+    background-color: var(--gf-sand-light, #E8E3D9) !important;
+    color: var(--gf-charcoal, #2C302E) !important;
+    border-left: 4px solid var(--gf-olive, #6b8e23);
+    border-radius: 3px;
+}
+
+.noRoomsAvailAlert span {
+    color: var(--gf-charcoal, #2C302E) !important;
+}
+
+/* Facet checkboxes.
+ *
+ * The theme runs them through the uniform plugin, which hides the real input
+ * and paints .checker span from a sprite image — so there is no colour to
+ * override, only a picture to replace. Drawing the box here instead gives a
+ * checked state that carries the brand and a tick at 8.6:1 on olive-dark,
+ * and it keeps the real input in place, so the label, the click target and
+ * keyboard operation are all untouched. */
+#left_column .checker span,
+#filter_results .checker span {
+    background-image: none;
+    background-color: #FFFFFF;
+    border: 1px solid var(--gf-charcoal, #2C302E);
+    border-radius: 3px;
+    box-sizing: border-box;
+}
+
+#left_column .checker span.checked,
+#filter_results .checker span.checked {
+    background-color: var(--gf-olive-dark, #556B2F);
+    border-color: var(--gf-olive-dark, #556B2F);
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23FFFFFF' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round' d='M3.5 8.5l3 3 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 12px 12px;
+}
+
+/* Uniform swallows the input's own focus ring, so put it on the drawn box. */
+#left_column .checker.focus span,
+#filter_results .checker.focus span {
+    outline: 2px solid var(--gf-olive-dark, #556B2F);
+    outline-offset: 2px;
+}
+
+/* --- Select controls (chosen) --------------------------------------------
+ * The hotel picker and the sort control are both chosen widgets; its own
+ * stylesheet highlights the hovered option in #379bf0. */
+.chosen-container .chosen-results li.highlighted {
+    background-color: var(--gf-olive-dark, #556B2F);
+    color: #FFFFFF;
+}
+
+.chosen-container-single .chosen-single {
+    border-color: var(--gf-sand-light, #E8E3D9);
+    color: var(--gf-charcoal, #2C302E);
+}
+
+.chosen-container-active .chosen-single {
+    border-color: var(--gf-olive-dark, #556B2F);
+}
+
+/* --- Search widget fields ------------------------------------------------ */
+
+#search_hotel_block_form .header-rmsearch-input {
+    border-color: var(--gf-sand-light, #E8E3D9);
+    color: var(--gf-charcoal, #2C302E);
+    font-family: var(--gf-font-body, -apple-system, sans-serif);
+}
+
+#search_hotel_block_form .header-rmsearch-input:active,
+#search_hotel_block_form .header-rmsearch-input:focus {
+    border: 2px solid var(--gf-olive-dark, #556B2F);
+}
+
+/* --- Date picker (AC-5) --------------------------------------------------
+ *
+ * The booking calendar is dateRangePicker, styled in the theme's
+ * daterangepicker.css. Three of its states failed AA before this:
+ *
+ *   selected day   white on #1292ff  = 3.0:1  -> white on olive-dark = 7.4:1
+ *   in-range day   #333 on #E6E6E6   ok, but off-brand -> charcoal on sand
+ *   other month    #CCC on white     = 1.6:1  -> #6B6F6C = 4.6:1
+ *
+ * The selected day takes olive-dark, not --gf-olive: it is a small numeral,
+ * and the restricted olive is for headings, icons and decorative fills (D4). */
+.date-picker-wrapper .first-date-selected,
+.date-picker-wrapper .last-date-selected {
+    background-color: var(--gf-olive-dark, #556B2F) !important;
+    color: #FFFFFF !important;
+}
+
+.date-picker-wrapper .month-wrapper table .day.checked {
+    background-color: var(--gf-sand-light, #E8E3D9);
+    color: var(--gf-charcoal, #2C302E);
+}
+
+.date-picker-wrapper .month-wrapper table .day.toMonth.hovering {
+    background-color: var(--gf-olive-hover, #55721c);
+    color: #FFFFFF;
+}
+
+/* A day outside the bookable window still has to be readable, not a ghost.
+ * The adjacent-month rules in jquery.daterangepicker.min.css qualify .day
+ * with div, so match that specificity rather than reaching for !important. */
+.date-picker-wrapper .month-wrapper table div.day.invalid,
+.date-picker-wrapper .month-wrapper table div.day.lastMonth,
+.date-picker-wrapper .month-wrapper table div.day.nextMonth {
+    color: #6B6F6C;
+}
+
+.date-picker-wrapper .month-name,
+.date-picker-wrapper .month-wrapper table .week-name {
+    font-family: var(--gf-font-display, Georgia, serif);
+    color: var(--gf-heading, #1A1C1B);
+}
+
+/* Today, which the theme deliberately leaves unpainted, gets a quiet ring so
+ * it is findable without competing with the selection. */
+.date-picker-wrapper .month-wrapper table .day.real-today {
+    box-shadow: inset 0 0 0 1px var(--gf-olive, #6b8e23);
+}
+
+/* --- Occupancy panel ----------------------------------------------------- */
+
+/* wk-global-search.css qualifies these with #search_occupancy_wrapper, so
+ * match that specificity rather than reaching for !important. */
+#search_occupancy_wrapper .add_new_occupancy_btn,
+#search_occupancy_wrapper .remove-room-link,
+.add_new_occupancy_btn,
+.remove-room-link {
+    color: var(--gf-olive-dark, #556B2F);
+}
+
+#search_occupancy_wrapper .add_new_occupancy_btn:hover,
+#search_occupancy_wrapper .remove-room-link:hover {
+    color: var(--gf-olive-hover, #55721c);
+}
+
+/* --- Room-type detail ---------------------------------------------------- */
+
+.pb-center-column h1,
+#room_type_name,
+.rm_detail_head h1 {
+    font-family: var(--gf-font-display, Georgia, serif);
+    color: var(--gf-heading, #1A1C1B);
+}
+
+/* Review count sits in the theme's raw link blue (#0000FF), which is both
+ * off-brand and only 8.6:1 by luck rather than by choice. */
+.num_reviews,
+.num_reviews a,
+a .num_reviews {
+    color: var(--gf-link, #55721c) !important;
+    border-color: var(--gf-link, #55721c) !important;
+}
+
+/* Active tab underline on the room information tabs. */
+#more_info_block .idTabHrefShort.selected,
+.nav-tabs > li.active > a,
+.idTabHrefShort.selected {
+    border-bottom-color: var(--gf-olive, #6b8e23) !important;
+    color: var(--gf-heading, #1A1C1B) !important;
+}
+
+/* Bare separators the theme leaves in its blue. */
+#room_type_page hr:not([class]),
+.pb-center-column hr:not([class]) {
+    border-color: var(--gf-sand-light, #E8E3D9);
+}
+
+/* Price panel and the booking call to action. */
+.our_price_display,
+#our_price_display,
+.price_panel .price {
+    color: var(--gf-olive-dark, #556B2F);
+    font-family: var(--gf-font-display, Georgia, serif);
+}
+
+.book_now_submit,
+button.book_now_submit {
+    background-color: var(--gf-olive, #6b8e23);
+    border-color: var(--gf-olive, #6b8e23);
+    color: #FFFFFF;
+    font-weight: 600;
+}
+
+.book_now_submit:hover,
+.book_now_submit:focus {
+    background-color: var(--gf-olive-dark, #556B2F);
+    border-color: var(--gf-olive-dark, #556B2F);
+}
+
+/* The theme's generic action button (.button.button-<size>, #379AEF in
+ * global.css) — the hero's Make Booking, the newsletter submit, and the
+ * small buttons scattered through the discovery pages. */
+/* global.css styles these with the `background` SHORTHAND, which sets a blue
+   linear-gradient as background-IMAGE. Overriding background-color alone left
+   the gradient painting straight over it, so every one of these buttons stayed
+   QloApps blue while computed background-color reported olive — a rebrand that
+   passed inspection and failed on screen. The image has to be cleared too. */
+.button.button-small,
+.button.button-medium,
+.button.button-large,
+.newsletter-btn,
+button.newsletter-btn {
+    background-color: var(--gf-olive-dark, #556B2F) !important;
+    background-image: none !important;
+    border-color: var(--gf-olive-dark, #556B2F) !important;
+    color: #FFFFFF !important;
+}
+
+.button.button-small:hover,
+.button.button-medium:hover,
+.button.button-large:hover,
+.newsletter-btn:hover {
+    background-color: var(--gf-olive-hover, #55721c) !important;
+    background-image: none !important;
+    border-color: var(--gf-olive-hover, #55721c) !important;
+}
+
+/* --- Mobile discovery journey (AC-4, FR-16) ------------------------------
+ *
+ * Overflow is fixed at its source rather than with overflow-x:hidden on the
+ * body, which hides the symptom and breaks position:sticky descendants. */
+@media (max-width: 767px) {
+    /* The search panel lays out on a 22-column grid that cannot fit 360px. */
+    .header-rmsearch-wrapper #search_hotel_block_form .grid,
+    #left_column #search_hotel_block_form .grid {
+        grid-template-columns: 1fr !important;
+        column-gap: 0;
+    }
+
+    .header-rmsearch-wrapper #search_hotel_block_form .grid-item {
+        grid-column: span 1 !important;
+        margin-bottom: 10px;
+    }
+
+    /* Room cards stack; the image goes full width instead of a fixed column. */
+    .room-type-image,
+    .room_type_img img {
+        width: 100%;
+        height: auto;
+    }
+
+    /* Long words in room and hotel names must wrap, not push the page wide. */
+    .room_type_name,
+    .rm_detail_head h1,
+    .search_result_info {
+        overflow-wrap: break-word;
+        word-wrap: break-word;
+    }
+
+    /* Tables and any wide block scroll inside themselves, never the page. */
+    .table-responsive,
+    #room_type_page table {
+        display: block;
+        max-width: 100%;
+        overflow-x: auto;
+    }
+
+    .gf-certification {
+        margin: 10px 0 2px;
+    }
+}
+
+
+/* ==========================================================================
+   9. Transactional emails — Story 1.7
+   (Email CSS is inline in the template, not this file; this section is for
+    any shared patterns)
+   ========================================================================== */
+
+/* TO BE ADDED BY STORY 1.7 */
+
+
+/* ==========================================================================
+   10. Accessibility overrides — Story 1.16
+   Focus indicators, reduced motion, contrast fixes
+   ========================================================================== */
+
+/* Keyboard focus indicator (WCAG 2.4.7).
+ *
+ * The bare *:focus-visible below is not enough on its own: global.css carries
+ * `a:focus`, `.btn:focus` and `.button.button-medium:focus` rules that either
+ * restore the browser's own ring or remove it outright, and each of those
+ * out-specifies a universal selector. Every control type is therefore named
+ * at matching specificity so the brand ring wins on the cascade rather than
+ * on !important — checked by tabbing the search widget and the filters. */
+*:focus-visible {
+    outline: 3px solid var(--gf-olive-dark, #556B2F);
+    outline-offset: 2px;
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible,
+[tabindex]:focus-visible,
+.btn:focus-visible,
+.button:focus-visible,
+.chosen-container-active .chosen-single {
+    outline: 3px solid var(--gf-olive-dark, #556B2F) !important;
+    outline-offset: 2px !important;
+}
+
+/* On the dark search panel and the charcoal footer, an olive ring is too
+ * close to the ground to see; those get the sand instead. */
+#gf-footer a:focus-visible,
+#left_column .header-rmsearch-wrapper a:focus-visible,
+#left_column .header-rmsearch-wrapper button:focus-visible,
+#left_column .header-rmsearch-wrapper input:focus-visible,
+.header-rmsearch-wrapper .chosen-container-active .chosen-single {
+    outline-color: var(--gf-sand-light, #E8E3D9) !important;
+}
+
+/* Reduced motion — disable card lift and transitions */
+@media (prefers-reduced-motion: reduce) {
+    .gf-card:hover {
+        transform: none;
+        box-shadow: var(--gf-shadow-card-rest, 0 4px 15px rgba(0, 0, 0, 0.03));
+    }
+
+    *, *::before, *::after {
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+    }
+}
+
+
+/* ==========================================================================
+   11. Theme override fixes — catch-all for QloApps stock blue → olive swap
+   ========================================================================== */
+
+/* Override the hardcoded #009ad0 theme blue in common elements.
+ * The SASS is not recompiled (C3), so target compiled output selectors. */
+
+/* Theme primary colour links */
+a.btn-primary,
+button.btn-primary {
+    background-color: var(--gf-olive-dark, #556B2F);
+    border-color: var(--gf-olive-dark, #556B2F);
+}
+
+a.btn-primary:hover,
+button.btn-primary:hover {
+    background-color: var(--gf-olive-hover, #55721c);
+    border-color: var(--gf-olive-hover, #55721c);
+}
+
+/* The room search panel is the most prominent call to action on the site and
+ * wkroomsearchblock hardcodes it to the QloApps blue, at a specificity our
+ * plain .btn-primary rule does not reach. */
+.header-rmsearch-wrapper .btn-primary,
+#search_hotel_block_form #search_room_submit {
+    background-color: var(--gf-olive-dark, #556B2F);
+    border-color: var(--gf-olive-dark, #556B2F);
+    color: #FFFFFF;
+}
+
+.header-rmsearch-wrapper .btn-primary:hover,
+.header-rmsearch-wrapper .btn-primary:focus,
+#search_hotel_block_form #search_room_submit:hover,
+#search_hotel_block_form #search_room_submit:focus {
+    background-color: var(--gf-olive-hover, #55721c);
+    border-color: var(--gf-olive-hover, #55721c);
+}
+
+/* The booking funnel's own calls to action. The theme hardcodes these — the
+ * hero's Make Booking in blue, Book Now in a stock green — so each needs
+ * naming rather than being reached by a .btn-primary rule. */
+#make_booking_btn,
+.newsletter-block .btn,
+#newsletter_block_left .btn,
+.footer-container .btn-primary {
+    background-color: var(--gf-olive-dark, #556B2F) !important;
+    border-color: var(--gf-olive-dark, #556B2F) !important;
+    color: #FFFFFF !important;
+}
+
+#add_to_cart button,
+#add_to_cart input.button,
+.btn-book-now,
+#book_now_btn {
+    background-color: var(--gf-olive, #6b8e23) !important;
+    border-color: var(--gf-olive, #6b8e23) !important;
+}
+
+#add_to_cart button:hover,
+.btn-book-now:hover,
+#book_now_btn:hover {
+    background-color: var(--gf-olive-dark, #556B2F) !important;
+    border-color: var(--gf-olive-dark, #556B2F) !important;
+}
+
+/* The theme's accent blue (#379BF0) reaches these by class name, so each is
+ * named here rather than being caught by a .btn-primary rule. */
+
+/* Section underline used throughout the filters and footer blocks. */
+hr.theme-text-underline {
+    border-color: var(--gf-olive, #6b8e23) !important;
+    background-color: var(--gf-olive, #6b8e23) !important;
+}
+
+/* "View More" on a room card. */
+.rm_desc .view_more,
+a.view_more {
+    color: var(--gf-link, #55721c);
+}
+
+/* Cart count badge, the menu button beside it, and the drawer's close tab. */
+.badge.badge_style,
+button.nav_toggle,
+.close_navbar {
+    background-color: var(--gf-olive-dark, #556B2F) !important;
+    border-color: var(--gf-olive-dark, #556B2F) !important;
+    color: #FFFFFF !important;
+}
+
+/* Range slider on the room filters. */
+.ui-slider .ui-slider-range,
+.ui-slider-horizontal .ui-slider-range {
+    background: var(--gf-olive, #6b8e23) !important;
+}
+
+/* The room search panel on listing pages — navy in stock, charcoal here so it
+ * sits with the footer rather than fighting the olive. */
+#left_column .header-rmsearch-wrapper,
+#right_column .header-rmsearch-wrapper {
+    background-color: var(--gf-charcoal, #2C302E) !important;
+}
+
+
+/* ==========================================================================
+ * 9. Advisor and partner drawers — Story 1.11
+ * AC-4..8: in-place disclosure, keyboard + screen reader, trigger stays
+ * visible with a flipped label, intrinsic-height animation (no clipping),
+ * default-open without JS, reduced-motion instant.
+ * ========================================================================== */
+
+.gf-trust-drawer {
+    border-top: 1px solid var(--gf-rule, #E5E9E6);
+}
+
+/* The trigger is a real button that never disappears (AC-6): its label flips
+ * and aria-expanded carries the state. */
+.gf-trust-trigger {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 18px 0;
+    background: none;
+    border: 0;
+    font-family: var(--gf-font-body, sans-serif);
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--gf-text, #556B2F);
+    cursor: pointer;
+}
+
+.gf-trust-trigger:hover {
+    color: var(--gf-link-hover, #6b8e23);
+}
+
+/* Focus is visible, because this is a primary interactive control. */
+.gf-trust-trigger:focus-visible {
+    outline: 2px solid var(--gf-olive-dark, #556B2F);
+    outline-offset: 4px;
+}
+
+/* Two labels: exactly one is shown at a time. The drawer is open when it
+ * carries --open, or when JS has not run yet (--nojs): the markup is correct
+ * with scripts disabled precisely because --nojs *is* the open state. */
+.gf-trust-trigger-label--open {
+    display: none;
+}
+
+.gf-trust-drawer--open .gf-trust-trigger-label {
+    display: none;
+}
+
+.gf-trust-drawer--open .gf-trust-trigger-label--open {
+    display: inline;
+}
+
+/* Without JS the button has no click handler at all — content is simply
+ * always visible below it (D6). Labelling it "Hide the Advisors" would claim
+ * an action that does nothing when clicked; the closed-state label reads
+ * correctly here since nothing ever toggles. */
+.gf-trust-drawer--nojs .gf-trust-trigger-label--open {
+    display: none;
+}
+
+.gf-trust-trigger-chevron {
+    transition: transform 300ms ease;
+}
+
+.gf-trust-drawer--nojs .gf-trust-trigger-chevron,
+.gf-trust-drawer--open .gf-trust-trigger-chevron {
+    transform: rotate(180deg);
+}
+
+/* The animation is grid-template-rows 0fr -> 1fr (AC-7): it reaches intrinsic
+ * height, so a fifth advisor cannot clip the way a fixed max-height would.
+ * The inner clip is what makes the row trackable by the grid. */
+.gf-trust-drawer-body {
+    display: grid;
+    grid-template-rows: 1fr;
+    transition: grid-template-rows 450ms cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.gf-trust-drawer--closed .gf-trust-drawer-body {
+    grid-template-rows: 0fr;
+}
+
+/* Suppresses the collapse animation for the one frame in which JS closes a
+ * drawer that was born open — without this, every page load visibly
+ * animates the drawer shut instead of starting closed. */
+.gf-trust-drawer--no-transition .gf-trust-drawer-body,
+.gf-trust-drawer--no-transition .gf-trust-drawer-clip {
+    transition: none !important;
+}
+
+.gf-trust-drawer-clip {
+    overflow: hidden;
+    min-height: 0;
+    /* The row collapsing to 0fr only hides the content visually: without
+     * this, every advisor/partner link inside stays in the tab order and the
+     * accessibility tree while the drawer looks closed. visibility:hidden
+     * removes both — delayed on close so it does not clip the collapse
+     * animation, immediate on open. */
+    visibility: hidden;
+    transition: visibility 0ms linear 450ms;
+}
+
+.gf-trust-drawer--open .gf-trust-drawer-clip,
+.gf-trust-drawer--nojs .gf-trust-drawer-clip {
+    visibility: visible;
+    transition-delay: 0ms;
+}
+
+.gf-trust-drawer-inner {
+    padding: 30px 0 45px;
+}
+
+/* --- Advisor cards --- */
+
+.gf-advisor-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 28px;
+}
+
+.gf-advisor-card {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+}
+
+.gf-advisor-avatar {
+    flex: 0 0 auto;
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: var(--gf-beige-deep, #f5f5dc);
+}
+
+/* The designed "no photograph" state (AC-9): a silhouette, not a broken
+ * image icon. */
+.gf-advisor-avatar--glyph {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--gf-sage, #657a5a);
+    background: var(--gf-beige-deep, #f5f5dc);
+}
+
+.gf-advisor-name {
+    font-family: var(--gf-font-display, Georgia, serif);
+    font-size: var(--gf-h3-size, 18px);
+    color: var(--gf-heading, #1A1C1B);
+    margin: 0 0 6px;
+}
+
+.gf-advisor-regions {
+    margin: 0 0 8px;
+}
+
+.gf-advisor-bio {
+    margin: 0 0 10px;
+    font-size: var(--gf-card-body-size, 14px);
+    line-height: var(--gf-card-body-lh, 1.55);
+    color: var(--gf-charcoal, #2C302E);
+}
+
+.gf-advisor-contact {
+    margin: 0;
+}
+
+.gf-advisor-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-right: 18px;
+    font-size: var(--gf-card-body-size, 14px);
+    font-weight: 600;
+    color: var(--gf-link, #55721c);
+    text-decoration: none;
+}
+
+.gf-advisor-link:hover {
+    color: var(--gf-link-hover, #6b8e23);
+    text-decoration: underline;
+}
+
+/* --- Partner logos --- */
+
+.gf-partner-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 28px;
+}
+
+.gf-partner-card {
+    text-align: center;
+}
+
+.gf-partner-link {
+    display: block;
+    text-decoration: none;
+}
+
+/* Each logo sits on white, constrained by height never width (AC-11): the
+ * assets differ wildly in aspect ratio and background, and height is the only
+ * rule that keeps them optically agreeing. */
+.gf-partner-tile {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #FFFFFF;
+    padding: 14px 18px;
+    border: 1px solid var(--gf-rule, #E5E9E6);
+    min-height: 88px;
+}
+
+.gf-partner-tile img {
+    height: 56px;
+    width: auto;
+    max-width: 100%;
+    object-fit: contain;
+}
+
+.gf-partner-tile--text {
+    font-family: var(--gf-font-display, Georgia, serif);
+    font-size: 16px;
+    color: var(--gf-heading, #1A1C1B);
+}
+
+.gf-partner-desc {
+    margin: 10px 0 0;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--gf-muted, #707571);
+}
+
+/* --- Standalone pages --- */
+
+.gf-page-title {
+    font-family: var(--gf-font-display, Georgia, serif);
+    font-size: var(--gf-h2-size, 34px);
+    color: var(--gf-heading, #1A1C1B);
+    margin: 0 0 10px;
+}
+
+.gf-page-intro {
+    font-size: 17px;
+    color: var(--gf-charcoal, #2C302E);
+    max-width: 60ch;
+    margin: 0 0 34px;
+}
+
+.gf-empty-state {
+    padding: 30px;
+    border: 1px solid var(--gf-rule, #E5E9E6);
+    background: var(--gf-beige, #FDFBF7);
+    color: var(--gf-charcoal, #2C302E);
+}
+
+/* --- Responsive --- */
+
+@media (max-width: 991px) {
+    .gf-advisor-list {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .gf-partner-list {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 767px) {
+    .gf-advisor-list {
+        grid-template-columns: 1fr;
+    }
+
+    .gf-partner-list {
+        grid-template-columns: 1fr;
+    }
+
+    .gf-advisor-card {
+        flex-direction: column;
+    }
+}
+
+/* AC-10: reduced motion opens and closes instantly. */
+@media (prefers-reduced-motion: reduce) {
+    .gf-trust-drawer-body,
+    .gf-trust-trigger-chevron,
+    .gf-trust-drawer-clip {
+        transition: none;
+    }
+}
+
+
+/* ==========================================================================
+ * 10. Homepage assembly — Story 1.13
+ * Pillars, featured strip, Why Choose Us. The hero lives in the theme header
+ * (already restyled in §1); this owns the middle sections.
+ * ========================================================================== */
+
+/* --- Pillars (AC-3) --- */
+
+/* Four equal columns separated by hairline rules, not card borders. The
+ * border sits on every column except the first, so a single rule divides the
+ * pair. On a two-up mobile layout the same trick gives one vertical rule. */
+.gf-pillars {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    border-top: 1px solid var(--gf-rule, #E5E9E6);
+    border-bottom: 1px solid var(--gf-rule, #E5E9E6);
+}
+
+.gf-pillar {
+    padding: 40px 28px;
+    border-left: 1px solid var(--gf-rule, #E5E9E6);
+}
+
+.gf-pillar:first-child {
+    border-left: 0;
+}
+
+/* A pillar is one unit, top to bottom. The link variant wraps everything in a
+ * single anchor; the disclosure variant uses a button for the same footprint. */
+.gf-pillar-link,
+.gf-pillar-disclosure {
+    display: block;
+    height: 100%;
+}
+
+.gf-pillar-link,
+.gf-pillar-trigger {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: 0;
+    padding: 0;
+    font-family: var(--gf-font-body, sans-serif);
+    color: inherit;
+    cursor: pointer;
+}
+
+/* The filled olive circle icon, shared by all four pillars. */
+.gf-pillar-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    margin-bottom: 20px;
+    border-radius: 50%;
+    background: var(--gf-olive-dark, #556B2F);
+    color: #FFFFFF;
+}
+
+.gf-pillar-title {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gf-heading, #1A1C1B);
+    margin: 0 0 10px;
+}
+
+.gf-pillar-copy {
+    font-size: var(--gf-card-body-size, 14px);
+    line-height: var(--gf-card-body-lh, 1.55);
+    color: var(--gf-charcoal, #2C302E);
+    margin: 0 0 18px;
+}
+
+.gf-pillar-cta {
+    margin-top: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--gf-link, #55721c);
+}
+
+.gf-pillar-arrow {
+    font-size: 16px;
+    display: inline-block;
+    transition: transform 300ms ease;
+}
+
+/* The pillar trigger controls its drawer purely through aria-controls (it is
+ * a sibling of .gf-trust-drawer, not a descendant — story 1.13's embedded
+ * rendering), so its own open/closed indicator has to key off its own
+ * aria-expanded rather than a shared parent state class. */
+.gf-pillar-trigger[aria-expanded="true"] .gf-pillar-arrow {
+    transform: rotate(180deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .gf-pillar-arrow {
+        transition: none;
+    }
+}
+
+.gf-pillar-link:hover .gf-pillar-cta,
+.gf-pillar-trigger:hover .gf-pillar-cta {
+    color: var(--gf-link-hover, #6b8e23);
+}
+
+.gf-pillar-link:focus-visible,
+.gf-pillar-trigger:focus-visible {
+    outline: 2px solid var(--gf-olive-dark, #556B2F);
+    outline-offset: 4px;
+}
+
+/* --- Featured strip (AC-4) --- */
+
+.gf-featured {
+    padding: 72px 0;
+    background: var(--gf-beige, #FDFBF7);
+}
+
+.gf-featured-title {
+    font-family: var(--gf-font-display, Georgia, serif);
+    font-size: var(--gf-h2-size, 34px);
+    line-height: var(--gf-h2-lh, 1.25);
+    color: var(--gf-heading, #1A1C1B);
+    text-align: center;
+    margin: 0 0 40px;
+}
+
+.gf-featured-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 28px;
+}
+
+.gf-featured-more {
+    text-align: center;
+    margin: 40px 0 0;
+}
+
+.gf-featured-more a {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--gf-link, #55721c);
+    text-decoration: none;
+}
+
+.gf-featured-more a:hover {
+    color: var(--gf-link-hover, #6b8e23);
+    text-decoration: underline;
+}
+
+/* --- Why Choose Us (AC-1) --- */
+
+.gf-why {
+    padding: 72px 0;
+}
+
+.gf-why-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 56px;
+    align-items: center;
+}
+
+.gf-why-photo img {
+    width: 100%;
+    /* GFE-8: the client photo is 2:3 portrait; the slot is 4:3. The aspect-ratio
+       reserves the slot box (the <img>'s 640x480 attributes back it for CLS) and
+       object-fit: cover scales-to-cover + center-crops at render time, so the
+       stored file is never modified. */
+    aspect-ratio: 4 / 3;
+    height: auto;
+    object-fit: cover;
+    object-position: center;
+    display: block;
+    border-radius: 4px;
+}
+
+.gf-why-eyebrow {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gf-sage, #657a5a);
+    margin: 0 0 10px;
+}
+
+.gf-why-title {
+    font-family: var(--gf-font-display, Georgia, serif);
+    font-size: var(--gf-h2-size, 34px);
+    line-height: var(--gf-h2-lh, 1.25);
+    color: var(--gf-heading, #1A1C1B);
+    margin: 0 0 24px;
+}
+
+.gf-why-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.gf-why-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 10px 0;
+}
+
+/* Filled olive circle tick, echoing the pillar icons. */
+.gf-why-tick {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    margin-top: 1px;
+    border-radius: 50%;
+    background: var(--gf-olive-dark, #556B2F);
+    color: #FFFFFF;
+    font-size: 14px;
+}
+
+.gf-why-item-text {
+    font-size: 16px;
+    line-height: var(--gf-body-lh, 1.65);
+    color: var(--gf-charcoal, #2C302E);
+}
+
+/* --- Embedded trust drawers (homepage) --- */
+
+/* On the homepage the pillar row is the trigger, so the drawer sits directly
+ * beneath the pillar it belongs to. The hairline top border the standalone
+ * drawer carries would double up against the pillar rule, so it is dropped. */
+.gf-trust-drawer--embedded {
+    border-top: 0;
+}
+
+/* --- Responsive (AC-8) --- */
+
+@media (max-width: 991px) {
+    .gf-pillars {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .gf-pillar:nth-child(3) {
+        border-left: 0;
+        border-top: 1px solid var(--gf-rule, #E5E9E6);
+    }
+
+    .gf-pillar:nth-child(4) {
+        border-top: 1px solid var(--gf-rule, #E5E9E6);
+    }
+
+    .gf-featured-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .gf-why-row {
+        grid-template-columns: 1fr;
+        gap: 32px;
+    }
+}
+
+@media (max-width: 767px) {
+    .gf-pillars {
+        grid-template-columns: 1fr;
+    }
+
+    .gf-pillar {
+        border-left: 0;
+        border-top: 1px solid var(--gf-rule, #E5E9E6);
+        padding: 32px 24px;
+    }
+
+    .gf-pillar:first-child {
+        border-top: 0;
+    }
+
+    .gf-featured-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .gf-featured,
+    .gf-why {
+        padding: 48px 0;
+    }
+}
+
+
+/* --- Homepage hero (Task 1, AC-2) -----------------------------------------
+ * The hero is the theme's header on the landing page (a full-bleed photo with
+ * the welcome text). Story 1.13 restyles it in place — the two-line DM Serif
+ * headline, the one-sentence subhead, the scrim — rather than editing the
+ * theme template. The scrim already exists (§1); here the type is brought to
+ * the brand spec. */
+
+/* Two-line DM Serif Display headline, sentence case, the brand's display face. */
+body.index .header-desc-container .header-hotel-name {
+    font-family: var(--gf-font-display, 'DM Serif Display', Georgia, serif);
+    font-size: var(--gf-hero-size, 56px);
+    line-height: var(--gf-hero-lh, 1.1);
+    letter-spacing: -0.5px;
+    font-weight: 400;
+    max-width: 18ch;
+}
+
+/* One-sentence subhead, the brand's body face. */
+body.index .header-desc-container .header-hotel-desc {
+    font-family: var(--gf-font-body, 'Source Sans 3', sans-serif);
+    font-size: 17px;
+    line-height: 1.6;
+    max-width: 46ch;
+    color: #FFFFFF;
+}
+
+/* The "Welcome To" eyebrow takes the brand's secondary accent. */
+body.index .header-desc-container .header-desc-welcome {
+    font-family: var(--gf-font-body, 'Source Sans 3', sans-serif);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-size: 13px;
+    color: #FFFFFF;
+}
+
+@media (max-width: 767px) {
+    body.index .header-desc-container .header-hotel-name {
+        font-size: var(--gf-hero-size-mobile, 34px);
+    }
+
+    body.index .header-desc-container .header-hotel-desc {
+        font-size: 15px;
+    }
+}
+
+
+/* ==========================================================================
+   11. About Us page — Story 1.14
+   FR-n/a: the QloApps equivalent of the old WordPress About Us page. A
+   dedicated gfbrand front controller, so this section is self-contained —
+   it cannot reach any other page — the same section-per-story convention
+   as §4's .gf-establishments.
+   ========================================================================== */
+
+.gf-aboutus-band {
+    padding: var(--gf-space-20) 0;
+}
+
+.gf-aboutus-eyebrow {
+    margin: 0 0 var(--gf-space-3);
+    font-family: var(--gf-font-body);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gf-sage, #657a5a);
+}
+
+.gf-aboutus-eyebrow--center {
+    text-align: center;
+}
+
+/* --- Inner-page hero ------------------------------------------------------
+   Same look as the establishments listing's header (§4); a separate class
+   so each page's CSS stays self-contained per file convention. */
+
+.gf-aboutus-hero {
+    max-width: var(--gf-container-max);
+    margin: 0 auto;
+    padding: var(--gf-space-15) var(--gf-grid-gutter, 20px) var(--gf-space-10);
+    text-align: center;
+}
+
+.gf-aboutus-hero-title {
+    margin: 0;
+    font-family: var(--gf-font-display);
+    font-size: var(--gf-hero-size);
+    line-height: var(--gf-hero-lh);
+    letter-spacing: var(--gf-hero-tracking);
+    color: var(--gf-heading);
+}
+
+.gf-aboutus-hero-tagline {
+    margin: var(--gf-space-4) 0 0;
+    font-family: var(--gf-font-body);
+    font-size: var(--gf-body-size);
+    line-height: var(--gf-body-lh);
+    color: var(--gf-charcoal);
+}
+
+.gf-aboutus-rule {
+    display: block;
+    width: 56px;
+    height: 2px;
+    margin: var(--gf-space-6) auto 0;
+    background: var(--gf-olive);
+}
+
+.gf-aboutus-rule--left {
+    margin-left: 0;
+}
+
+/* --- Band 1: Who We Are ---------------------------------------------------- */
+
+.gf-aboutus-whoweare-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 56px;
+    align-items: center;
+}
+
+.gf-aboutus-whoweare-heading {
+    margin: 0 0 var(--gf-space-4);
+    font-family: var(--gf-font-display);
+    font-size: var(--gf-h2-size);
+    line-height: var(--gf-h2-lh);
+    color: var(--gf-heading);
+}
+
+.gf-aboutus-whoweare-para {
+    margin: 0 0 var(--gf-space-4);
+    font-family: var(--gf-font-body);
+    font-size: var(--gf-body-size);
+    line-height: var(--gf-body-lh);
+    color: var(--gf-charcoal);
+}
+
+.gf-aboutus-whoweare-para:last-child {
+    margin-bottom: 0;
+}
+
+/* AC-1: "closing line in bold" — the last paragraph in the textarea. */
+.gf-aboutus-emphasis {
+    font-weight: 700;
+    color: var(--gf-heading);
+}
+
+.gf-aboutus-whoweare-photo img {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    height: auto;
+    object-fit: cover;
+    object-position: center;
+    display: block;
+    border-radius: 4px;
+}
+
+/* --- Band 2: Our Mission ----------------------------------------------------
+   Warm sand band, centred statement, three icon-left/text-right pillars. */
+
+.gf-aboutus-mission {
+    background: var(--gf-beige-deep, #f5f5dc);
+}
+
+.gf-aboutus-mission-statement {
+    max-width: 46em;
+    margin: 0 auto var(--gf-space-15);
+    font-family: var(--gf-font-display);
+    font-size: var(--gf-h2-size-mobile, 26px);
+    line-height: var(--gf-h2-lh, 1.4);
+    text-align: center;
+    color: var(--gf-heading);
+}
+
+.gf-aboutus-mission-pillars {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--gf-space-10);
+}
+
+.gf-aboutus-mission-pillar {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--gf-space-4);
+}
+
+.gf-aboutus-mission-icon {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--gf-olive-dark, #556B2F);
+    color: #FFFFFF;
+}
+
+.gf-aboutus-mission-text {
+    display: block;
+}
+
+.gf-aboutus-mission-title {
+    display: block;
+    margin: 0 0 var(--gf-space-1);
+    font-family: var(--gf-font-body);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--gf-heading);
+}
+
+.gf-aboutus-mission-copy {
+    display: block;
+    font-family: var(--gf-font-body);
+    font-size: 14px;
+    line-height: var(--gf-card-body-lh, 1.55);
+    color: var(--gf-charcoal);
+}
+
+/* --- Band 3: What We Offer -------------------------------------------------- */
+
+.gf-aboutus-band-header {
+    margin: 0 0 var(--gf-space-15);
+    text-align: center;
+}
+
+.gf-aboutus-offer-heading {
+    margin: 0;
+    font-family: var(--gf-font-display);
+    font-size: var(--gf-h2-size);
+    line-height: var(--gf-h2-lh);
+    color: var(--gf-heading);
+}
+
+.gf-offer-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--gf-space-6);
+}
+
+.gf-offer-card {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--gf-rule);
+    border-radius: var(--gf-radius-card);
+    background: #FFF;
+    overflow: hidden;
+    box-shadow: var(--gf-shadow-card-rest);
+}
+
+.gf-offer-card-media {
+    position: relative;
+    /* Room for the icon circle to straddle the image/body boundary without
+       clipping — the media box's overflow stays visible for exactly this. */
+    margin-bottom: 28px;
+}
+
+.gf-offer-card-media img {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 3 / 2;
+    object-fit: cover;
+}
+
+.gf-offer-card-icon {
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    transform: translate(-50%, 50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--gf-olive-dark, #556B2F);
+    color: #FFFFFF;
+    border: 3px solid #FFF;
+}
+
+.gf-offer-card-body {
+    padding: 0 var(--gf-space-6) var(--gf-space-6);
+    text-align: center;
+}
+
+.gf-offer-card-title {
+    margin: 0 0 var(--gf-space-3);
+    font-family: var(--gf-font-display);
+    font-size: var(--gf-h3-size);
+    color: var(--gf-heading);
+}
+
+.gf-offer-card-copy {
+    margin: 0;
+    font-family: var(--gf-font-body);
+    font-size: var(--gf-card-body-size);
+    line-height: var(--gf-card-body-lh);
+    color: var(--gf-charcoal);
+}
+
+/* --- Band 5: Closing CTA ----------------------------------------------------
+   Full-width olive band, centred white serif headline. */
+
+.gf-aboutus-cta {
+    background: var(--gf-olive-dark, #556B2F);
+    text-align: center;
+}
+
+.gf-aboutus-cta-heading {
+    max-width: 42em;
+    margin: 0 auto var(--gf-space-3);
+    font-family: var(--gf-font-display);
+    font-size: var(--gf-h2-size);
+    line-height: var(--gf-h2-lh);
+    color: #FFFFFF;
+}
+
+.gf-aboutus-cta-subtext {
+    margin: 0;
+    font-family: var(--gf-font-body);
+    font-size: var(--gf-body-size);
+    color: #FFFFFF;
+}
+
+/* --- Responsive: stack at tablet/mobile, matching §4 and §10 -------------- */
+
+@media (max-width: 991px) {
+    .gf-aboutus-mission-pillars {
+        grid-template-columns: 1fr;
+        gap: var(--gf-space-8);
+    }
+
+    .gf-offer-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 767px) {
+    .gf-aboutus-band {
+        padding: var(--gf-space-10) 0;
+    }
+
+    .gf-aboutus-hero {
+        padding: var(--gf-space-10) var(--gf-grid-gutter, 20px) var(--gf-space-6);
+    }
+
+    .gf-aboutus-hero-title {
+        font-size: var(--gf-hero-size-mobile);
+    }
+
+    .gf-aboutus-whoweare-row {
+        grid-template-columns: 1fr;
+        gap: 32px;
+    }
+
+    .gf-offer-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .gf-aboutus-mission-statement {
+        font-size: 20px;
+    }
+
+    .gf-aboutus-cta-heading {
+        font-size: var(--gf-h2-size-mobile);
+    }
+}
+
+
+/* ==========================================================================
+   12. Contact Us character count — Story 1.14, AC-6
+   The theme's own contact-form.tpl (READ ONLY) already renders the
+   two-column form/info layout; this only styles the live region this
+   story's hook adds directly under the #message field.
+   ========================================================================== */
+
+.gf-contact-char-count {
+    margin: 6px 0 0;
+    font-family: var(--gf-font-body, sans-serif);
+    font-size: 13px;
+    color: var(--gf-muted, var(--gf-sage, #657a5a));
+    /* Reserves the line before JS fills it in, so the region appearing does
+       not shift the submit button down a beat after first input. */
+    min-height: 1.2em;
+}

@@ -252,7 +252,11 @@ class InstallControllerConsoleProcess extends InstallControllerConsole
     {
         $this->initializeContext();
 
-        return $this->model_install->installModules();
+        // Modules seed their own demo content (the "Hotel Prime" hotel, its
+        // room types and the home page showcase blocks) when installed with
+        // Module::$populateData = 1. The web installer decides that from its
+        // "full" vs "custom" install type; on the CLI it is --demo_data.
+        return $this->model_install->installModules(null, (int) $this->datas->demo_data);
     }
 
     /**

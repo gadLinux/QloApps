@@ -34,6 +34,12 @@ class Datas
             'validate' => 'isGenericName',
             'help' => 'all / database,fixtures,theme,modules,addons_modules',
         ),
+        'demo_data' => array(
+            'name' => 'demo_data',
+            'default' => 1,
+            'validate' => 'isInt',
+            'help' => 'Install the demo dataset (sample hotel, room types, services, home page blocks)',
+        ),
         'language' => array(
             'default' => 'en',
             'validate' => 'isLanguageIsoCode',

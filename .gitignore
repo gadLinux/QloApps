@@ -265,3 +265,13 @@ robots.txt
 /modules/wkfooterpaymentblock/views/img/payment_img/
 /modules/wkhotelfeaturesblock/views/img/hotels_features_img/
 /modules/wktestimonialblock/views/img/hotels_testimonials_img/
+
+# Hotel photographs, written per installation by the gfbrand importer (and by
+# the back office). Runtime state that belongs to a shop, not to the source.
+/modules/hotelreservationsystem/views/img/hotel_img/*/
+
+# PHPUnit cache
+modules/*/tests/.phpunit.cache/
+
+# PHPUnit PHAR — fetched by `make test-setup`, not committed.
+tests/bin/
